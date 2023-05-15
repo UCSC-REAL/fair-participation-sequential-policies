@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 from functools import partial
 from tqdm import tqdm
+
+import cvxpy as cp
+import numpy as onp
 
 import jax
 import jax.numpy as np
@@ -11,6 +15,7 @@ from scipy.spatial import ConvexHull
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.patches as patches
 
 from folktasks import get_achievable_losses
 
@@ -27,6 +32,11 @@ mpl.rcParams.update(
 font = {"size": 13}
 
 mpl.rc("font", **font)
+
+
+def savefig(fig, filename):
+    print("Saving", filename)
+    fig.savefig(filename)
 
 
 def use_two_ticks_x(ax):
@@ -125,6 +135,15 @@ class Env:
 
         self.eta = eta
 
+        self.update_funcs = {
+            "RRM": self.rrm_step,
+            "RRM_grad": self.rrm_grad_step,
+            "LPU": self.perf_step,
+            "LPU_grad": self.perf_grad_step,
+            "Fair": self.fair_step,
+            "Fair_grad": self.fair_grad_step,
+        }
+
     def get_losses(self, theta):
         """
         theta [0, 1] -> group_specific losses
@@ -134,12 +153,21 @@ class Env:
         y = np.interp(theta, self.ts, self.ys)
         return np.array([x, y])
 
+    def get_theta(self, losses):
+        return ((np.arctan2(losses[1], losses[0]) / (np.pi / 2) + 4.0) % 2.0) * (
+            np.pi / 2
+        )
+
     def get_grad_losses(self, theta):
         """
         Use finite differences.
         """
-        h = 0.000001
+        h = 0.0001
         return (self.get_losses(theta + h / 2) - self.get_losses(theta - h / 2)) / h
+
+    def get_tangent(self, theta):
+        i = np.sum(self.ts < theta) - 1
+        return np.array([self.xs[i + 1] - self.xs[i], self.ys[i + 1] - self.ys[i]])
 
     def get_rhos(self, losses):
         return np.array([self.rho_fns[g](losses[g]) for g in range(2)])
@@ -159,9 +187,49 @@ class Env:
 
     ############################################################################
 
+    def quadratic_program(self, losses, dual):
+        """
+        return theta that solves convex proximal update
+        """
+        x = cp.Variable(2)
+        constraints = [
+            onp.array([1, 0]) @ x <= 0,
+            onp.array([0, 1]) @ x <= 0,
+        ]
+        for i in range(len(self.hull) - 1):
+            l = self.hull[i]
+            r = self.hull[i + 1]
+            d = np.array([r[1] - l[1], l[0] - r[0]])
+            constraints.append(d.T @ x <= d.T @ l)
+
+        prob = cp.Problem(
+            cp.Minimize(
+                (1 / 2) * cp.quad_form(x - losses, onp.eye(2)) + self.eta * dual.T @ x
+            ),
+            constraints,
+        )
+        prob.solve()
+        return self.get_theta(x.value)
+
     def rrm_step(self, theta, losses, rhos):
         """
         Perform update step assuming fixed rho
+        """
+
+        # A_losses = np.array([self.xs, self.ys])
+
+        # return (
+        #     0,
+        #     self.ts[
+        #         np.argmin(np.einsum("g,gi,g->i", rhos, A_losses, self.group_sizes))
+        #     ],
+        # )
+
+        return (0, self.quadratic_program(losses, rhos * self.group_sizes))
+
+    def rrm_grad_step(self, theta, losses, rhos):
+        """
+        Perform gradient update step assuming fixed rho
         """
         grads = self.get_grad_losses(theta)
 
@@ -175,6 +243,23 @@ class Env:
         Perform update step with rho_hat
         """
         rhos_hat = rhos + self.get_rho_grads(losses) * losses
+
+        # A_losses = np.array([self.xs, self.ys])
+
+        # return (
+        #     0,
+        #     self.ts[
+        #         np.argmin(np.einsum("g,gi,g->i", rhos_hat, A_losses, self.group_sizes))
+        #     ],
+        # )
+
+        return (0, self.quadratic_program(losses, rhos_hat * self.group_sizes))
+
+    def perf_grad_step(self, theta, losses, rhos):
+        """
+        Perform gradient update step with rho_hat
+        """
+        rhos_hat = rhos + self.get_rho_grads(losses) * losses
         losses_grads = self.get_grad_losses(theta)
         return (
             0,
@@ -183,6 +268,69 @@ class Env:
         )
 
     def fair_step(self, theta, losses, rhos):
+
+        # pdv{rho_g}{l_g} [g] (is diagonal)
+        rhos_grad = self.get_rho_grads(losses)
+
+        # \pdv{F}{rho_g} [g]
+        disp_grad = self.grad_disparity_fn(rhos)
+
+        # \pdv{l_g}{theta} [g]
+        tangent = self.get_tangent(theta)
+        unit_tangent = tangent / np.linalg.norm(tangent)
+
+        g = self.disparity_fn(rhos)
+
+        perf_grad = rhos + rhos_grad * losses
+
+        fair_proj_grad = unit_tangent * np.einsum(
+            "g,g->",
+            unit_tangent,
+            disp_grad * rhos_grad
+            # \pdv{F}{rho_g} [g]  # \pdv{rho_g}{l_g} [g]
+        )
+
+        d = np.einsum("g,g->", perf_grad, fair_proj_grad) / np.einsum(
+            "g,g->", fair_proj_grad, fair_proj_grad
+        )
+        lamda = np.maximum(g - d, 0)
+
+        # print("losses", losses)
+        # print("g", g)
+        # print("d", d)
+        # print("perf_grad", perf_grad)
+        # print("fair_proj_grad", fair_proj_grad)
+        # print(
+        #     "update",
+        #     np.einsum("g,g->", (perf_grad + lamda * fair_proj_grad), fair_proj_grad),
+        # )
+
+        # A_losses = np.array([self.xs, self.ys])
+
+        # return (
+        #     lamda,
+        #     self.ts[
+        #         np.argmin(
+        #             np.einsum(
+        #                 "g,gi,g->i",
+        #                 rhos + rhos_grad * (losses + lamda * disp_grad),
+        #                 A_losses,
+        #                 self.group_sizes,
+        #             )
+        #         )
+        #     ],
+        # )
+
+        return (
+            lamda,
+            self.quadratic_program(
+                losses,
+                self.group_sizes * (perf_grad + lamda * fair_proj_grad),
+                # self.group_sizes * (rhos + rhos_grad * (losses + lamda * disp_grad)),
+            ),
+        )
+
+    def fair_grad_step(self, theta, losses, rhos):
 
         # pdv{rho_g}{l_g} [g] (is diagonal)
         rhos_grad = self.get_rho_grads(losses)
@@ -232,7 +380,7 @@ class Video:
     """
 
     def __init__(self, title, fig, fps, dpi):
-        self.video_file = title + ".mp4"
+        self.video_file = os.path.join("mp4", title + ".mp4")
 
         # ffmpeg backend
         self.writer = animation.FFMpegWriter(
@@ -259,7 +407,7 @@ class Video:
 
 
 class Viz(Video):
-    def __init__(self, problem, env, method=None, save_init=True):
+    def __init__(self, problem, env, method=None, save_init=True, **kw):
         """
         problem:
             save `problem.pdf` before any simulation
@@ -276,27 +424,26 @@ class Viz(Video):
             super().__init__(f"{problem}_{method}", self.fig, fps=15, dpi=100)
 
         self.left, self.center, self.right = axs
-        self.setup_left(self.left, "Group Losses")
-        self.setup_center(self.center, "Group Participation Rates")
-        self.setup_right(self.right, "Loss and Disparity Surfaces")
+        self.setup_left(self.left, "Group Losses", **kw)
+        self.setup_center(self.center, "Group Participation Rates", **kw)
+        self.setup_right(self.right, "Loss and Disparity Surfaces", **kw)
 
         if save_init:
             self.fig.tight_layout()
 
-            print("Saving", f"{self.title}_init.pdf")
-            self.fig.savefig(f"{self.title}_init.pdf")
+            savefig(self.fig, os.path.join("pdf", f"{self.title}_init.pdf"))
 
             fig, left = plt.subplots(1, 1, figsize=(6, 6))
-            self.setup_left(left, self.title)
-            fig.savefig(f"{self.title}_left.pdf")
+            self.setup_left(left, self.title, **kw)
+            savefig(fig, os.path.join("pdf", f"{self.title}_left.pdf"))
 
             fig, center = plt.subplots(1, 1, figsize=(6, 6))
-            self.setup_center(center, self.title)
-            fig.savefig(f"{self.title}_center.pdf")
+            self.setup_center(center, self.title, **kw)
+            savefig(fig, os.path.join("pdf", f"{self.title}_center.pdf"))
 
             fig, right = plt.subplots(1, 1, figsize=(6, 6))
-            self.setup_right(right, self.title)
-            fig.savefig(f"{self.title}_right.pdf")
+            self.setup_right(right, self.title, **kw)
+            savefig(fig, os.path.join("pdf", f"{self.title}_right.pdf"))
 
     def __enter__(self):
         if self.method is not None:
@@ -307,7 +454,7 @@ class Viz(Video):
         if self.method is not None:
             super().__exit__(*args)
 
-    def setup_left(self, left, title):
+    def setup_left(self, left, title, **kw):
 
         # Plot achievable losses
         achievable_losses = self.env.achievable_losses
@@ -323,6 +470,17 @@ class Viz(Video):
         left.set_title(title)
 
         left.legend(loc="upper right")
+
+        left.add_patch(
+            patches.FancyArrowPatch(
+                (-0.9, 0.0),
+                (-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
+                connectionstyle="arc3,rad=0.08",
+                arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
+                color="black",
+            )
+        )
+        left.annotate("$\\theta$", (-0.85, -0.1))
 
         use_two_ticks_x(left)
         use_two_ticks_y(left)
@@ -349,7 +507,7 @@ class Viz(Video):
             left_inset.set_yticks([])
             left.indicate_inset_zoom(left_inset)
 
-    def setup_center(self, center, title):
+    def setup_center(self, center, title, **kw):
 
         # plot achievable rhos
         theta_range = np.linspace(0, np.pi / 2, 1000)
@@ -371,10 +529,14 @@ class Viz(Video):
         use_two_ticks_x(center)
         use_two_ticks_y(center)
 
-    def setup_right(self, right, title):
+    def setup_right(self, right, title, **kw):
 
         # plot performative loss and fairness surface
-        theta_range = np.linspace(0, np.pi / 2, 1000)
+        if "theta_plot_range" in kw:
+            min_theta, max_theta = kw["theta_plot_range"]
+        else:
+            min_theta, max_theta = (0, np.pi / 2)
+        theta_range = np.linspace(min_theta, max_theta, 1000)
 
         right_r = right.twinx()
 
@@ -395,8 +557,8 @@ class Viz(Video):
             disparities,
             "red",
             linestyle="--",
-            label="Disparity",
         )
+        right.plot([], [], "red", linestyle="--", label="Disparity")
 
         def root_find(f, l, r):
             if f(l) < 0:
@@ -415,21 +577,19 @@ class Viz(Video):
         theta_l = root_find(self.env.get_total_disparity, 0, np.pi / 4)
         theta_r = root_find(self.env.get_total_disparity, np.pi / 4, np.pi / 2)
         right_r.fill_between(
-            [0, theta_l],
+            [min_theta, theta_l],
             [0, 0],
             [max_disparity, max_disparity],
             alpha=0.1,
             color="red",
         )
         right_r.fill_between(
-            [theta_r, np.pi / 2],
+            [theta_r, max_theta],
             [0, 0],
             [max_disparity, max_disparity],
             alpha=0.1,
             color="red",
         )
-
-        # right_r.plot()
 
         right.set_title(title)
         right.set_xlabel("Parameter $\\theta$")
@@ -439,7 +599,63 @@ class Viz(Video):
         right_r.yaxis.label.set_color("red")
 
         right.legend(loc="lower left")
-        right_r.legend(loc="lower right")
+
+        if "t_init" in kw:
+            right.scatter(
+                [kw["t_init"]],
+                [self.env.get_total_loss(kw["t_init"])],
+                marker="o",
+                color="black",
+            )
+            right.scatter(
+                [kw["t_init"]],
+                [self.env.get_total_loss(kw["t_init"]) + 0.005],
+                marker="$0$",
+                color="black",
+                s=64,
+            )
+        if "t_rrm" in kw:
+            right.scatter(
+                [kw["t_rrm"]],
+                [self.env.get_total_loss(kw["t_rrm"])],
+                marker="o",
+                color="black",
+            )
+            right.scatter(
+                [kw["t_rrm"]],
+                [self.env.get_total_loss(kw["t_rrm"]) + 0.005],
+                marker="$R$",
+                color="black",
+                s=64,
+            )
+        if "t_lpu" in kw:
+            right.scatter(
+                [kw["t_lpu"]],
+                [self.env.get_total_loss(kw["t_lpu"])],
+                marker="o",
+                color="black",
+            )
+            right.scatter(
+                [kw["t_lpu"]],
+                [self.env.get_total_loss(kw["t_lpu"]) + 0.005],
+                marker="$L$",
+                color="black",
+                s=64,
+            )
+        if "t_fair" in kw:
+            right.scatter(
+                [kw["t_fair"]],
+                [self.env.get_total_loss(kw["t_fair"])],
+                marker="o",
+                color="black",
+            )
+            right.scatter(
+                [kw["t_fair"]],
+                [self.env.get_total_loss(kw["t_fair"]) + 0.005],
+                marker="$F$",
+                color="black",
+                s=64,
+            )
 
         use_two_ticks_x(right)
         use_two_ticks_y(right_r)
@@ -544,9 +760,11 @@ def run_problem(
     rho_fns=concave_rho_fn,
     method=None,
     save_init=True,
-    eta=0.01,
+    eta=0.1,
     num_steps=100,
     init_theta=0.6 * np.pi / 2,
+    jit=False,
+    **kw,
 ):
 
     filename = f"{problem}.npy"
@@ -569,21 +787,18 @@ def run_problem(
     )
 
     if method is not None:
-
-        if method.startswith("RRM"):
-            update_func = jax.jit(env.rrm_step)
-        elif method.startswith("Perf"):
-            update_func = jax.jit(env.perf_step)
+        if jit:
+            update_func = jax.jit(env.update_funcs[method])
         else:
-            update_func = jax.jit(env.fair_step)
+            update_func = env.update_funcs[method]
 
     # save initial figures
     # save video if method is defined
-    with Viz(problem, env, method, save_init) as viz:
+    with Viz(problem, env, method, save_init, **kw) as viz:
 
         if method is not None:
 
-            filename = f"{problem}_{method}"
+            filename = os.path.join("npy", f"{problem}_{method}")
             try:  # load cached values
                 thetas = np.load(f"{filename}_thetas.npy")
                 losses = np.load(f"{filename}_losses.npy")
@@ -595,8 +810,7 @@ def run_problem(
                 for i in tqdm(range(100)):
                     viz.render_frame(lamdas[i], thetas[i], losses[i], rhos[i])
 
-            except FileNotFoundError as e:
-                print(e)
+            except FileNotFoundError:
 
                 theta = init_theta
                 _losses = env.get_losses(theta)
@@ -633,26 +847,32 @@ def run_problem(
                 np.save(f"{filename}_lamdas.npy", lamdas)
 
 
-def compare(problem):
+def compare(problem, grad=True):
     # save results of loss, disparity, lambda vs time.
     fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
 
     left, center, right = axs
     left_r, center_r, right_r = left.twinx(), center.twinx(), right.twinx()
 
-    to_compare = [
-        ("RRM", left, left_r),
-        ("Perf", center, center_r),
-        ("Fair", right, right_r),
-    ]
-
+    if grad:
+        to_compare = [
+            ("RRM_grad", left, left_r),
+            ("LPU_grad", center, center_r),
+            ("Fair_grad", right, right_r),
+        ]
+    else:
+        to_compare = [
+            ("RRM", left, left_r),
+            ("LPU", center, center_r),
+            ("Fair", right, right_r),
+        ]
     lmin = np.inf
     lmax = -np.inf
     dmin = np.inf
     dmax = -np.inf
     for method, ax, ax_r in to_compare:
 
-        filename = f"{problem}_{method}"
+        filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
         total_disparity = np.load(f"{filename}_total_disparity.npy")
         lamdas = np.load(f"{filename}_lamdas.npy")
@@ -686,18 +906,20 @@ def compare(problem):
     # legend
     center.plot([], [], color="red", linestyle="--", label="Disparity")
     center.plot([], [], color="black", linestyle="dotted", label="$\\lambda$")
-    center.legend()
+    center.legend(loc="right")
 
     for method, ax, ax_r in to_compare:
-        ax.set_ylim(lmin, lmax)
-        ax_r.set_ylim(dmin, dmax)
+        ax.set_ylim(lmin - 0.01, lmax + 0.01)
+        ax_r.set_ylim(dmin - 0.1, dmax + 0.1)
 
     left_r.set_yticks([])
     center_r.set_yticks([])
 
     fig.tight_layout()
-    print("Saving", f"{problem}_compare.pdf")
-    fig.savefig(f"{problem}_compare.pdf")
+    if grad:
+        savefig(fig, os.path.join("pdf", f"{problem}_compare.pdf"))
+    else:
+        savefig(fig, os.path.join("pdf", f"{problem}_compare_fast.pdf"))
 
 
 def compare_2(problem):
@@ -709,7 +931,7 @@ def compare_2(problem):
 
     to_compare = [
         ("RRM", left, left_r),
-        ("Perf", center, center_r),
+        ("LPU", center, center_r),
     ]
 
     lmin = np.inf
@@ -718,7 +940,7 @@ def compare_2(problem):
     dmax = -np.inf
     for method, ax, ax_r in to_compare:
 
-        filename = f"{problem}_{method}"
+        filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
         total_disparity = np.load(f"{filename}_total_disparity.npy")
 
@@ -741,16 +963,15 @@ def compare_2(problem):
     center.legend()
 
     for method, ax, ax_r in to_compare:
-        ax.set_ylim(lmin, lmax)
-        ax_r.set_ylim(dmin, dmax)
+        ax.set_ylim(lmin - 0.01, lmax + 0.01)
+        ax_r.set_ylim(dmin - 0.1, dmax + 0.1)
 
     left_r.set_yticks([])
     center_r.set_ylabel("Disparity $\\mathcal{F}(\\rho)$", labelpad=12)
     center_r.yaxis.label.set_color("red")
 
     fig.tight_layout()
-    print("Saving", f"{problem}_compare2.pdf")
-    fig.savefig(f"{problem}_compare2.pdf")
+    savefig(fig, os.path.join("pdf", f"{problem}_compare2.pdf"))
 
 
 def logistic(x):
@@ -767,42 +988,61 @@ def localized_rho_fn(center, sensitivity, loss):
 def main():
 
     problems = {
-        "Income": {
-            "rho_fns": (
-                partial(localized_rho_fn, -0.75, 20),
-                partial(localized_rho_fn, -0.75, 20),
-            ),
-        },
-        "Mobility": {
-            "rho_fns": (
-                partial(localized_rho_fn, -0.7, 10),
-                partial(localized_rho_fn, -0.7, 10),
-            ),
-        },
-        "PublicCoverage": {
-            "rho_fns": (
-                partial(localized_rho_fn, -0.7, 50),
-                partial(localized_rho_fn, -0.7, 50),
-            ),
-        },
+        # "Income": {
+        #     "rho_fns": (
+        #         partial(localized_rho_fn, -0.75, 20),
+        #         partial(localized_rho_fn, -0.75, 20),
+        #     ),
+        #     "init_theta": 0.57 * np.pi / 2,
+        #     "theta_plot_range": [0.3 * np.pi / 2, np.pi / 2],
+        # },
+        # "Mobility": {
+        #     "rho_fns": (
+        #         partial(localized_rho_fn, -0.7, 10),
+        #         partial(localized_rho_fn, -0.7, 10),
+        #     ),
+        #     "init_theta": 0.6 * np.pi / 2,
+        #     "eta": 0.3,
+        # },
+        # "PublicCoverage": {
+        #     "rho_fns": (
+        #         partial(localized_rho_fn, -0.7, 50),
+        #         partial(localized_rho_fn, -0.7, 50),
+        #     ),
+        #     "init_theta": 0.6 * np.pi / 2,
+        #     "theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2],
+        # },
         "TravelTime": {
             "rho_fns": (
                 partial(localized_rho_fn, -0.58, 100),
                 partial(localized_rho_fn, -0.58, 100),
             ),
             "init_theta": 0.51 * np.pi / 2,
-            "eta": 0.001,
+            "theta_plot_range": [0.4 * np.pi / 2, 0.6 * np.pi / 2],
         },
     }
 
     for problem, kw in problems.items():
         run_problem(problem, method="RRM", save_init=False, **kw)
-        run_problem(problem, method="Perf", save_init=False, **kw)
+        # # run_problem(problem, method="RRM_grad", save_init=False, jit=True, **kw)
+        run_problem(problem, method="LPU", save_init=False, **kw)
+        # # run_problem(problem, method="LPU_grad", save_init=False, jit=True, **kw)
         run_problem(problem, method="Fair", save_init=False, **kw)
-        run_problem(problem, method=None, save_init=True, **kw)
-        compare(problem)
+        # # run_problem(problem, method="Fair_grad", save_init=False, jit=True, **kw)
+        run_problem(
+            problem,
+            method=None,
+            save_init=True,
+            t_rrm=np.load(f"npy/{problem}_RRM_thetas.npy")[-1],
+            t_lpu=np.load(f"npy/{problem}_LPU_thetas.npy")[-1],
+            t_fair=np.load(f"npy/{problem}_Fair_thetas.npy")[-1],
+            t_init=kw["init_theta"],
+            **kw,
+        )
+        compare(problem, grad=False)
+        # compare(problem, grad=True)
 
-    compare_2("TravelTime")
+    # compare_2("Income")
 
 
 if __name__ == "__main__":
