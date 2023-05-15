@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+https://archive.ics.uci.edu/ml/machine-learning-databases/adult/
+"""
+
 import os
 import urllib.request
 import pandas as pd

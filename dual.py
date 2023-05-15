@@ -7,7 +7,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
-from main import localized_rho_fn
+from main import localized_rho_fn, use_two_ticks_x, use_two_ticks_y
 
 mpl.rcParams.update(
     {
@@ -22,17 +22,6 @@ mpl.rcParams.update(
 font = {"size": 13}
 
 mpl.rc("font", **font)
-
-
-def use_two_ticks_x(ax):
-    x = ax.get_xticks()
-    ax.set_xticks(x[:: len(x) - 1])
-
-
-def use_two_ticks_y(ax):
-    y = ax.get_yticks()
-    ax.set_yticks(y[:: len(y) - 1])
-
 
 ################################################################################
 
@@ -95,9 +84,29 @@ right.scatter([ra[0]], [ra[1]], color="red", marker="^", s=ms)
 right.scatter([rb[0]], [rb[1]], color="blue", marker="o", s=ms)
 right.plot([0, ra[0]], [0, ra[1]], color="red")
 right.plot([0, rb[0]], [0, rb[1]], color="blue", linestyle="--")
-
 ram = np.linalg.norm(ra)
 rbm = np.linalg.norm(rb)
+right.add_patch(
+    patches.FancyArrowPatch(
+        (ra[0] * 0.95, ra[1] * 0.95),
+        (ra[0] * 0.95 + 0.02, ra[1] * 0.95 - 0.1),
+        connectionstyle="arc3,rad=-0.08",
+        arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
+        color="red",
+    )
+)
+right.add_patch(
+    patches.FancyArrowPatch(
+        (rb[0] * 0.95, rb[1] * 0.95),
+        (rb[0] * 0.95 - 0.1, rb[1] * 0.95 + 0.02),
+        connectionstyle="arc3,rad=0.08",
+        arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
+        color="blue",
+        linestyle="dashed",
+    )
+)
+
+
 left.plot([0, -ra[0] / ram], [0, -ra[1] / ram], color="red")
 left.plot([0, -rb[0] / rbm], [0, -rb[1] / rbm], color="blue", linestyle="--")
 # d = -np.sqrt(np.einsum("g,g->", ra, ra))
@@ -133,6 +142,7 @@ left.add_patch(
         linestyle="dashed",
     )
 )
+left.text(-0.3, -0.8, "$\\ell_1^2 + \\ell_2^2 = 1$")
 
 inset_l.plot(losses[:, 0], rhos[:, 0], color="black")
 inset_l.set_xlabel("Group 1 loss $\\ell_1$")
@@ -141,6 +151,12 @@ inset_l.set_ylabel("Group 1 Participation Rate $\\rho_1$")
 inset_l.set_ylim(0, 1)
 inset_l.scatter([la[0]], [ra[0]], color="red", marker="^", s=ms)
 inset_l.scatter([lb[0]], [rb[0]], color="blue", marker="o", s=ms)
+inset_l.text(
+    -0.57,
+    0.8,
+    r"$\frac{1}{1 + \exp[20(\ell_g + 0.62)]}$",
+    fontsize=19,
+)
 use_two_ticks_x(inset_l)
 use_two_ticks_y(inset_l)
 
