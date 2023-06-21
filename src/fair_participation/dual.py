@@ -8,7 +8,11 @@ import matplotlib.patches as patches
 
 log = logging.getLogger(__name__)
 
-from fair_participation.main import localized_rho_fn, use_two_ticks_x, use_two_ticks_y
+from fair_participation.dynamics import (
+    localized_rho_fn,
+    use_two_ticks_x,
+    use_two_ticks_y,
+)
 
 mpl.rcParams.update(
     {

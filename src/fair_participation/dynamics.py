@@ -39,7 +39,7 @@ mpl.rc("font", **font)
 
 
 def savefig(fig, filename):
-    log.info("Saving", filename)
+    log.info(f"Saving {filename}")
     fig.savefig(filename)
 
 
@@ -766,11 +766,11 @@ def run_problem(
     filename = os.path.join("losses", f"{name}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
-        log.info(f"Loaded Cached Achievable Losses from {filename}")
+        log.info(f"Loaded cached achievable losses from {filename}.")
     except FileNotFoundError:
-        log.info("Determining Achievable Losses")
+        log.info("Calculating achievable losses...")
         achievable_losses = get_achievable_losses(name)
-        log.info(f"Saving to {filename}")
+        log.info(f"Saving {filename}")
         np.save(filename, achievable_losses)
 
     if rho_fns is None:
@@ -797,6 +797,7 @@ def run_problem(
     # save video if method is defined
     if viz_kwargs is None:
         viz_kwargs = dict()
+    # TODO should update this with fast version
     with Viz(name, env, method, save_init, viz_kwargs) as viz:
         if method is not None:
             filename = os.path.join("npy", f"{name}_{method}")
@@ -806,10 +807,10 @@ def run_problem(
                 rhos = np.load(f"{filename}_rhos.npy")
                 total_loss = np.load(f"{filename}_total_loss.npy")
                 total_disparity = np.load(f"{filename}_total_disparity.npy")
-                lamdas = np.load(f"{filename}_lamdas.npy")
+                lambdas = np.load(f"{filename}_lambdas.npy")
 
                 for i in tqdm(range(100)):
-                    viz.render_frame(lamdas[i], thetas[i], losses[i], rhos[i])
+                    viz.render_frame(lambdas[i], thetas[i], losses[i], rhos[i])
 
             except FileNotFoundError:
                 theta = init_theta
@@ -821,18 +822,18 @@ def run_problem(
                 thetas = [theta]
                 total_loss = [env.get_total_loss(theta)]
                 total_disparity = [env.get_total_disparity(theta)]
-                lamdas = []
+                lambdas = []
                 losses = [_losses]
                 rhos = [_rhos]
                 for i in tqdm(range(num_steps)):
-                    lamda, theta = update_func(theta, _losses, _rhos)
+                    lambda_, theta = update_func(theta, _losses, _rhos)
                     _losses = env.get_losses(theta)
                     _rhos = env.get_rhos(_losses)
 
                     thetas.append(theta)
                     total_loss.append(env.get_total_loss(theta))
                     total_disparity.append(env.get_total_disparity(theta))
-                    lamdas.append(lamda)
+                    lambdas.append(lambda_)
                     losses.append(_losses)
                     rhos.append(_rhos)
 
@@ -843,7 +844,7 @@ def run_problem(
                 np.save(f"{filename}_rhos.npy", rhos)
                 np.save(f"{filename}_total_loss.npy", total_loss)
                 np.save(f"{filename}_total_disparity.npy", total_disparity)
-                np.save(f"{filename}_lamdas.npy", lamdas)
+                np.save(f"{filename}_lambdas.npy", lambdas)
 
 
 def compare(problem, grad=True):
@@ -873,7 +874,7 @@ def compare(problem, grad=True):
         filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
         total_disparity = np.load(f"{filename}_total_disparity.npy")
-        lamdas = np.load(f"{filename}_lamdas.npy")
+        lambdas = np.load(f"{filename}_lambdas.npy")
 
         lmin = min(lmin, min(total_loss))
         lmax = max(lmax, max(total_loss))
@@ -895,8 +896,8 @@ def compare(problem, grad=True):
     right_rr.spines.right.set_position(("axes", 1.3))
     right_rr.set_ylabel("$\\lambda$", labelpad=12)
     right_rr.plot(
-        np.arange(len(lamdas)) + 1,
-        lamdas,
+        np.arange(len(lambdas)) + 1,
+        lambdas,
         color="black",
         linestyle="dotted",
     )

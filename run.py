@@ -1,14 +1,17 @@
 import os
 import logging
 import numpy as np
-
-
-from fair_participation.main import localized_rho_fn, run_problem, compare, compare_2
+from fair_participation.dynamics import (
+    localized_rho_fn,
+    run_problem,
+    compare,
+    compare_2,
+)
 
 log = logging.getLogger(__name__)
 
 
-def main(problems: list[dict]):
+def main(problems: list[dict]) -> None:
     # TODO clean dir version
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npy", "pdf"):
@@ -54,14 +57,14 @@ if __name__ == "__main__":
             # all_problems.append(
             #     dict(**prob, method=f"{method}_grad", jit=True)
             # )
-            # all_problems.append(
-            #     dict(
-            #         **prob,
-            #         save_init=True,
-            #         t_rrm=np.load(f"npy/{prob['name']}_RRM_thetas.npy")[-1],
-            #         t_lpu=np.load(f"npy/{prob['name']}_LPU_thetas.npy")[-1],
-            #         t_fair=np.load(f"npy/{prob['name']}_Fair_thetas.npy")[-1],
-            #         t_init=prob["init_theta"],
-            #     )
-            # )
+        # all_problems.append(
+        #     dict(
+        #         **prob,
+        #         save_init=True,
+        #         t_rrm=np.load(f"npy/{prob['name']}_RRM_thetas.npy")[-1],
+        #         t_lpu=np.load(f"npy/{prob['name']}_LPU_thetas.npy")[-1],
+        #         t_fair=np.load(f"npy/{prob['name']}_Fair_thetas.npy")[-1],
+        #         t_init=prob["init_theta"],
+        #     )
+        # )
     main(all_problems)
