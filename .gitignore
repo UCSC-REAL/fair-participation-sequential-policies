@@ -2,6 +2,11 @@
 .idea
 *.log
 tmp/
+data/
+losses/
+mp4/
+npy/
+pdf/
 
 *.py[cod]
 *.egg

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import numpy as np
 from functools import partial
 
@@ -7,7 +5,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
-from main import localized_rho_fn, use_two_ticks_x, use_two_ticks_y
+from fair_participation.main import localized_rho_fn, use_two_ticks_x, use_two_ticks_y
 
 mpl.rcParams.update(
     {
