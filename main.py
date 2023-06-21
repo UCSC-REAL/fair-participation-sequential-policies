@@ -380,8 +380,6 @@ class Video:
     """
 
     def __init__(self, title, fig, fps, dpi):
-        if not os.path.exists("mp4"):
-            os.makedirs("mp4")
         self.video_file = os.path.join("mp4", title + ".mp4")
 
         # ffmpeg backend
@@ -769,7 +767,7 @@ def run_problem(
     **kw,
 ):
 
-    filename = f"{problem}.npy"
+    filename = os.path.join("losses", f"{problem}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
         print(f"Loaded Cached Achievable Losses from {filename}")
@@ -988,6 +986,10 @@ def localized_rho_fn(center, sensitivity, loss):
 
 
 def main():
+    # Create needed directories if they don't exist
+    for folder in ("losses", "data", "mp4", "npy", "pdf"):
+        os.makedirs(folder, exist_ok=True)
+
 
     problems = {
         # "Income": {
