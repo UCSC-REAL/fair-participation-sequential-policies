@@ -1,7 +1,6 @@
 import os
 import logging
 import numpy as np
-from functools import partial
 
 
 from fair_participation.main import localized_rho_fn, run_problem, compare, compare_2
@@ -16,35 +15,23 @@ def main():
         os.makedirs(folder, exist_ok=True)
 
     problems = {
-        # "Income": {
-        #     "rho_fns": (
-        #         partial(localized_rho_fn, -0.75, 20),
-        #         partial(localized_rho_fn, -0.75, 20),
-        #     ),
-        #     "init_theta": 0.57 * np.pi / 2,
-        #     "theta_plot_range": [0.3 * np.pi / 2, np.pi / 2],
-        # },
-        # "Mobility": {
-        #     "rho_fns": (
-        #         partial(localized_rho_fn, -0.7, 10),
-        #         partial(localized_rho_fn, -0.7, 10),
-        #     ),
-        #     "init_theta": 0.6 * np.pi / 2,
-        #     "eta": 0.3,
-        # },
-        # "PublicCoverage": {
-        #     "rho_fns": (
-        #         partial(localized_rho_fn, -0.7, 50),
-        #         partial(localized_rho_fn, -0.7, 50),
-        #     ),
-        #     "init_theta": 0.6 * np.pi / 2,
-        #     "theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2],
-        # },
+        "Income": {
+            "rho_fns": (localized_rho_fn(-0.75, 20),),
+            "init_theta": 0.57 * np.pi / 2,
+            "theta_plot_range": [0.3 * np.pi / 2, np.pi / 2],
+        },
+        "Mobility": {
+            "rho_fns": (localized_rho_fn(-0.7, 10),),
+            "init_theta": 0.6 * np.pi / 2,
+            "eta": 0.3,
+        },
+        "PublicCoverage": {
+            "rho_fns": (localized_rho_fn(-0.7, 50),),
+            "init_theta": 0.6 * np.pi / 2,
+            "theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2],
+        },
         "TravelTime": {
-            "rho_fns": (
-                partial(localized_rho_fn, -0.58, 100),
-                partial(localized_rho_fn, -0.58, 100),
-            ),
+            "rho_fns": (localized_rho_fn(-0.58, 100),),
             "init_theta": 0.51 * np.pi / 2,
             "theta_plot_range": [0.4 * np.pi / 2, 0.6 * np.pi / 2],
         },

@@ -1,15 +1,20 @@
 import os
+
 from tqdm import tqdm
+from typing import Callable, Optional
 import logging
 
 import cvxpy as cp
-import numpy as onp
+import numpy as onp  # TODO fix
+from numpy.typing import ArrayLike
+
+# FloatOrArray = TypeVar("FloatOrArray", float, NDArray)
 
 import jax
 import jax.numpy as np
 import jax.scipy.optimize
-from scipy.spatial import ConvexHull
 
+from scipy.spatial import ConvexHull
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
@@ -751,7 +756,7 @@ def concave_rho_fn(loss):
 
 def run_problem(
     problem,
-    rho_fns=concave_rho_fn,
+    rho_fns: Optional[tuple[Callable]] = None,
     method=None,
     save_init=True,
     eta=0.1,
@@ -769,6 +774,11 @@ def run_problem(
         achievable_losses = get_achievable_losses(problem)
         log.info(f"Saving to {filename}")
         np.save(filename, achievable_losses)
+
+    if rho_fns is None:
+        rho_fns = (concave_rho_fn, concave_rho_fn)
+    elif len(rho_fns) == 1:
+        rho_fns = (rho_fns, rho_fns)
 
     env = Env(
         achievable_losses,
@@ -965,8 +975,13 @@ def logistic(x):
     return 1 / (1 + np.exp(-x))
 
 
-def localized_rho_fn(center, sensitivity, loss):
-    """
-    Monotonically decreasing. Not concave.
-    """
-    return 1 - np.clip(logistic((loss - center) * sensitivity), 0, 1)
+def localized_rho_fn(
+    sensitivity: float, loss: float
+) -> Callable[[ArrayLike], ArrayLike]:
+    def localized_rho(center: ArrayLike):
+        """
+        Monotonically decreasing. Not concave.
+        """
+        return 1 - np.clip(logistic((loss - center) * sensitivity), 0, 1)
+
+    return localized_rho
