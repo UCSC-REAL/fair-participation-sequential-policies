@@ -8,8 +8,6 @@ import cvxpy as cp
 import numpy as onp  # TODO fix
 from numpy.typing import ArrayLike
 
-# FloatOrArray = TypeVar("FloatOrArray", float, NDArray)
-
 import jax
 import jax.numpy as np
 import jax.scipy.optimize
@@ -755,23 +753,23 @@ def concave_rho_fn(loss):
 
 
 def run_problem(
-    problem,
+    name: str = "",
     rho_fns: Optional[tuple[Callable]] = None,
-    method=None,
-    save_init=True,
-    eta=0.1,
-    num_steps=100,
-    init_theta=0.6 * np.pi / 2,
-    jit=False,
-    **kw,
+    method: Optional[str] = None,
+    save_init: bool = True,
+    eta: float = 0.1,
+    num_steps: int = 100,
+    init_theta: float = 0.6 * np.pi / 2,
+    jit: bool = False,
+    viz_kwargs: Optional[dict] = None,
 ):
-    filename = os.path.join("losses", f"{problem}.npy")
+    filename = os.path.join("losses", f"{name}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
         log.info(f"Loaded Cached Achievable Losses from {filename}")
     except FileNotFoundError:
         log.info("Determining Achievable Losses")
-        achievable_losses = get_achievable_losses(problem)
+        achievable_losses = get_achievable_losses(name)
         log.info(f"Saving to {filename}")
         np.save(filename, achievable_losses)
 
@@ -797,9 +795,11 @@ def run_problem(
 
     # save initial figures
     # save video if method is defined
-    with Viz(problem, env, method, save_init, **kw) as viz:
+    if viz_kwargs is None:
+        viz_kwargs = dict()
+    with Viz(name, env, method, save_init, viz_kwargs) as viz:
         if method is not None:
-            filename = os.path.join("npy", f"{problem}_{method}")
+            filename = os.path.join("npy", f"{name}_{method}")
             try:  # load cached values
                 thetas = np.load(f"{filename}_thetas.npy")
                 losses = np.load(f"{filename}_losses.npy")
