@@ -90,7 +90,6 @@ def get_achievable_losses(
         np.linspace(0, np.pi / 2, n_samples),
     )
     for w in tqdm(group_weights):
-
         # female examples (G = 1) given weight w
         # male examples (G = 0) given weight (1 - w)
         m = (G == 1) * w[0] + (G == 2) * w[1]

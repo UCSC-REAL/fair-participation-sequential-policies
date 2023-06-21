@@ -4,12 +4,12 @@ from functools import partial
 
 from fair_participation.main import localized_rho_fn, run_problem, compare, compare_2
 
+
 def main():
     # TODO clean dir version
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npy", "pdf"):
         os.makedirs(folder, exist_ok=True)
-
 
     problems = {
         # "Income": {

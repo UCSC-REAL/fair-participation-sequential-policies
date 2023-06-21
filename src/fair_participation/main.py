@@ -16,6 +16,7 @@ import matplotlib.patches as patches
 
 from fair_participation.folktasks import get_achievable_losses
 
+
 mpl.rcParams.update(
     {
         "font.family": "serif",
@@ -47,7 +48,6 @@ def use_two_ticks_y(ax):
 
 
 def get_hull(achievable_losses):
-
     min_g1_loss = np.min(achievable_losses[:, 0])
     min_g2_loss = np.min(achievable_losses[:, 1])
     achievable_losses = list(achievable_losses)
@@ -265,7 +265,6 @@ class Env:
         )
 
     def fair_step(self, theta, losses, rhos):
-
         # pdv{rho_g}{l_g} [g] (is diagonal)
         rhos_grad = self.get_rho_grads(losses)
 
@@ -328,7 +327,6 @@ class Env:
         )
 
     def fair_grad_step(self, theta, losses, rhos):
-
         # pdv{rho_g}{l_g} [g] (is diagonal)
         rhos_grad = self.get_rho_grads(losses)
         # pdv{l_g}{theta} [g]
@@ -452,7 +450,6 @@ class Viz(Video):
             super().__exit__(*args)
 
     def setup_left(self, left, title, **kw):
-
         # Plot achievable losses
         achievable_losses = self.env.achievable_losses
 
@@ -505,7 +502,6 @@ class Viz(Video):
             left.indicate_inset_zoom(left_inset)
 
     def setup_center(self, center, title, **kw):
-
         # plot achievable rhos
         theta_range = np.linspace(0, np.pi / 2, 1000)
         achievable_rhos = np.array(
@@ -527,7 +523,6 @@ class Viz(Video):
         use_two_ticks_y(center)
 
     def setup_right(self, right, title, **kw):
-
         # plot performative loss and fairness surface
         if "theta_plot_range" in kw:
             min_theta, max_theta = kw["theta_plot_range"]
@@ -710,7 +705,6 @@ class Viz(Video):
         return artifacts
 
     def render_frame(self, lamda, theta, losses, rhos):
-
         to_remove = self.update_left(self.left, lamda, theta, losses, rhos)
         to_remove.extend(self.update_center(self.center, lamda, theta, losses, rhos))
         to_remove.extend(self.update_right(self.right, lamda, theta, losses, rhos))
@@ -763,7 +757,6 @@ def run_problem(
     jit=False,
     **kw,
 ):
-
     filename = os.path.join("losses", f"{problem}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
@@ -792,9 +785,7 @@ def run_problem(
     # save initial figures
     # save video if method is defined
     with Viz(problem, env, method, save_init, **kw) as viz:
-
         if method is not None:
-
             filename = os.path.join("npy", f"{problem}_{method}")
             try:  # load cached values
                 thetas = np.load(f"{filename}_thetas.npy")
@@ -808,7 +799,6 @@ def run_problem(
                     viz.render_frame(lamdas[i], thetas[i], losses[i], rhos[i])
 
             except FileNotFoundError:
-
                 theta = init_theta
                 _losses = env.get_losses(theta)
                 _rhos = env.get_rhos(_losses)
@@ -822,7 +812,6 @@ def run_problem(
                 losses = [_losses]
                 rhos = [_rhos]
                 for i in tqdm(range(num_steps)):
-
                     lamda, theta = update_func(theta, _losses, _rhos)
                     _losses = env.get_losses(theta)
                     _rhos = env.get_rhos(_losses)
@@ -868,7 +857,6 @@ def compare(problem, grad=True):
     dmin = np.inf
     dmax = -np.inf
     for method, ax, ax_r in to_compare:
-
         filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
         total_disparity = np.load(f"{filename}_total_disparity.npy")
@@ -936,7 +924,6 @@ def compare_2(problem):
     dmin = np.inf
     dmax = -np.inf
     for method, ax, ax_r in to_compare:
-
         filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
         total_disparity = np.load(f"{filename}_total_disparity.npy")
