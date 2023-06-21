@@ -1,9 +1,14 @@
 import numpy as np
 import logging
+
+from numpy.typing import NDArray
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 from tqdm import tqdm
+
+from fair_participation.utils import rng_old
 
 # https://github.com/socialfoundations/folktables
 from folktables import (
@@ -15,101 +20,65 @@ from folktables import (
     ACSTravelTime,  # task
 )
 
-
 log = logging.getLogger(__name__)
 
-
-def group_income(row):
-    """{1: "<=50k", 2: ">50k"}"""
-    return 1 if (row["PINCP"] <= 50000) else 2
-
-
-def group_race(row):
-    """{1: "White", 2: "Black"}"""
-    return row["RAC1P"]
-
-
-def group_sex(row):
-    """{1: "Male", 2: "Female"}"""
-    return row["SEX"]
-
-
-def group_age(row):
-    """{1: "<=35", 2: ">=36"}"""
-    return 1 if (row["AGEP"] < 35.5) else 2
-
-
-def group_mobility(row):
-    """{1: "moved last year", 2: "no move"}"""
-    return 1 if (row["MIG"] != 1) else 2
-
-
+# {str -> (problem, group, thresh, state)}
 acs_problems = {
-    "Income": (ACSIncome, group_income, ["AL"]),
-    "Mobility": (ACSMobility, group_mobility, ["FL"]),
-    "PublicCoverage": (ACSPublicCoverage, group_sex, ["AK"]),
-    # "Employment": (ACSEmployment, group_race, ["TX"]),
-    "TravelTime": (ACSTravelTime, group_age, ["CA"]),
+    "Income": (ACSIncome, "PINCP", 5e4, ["AL"]),  # income
+    "Mobility": (ACSMobility, "MIG", 1.5, ["FL"]),  # 1-moved within last year
+    "PublicCoverage": (ACSPublicCoverage, "SEX", 1.5, ["AK"]),  # 1-male 2-female
+    "Employment": (ACSEmployment, "RAC1P", 1.5, ["TX"]),  # 1-white 2-black
+    "TravelTime": (ACSTravelTime, "AGEP", 35.5, ["CA"]),  # age
 }
 
 
 def get_achievable_losses(
-    problem,
-    n_samples=100,
-):
+    problem_name: str,
+    n_samples: int = 100,
+) -> NDArray:
     """
-    returns
-      - list of loss vectors (negative classification accuracies), of length
-        n_samples, indexed by group, achievable by a simple logistic classifier
-        when trained with different group weightings in the loss function.
-    problem: key in `problems` dictionary
-    n_samples: an integer
+    Compute achievable losses for a given problem.
+
+    :param problem_name: key in acs_problems dictionary
+    :param n_samples: sampling resolution for sweeping over group weights
+    :return: array of negative classification accuracies, of length
+     n_samples, indexed by group, achievable by a simple logistic classifier
+     when trained with different group weightings in the loss function.
     """
 
-    acs_task, group_map, states = acs_problems[problem]
-    year = 2018
-
-    data_source = ACSDataSource(
-        survey_year=f"{year}", horizon="1-Year", survey="person"
-    )
+    acs_problem, group_col, threshold, states = acs_problems[problem_name]
+    data_source = ACSDataSource(survey_year=f"2018", horizon="1-Year", survey="person")
     acs_data = data_source.get_data(states=states, download=True)
 
-    # create feature "GROUP" defined by argument group_map
-    acs_data["GROUP"] = acs_data.apply(group_map, axis=1)
-    acs_task._group = "GROUP"
-
-    # filter for membership in groups 1 or 2
-    acs_data = acs_data[acs_data["GROUP"].isin([1, 2])]
+    # create feature "GROUP" (can be same as default in acs.py)
+    acs_data["GROUP"] = (acs_data[group_col] <= threshold) + 1
+    acs_problem._group = "GROUP"  # hack
+    assert set(acs_data["GROUP"].unique()) == {1, 2}
 
     # get features, labels and groups
-    X, Y, G = acs_task.df_to_numpy(acs_data)
+    x, y, g = acs_problem.df_to_pandas(acs_data)
+    y = y.iloc[:, 0]
+    g1 = g["GROUP"] == 1
+    g2 = g["GROUP"] == 2
+
+    pipeline = make_pipeline(StandardScaler(), LogisticRegression(random_state=rng_old))
+    sample_weights = [
+        g1 * np.cos(t) + g2 * np.sin(t) for t in np.linspace(0, np.pi / 2, n_samples)
+    ]
 
     achievable_losses = []
-
-    group_weights = map(
-        # allowing negative weights
-        # lambda t: (np.cos(t), np.sin(t)), np.linspace(-np.pi, np.pi, n_samples)
-        # only positive weights
-        lambda t: (np.cos(t), np.sin(t)),
-        np.linspace(0, np.pi / 2, n_samples),
-    )
-    for w in tqdm(group_weights):
-        # female examples (G = 1) given weight w
-        # male examples (G = 0) given weight (1 - w)
-        m = (G == 1) * w[0] + (G == 2) * w[1]
-
-        model = make_pipeline(StandardScaler(), LogisticRegression(random_state=0))
-        model.fit(X, Y, logisticregression__sample_weight=m)
-
-        Y_hat = model.predict(X)
-
-        # negative accuracy, per group
+    for sample_weight in tqdm(sample_weights):
+        pipeline.fit(x, y, logisticregression__sample_weight=sample_weight)
+        y_pred = pipeline.predict(x)
+        # return negative accuracies per group
         achievable_losses.append(
-            [-np.sum((Y_hat == Y) & (G == g)) / np.sum(G == g) for g in [1, 2]]
+            [-accuracy_score(y[g_], y_pred[g_]) for g_ in (g1, g2)]
         )
-
     return np.array(achievable_losses)
 
 
 if __name__ == "__main__":
-    log.info(get_achievable_losses("Income"))
+    for name in acs_problems.keys():
+        log.info(f"Problem: {name}") # TODO fix?
+        losses = get_achievable_losses(name)
+        print(losses)
