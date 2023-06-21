@@ -380,6 +380,8 @@ class Video:
     """
 
     def __init__(self, title, fig, fps, dpi):
+        if not os.path.exists("mp4"):
+            os.makedirs("mp4")
         self.video_file = os.path.join("mp4", title + ".mp4")
 
         # ffmpeg backend
