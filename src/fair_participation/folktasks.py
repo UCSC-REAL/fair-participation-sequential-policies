@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -13,6 +14,9 @@ from folktables import (
     ACSEmployment,  # task
     ACSTravelTime,  # task
 )
+
+
+log = logging.getLogger(__name__)
 
 
 def group_income(row):
@@ -108,4 +112,4 @@ def get_achievable_losses(
 
 
 if __name__ == "__main__":
-    print(get_achievable_losses("Income"))
+    log.info(get_achievable_losses("Income"))

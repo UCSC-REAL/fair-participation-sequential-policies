@@ -1,8 +1,12 @@
 import os
+import logging
 import numpy as np
 from functools import partial
 
+
 from fair_participation.main import localized_rho_fn, run_problem, compare, compare_2
+
+log = logging.getLogger(__name__)
 
 
 def main():

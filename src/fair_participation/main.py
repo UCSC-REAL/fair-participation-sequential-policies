@@ -1,5 +1,6 @@
 import os
 from tqdm import tqdm
+import logging
 
 import cvxpy as cp
 import numpy as onp
@@ -15,6 +16,8 @@ import matplotlib.animation as animation
 import matplotlib.patches as patches
 
 from fair_participation.folktasks import get_achievable_losses
+
+log = logging.getLogger(__name__)
 
 
 mpl.rcParams.update(
@@ -33,7 +36,7 @@ mpl.rc("font", **font)
 
 
 def savefig(fig, filename):
-    print("Saving", filename)
+    log.info("Saving", filename)
     fig.savefig(filename)
 
 
@@ -291,15 +294,15 @@ class Env:
         )
         lamda = np.maximum(g - d, 0)
 
-        # print("losses", losses)
-        # print("g", g)
-        # print("d", d)
-        # print("perf_grad", perf_grad)
-        # print("fair_proj_grad", fair_proj_grad)
-        # print(
-        #     "update",
-        #     np.einsum("g,g->", (perf_grad + lamda * fair_proj_grad), fair_proj_grad),
-        # )
+        log.debug("losses", losses)
+        log.debug("g", g)
+        log.debug("d", d)
+        log.debug("perf_grad", perf_grad)
+        log.debug("fair_proj_grad", fair_proj_grad)
+        log.debug(
+            "update",
+            np.einsum("g,g->", (perf_grad + lamda * fair_proj_grad), fair_proj_grad),
+        )
 
         # A_losses = np.array([self.xs, self.ys])
 
@@ -398,7 +401,7 @@ class Video:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         # write file and exit
         self.writer.finish()
-        print("Writing", self.video_file)
+        log.info("Writing", self.video_file)
 
 
 class Viz(Video):
@@ -760,11 +763,11 @@ def run_problem(
     filename = os.path.join("losses", f"{problem}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
-        print(f"Loaded Cached Achievable Losses from {filename}")
+        log.info(f"Loaded Cached Achievable Losses from {filename}")
     except FileNotFoundError:
-        print("Determining Achievable Losses")
+        log.info("Determining Achievable Losses")
         achievable_losses = get_achievable_losses(problem)
-        print(f"Saving to {filename}")
+        log.info(f"Saving to {filename}")
         np.save(filename, achievable_losses)
 
     env = Env(

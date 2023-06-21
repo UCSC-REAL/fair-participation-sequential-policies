@@ -1,10 +1,12 @@
 import numpy as np
+import logging
 from functools import partial
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
+log = logging.getLogger(__name__)
 
 from fair_participation.main import localized_rho_fn, use_two_ticks_x, use_two_ticks_y
 
