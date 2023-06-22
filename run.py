@@ -1,5 +1,4 @@
 import os
-import logging
 import numpy as np
 from fair_participation.dynamics import (
     localized_rho_fn,
@@ -8,7 +7,7 @@ from fair_participation.dynamics import (
     compare_2,
 )
 
-log = logging.getLogger(__name__)
+from fair_participation.base_logger import log
 
 
 def main(problems: list[dict]) -> None:

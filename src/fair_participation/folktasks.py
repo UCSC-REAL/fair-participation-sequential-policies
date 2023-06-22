@@ -1,5 +1,4 @@
 import numpy as np
-import logging
 
 from numpy.typing import NDArray
 from sklearn.linear_model import LogisticRegression
@@ -11,8 +10,7 @@ from tqdm import tqdm
 
 from fair_participation.acs import problems
 from fair_participation.utils import rng_old
-
-log = logging.getLogger(__name__)
+from fair_participation.base_logger import log
 
 
 def get_achievable_losses(

@@ -1,8 +1,8 @@
+import logging
 import os
 
 from tqdm import tqdm
 from typing import Callable, Optional
-import logging
 
 import cvxpy as cp
 import numpy as onp  # TODO fix
@@ -19,8 +19,6 @@ import matplotlib.animation as animation
 import matplotlib.patches as patches
 
 from fair_participation.folktasks import get_achievable_losses
-
-log = logging.getLogger(__name__)
 
 
 mpl.rcParams.update(
