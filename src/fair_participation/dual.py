@@ -6,13 +6,13 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
-log = logging.getLogger(__name__)
-
 from fair_participation.dynamics import (
     localized_rho_fn,
     use_two_ticks_x,
     use_two_ticks_y,
 )
+
+log = logging.getLogger(__name__)
 
 mpl.rcParams.update(
     {

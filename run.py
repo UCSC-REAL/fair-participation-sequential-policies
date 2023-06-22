@@ -1,12 +1,9 @@
 import os
 import numpy as np
-from fair_participation.dynamics import (
-    localized_rho_fn,
-    run_problem,
-    compare,
-    compare_2,
-)
 
+
+from fair_participation.dynamics import localized_rho_fn, run_problem
+from fair_participation.plotting import compare, compare_2
 from fair_participation.base_logger import log
 
 
