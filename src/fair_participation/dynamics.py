@@ -410,49 +410,36 @@ def run_problem(
                 # TODO load/save as npz
                 npz = np.load(filename)
                 for i in tqdm(range(100)):
+                    pars = {
+                        par: npz[par][i]
+                        for par in ("lambdas", "thetas", "losses", "rhos")
+                    }
                     viz.render_frame(
-                        npz["lambdas"][i],
-                        npz["thetas"][i],
-                        npz["losses"][i],
-                        npz["rhos"][i],
+                        render_pars=pars,
                     )
 
             except FileNotFoundError:
-                theta = init_theta
-                _losses = env.get_losses(theta)
-                _rhos = env.get_rhos(_losses)
-
-                viz.render_frame(0, theta, _losses, _rhos)
-
-                thetas = [theta]
-                total_loss = [env.get_total_loss(theta)]
-                total_disparity = [env.get_total_disparity(theta)]
-                lambdas = []
-                losses = [_losses]
-                rhos = [_rhos]
+                pars = dict()
                 for i in tqdm(range(num_steps)):
-                    lambda_, theta = update_func(theta, _losses, _rhos)
-                    _losses = env.get_losses(theta)
-                    _rhos = env.get_rhos(_losses)
+                    if i == 0:
+                        lambda_, theta = 0, init_theta
+                    else:
+                        lambda_, theta = update_func(theta, losses, rhos)
+                    losses = env.get_losses(theta)
+                    rhos = env.get_rhos(losses)
 
-                    thetas.append(theta)
-                    total_loss.append(env.get_total_loss(theta))
-                    total_disparity.append(env.get_total_disparity(theta))
-                    lambdas.append(lambda_)
-                    losses.append(_losses)
-                    rhos.append(_rhos)
+                    pars.setdefault("lambdas", []).append(lambda_)
+                    pars.setdefault("thetas", []).append(theta)
+                    pars.setdefault("losses", []).append(losses)
+                    pars.setdefault("rhos", []).append(rhos)
+                    pars.setdefault("total_loss", []).append(env.get_total_loss(theta))
+                    pars.setdefault("total_disparity", []).append(
+                        env.get_total_disparity(theta)
+                    )
 
-                    viz.render_frame(lambda_, theta, _losses, _rhos)
+                    viz.render_frame(render_pars=pars)
 
-                np.savez(
-                    filename,
-                    thetas=thetas,
-                    losses=losses,
-                    rhos=rhos,
-                    total_loss=total_loss,
-                    total_disparity=total_disparity,
-                    lambdas=lambdas,
-                )
+                np.savez(filename, **pars)
 
 
 def logistic(x):
