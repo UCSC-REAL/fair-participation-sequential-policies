@@ -776,17 +776,18 @@ def run_problem(
     # TODO should update this with fast version
     with Viz(name, env, method, save_init, viz_kwargs) as viz:
         if method is not None:
-            filename = os.path.join("npy", f"{name}_{method}")
+            filename = os.path.join("npz", f"{name}_{method}.npz")
             try:  # load cached values
-                thetas = np.load(f"{filename}_thetas.npy")
-                losses = np.load(f"{filename}_losses.npy")
-                rhos = np.load(f"{filename}_rhos.npy")
-                total_loss = np.load(f"{filename}_total_loss.npy")
-                total_disparity = np.load(f"{filename}_total_disparity.npy")
-                lambdas = np.load(f"{filename}_lambdas.npy")
+                # TODO load/save as npz
+                npz = np.load(filename)
 
                 for i in tqdm(range(100)):
-                    viz.render_frame(lambdas[i], thetas[i], losses[i], rhos[i])
+                    viz.render_frame(
+                        npz["lambdas"][i],
+                        npz["thetas"][i],
+                        npz["losses"][i],
+                        npz["rhos"][i],
+                    )
 
             except FileNotFoundError:
                 theta = init_theta
@@ -815,12 +816,15 @@ def run_problem(
 
                     viz.render_frame(lambda_, theta, _losses, _rhos)
 
-                np.save(f"{filename}_thetas.npy", thetas)
-                np.save(f"{filename}_losses.npy", losses)
-                np.save(f"{filename}_rhos.npy", rhos)
-                np.save(f"{filename}_total_loss.npy", total_loss)
-                np.save(f"{filename}_total_disparity.npy", total_disparity)
-                np.save(f"{filename}_lambdas.npy", lambdas)
+                np.savez(
+                    filename,
+                    thetas=thetas,
+                    losses=losses,
+                    rhos=rhos,
+                    total_loss=total_loss,
+                    total_disparity=total_disparity,
+                    lambdas=lambdas,
+                )
 
 
 def logistic(x):
