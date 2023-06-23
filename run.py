@@ -1,7 +1,6 @@
 import os
 import numpy as np
 
-
 from fair_participation.dynamics import localized_rho_fn, run_problem
 from fair_participation.plotting import compare, compare_2
 from fair_participation.base_logger import log
@@ -14,6 +13,7 @@ def main(problems: list[dict]) -> None:
         os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
+        log.info(f"Running problem: {problem['name']}")
         run_problem(**problem)
         compare(problem, grad=False)
         # compare(problem, grad=True)
@@ -24,25 +24,25 @@ if __name__ == "__main__":
     base_problems = [
         {
             "name": "Income",
-            "rho_fns": (localized_rho_fn(-0.75, 20),),
+            "rho_fns": localized_rho_fn(-0.75, 20),
             "init_theta": 0.57 * np.pi / 2,
             "viz_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, np.pi / 2]},
         },
         {
             "name": "Mobility",
-            "rho_fns": (localized_rho_fn(-0.7, 10),),
+            "rho_fns": localized_rho_fn(-0.7, 10),
             "init_theta": 0.6 * np.pi / 2,
             "eta": 0.3,
         },
         {
             "name": "PublicCoverage",
-            "rho_fns": (localized_rho_fn(-0.7, 50),),
+            "rho_fns": localized_rho_fn(-0.7, 50),
             "init_theta": 0.6 * np.pi / 2,
             "viz_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2]},
         },
         {
             "name": "TravelTime",
-            "rho_fns": (localized_rho_fn(-0.58, 100),),
+            "rho_fns": localized_rho_fn(-0.58, 100),
             "init_theta": 0.51 * np.pi / 2,
             "viz_kwargs": {"theta_plot_range": [0.4 * np.pi / 2, 0.6 * np.pi / 2]},
         },

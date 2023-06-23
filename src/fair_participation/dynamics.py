@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Optional
+from typing import Callable, Optional, Iterable, Sized
 
 import cvxpy as cp
 import jax
@@ -719,7 +719,7 @@ def concave_rho_fn(loss):
 
 def run_problem(
     name: str = "",
-    rho_fns: Optional[tuple[Callable]] = None,
+    rho_fns: Optional[Callable | tuple[Callable]] = concave_rho_fn,
     method: Optional[str] = None,
     save_init: bool = True,
     eta: float = 0.1,
@@ -728,6 +728,18 @@ def run_problem(
     jit: bool = False,
     viz_kwargs: Optional[dict] = None,
 ):
+    """
+
+    :param name:
+    :param rho_fns:
+    :param method:
+    :param save_init:
+    :param eta:
+    :param num_steps:
+    :param init_theta:
+    :param jit:
+    :param viz_kwargs:
+    """
     filename = os.path.join("losses", f"{name}.npy")
     try:  # load cached values
         achievable_losses = np.load(filename)
@@ -738,9 +750,8 @@ def run_problem(
         log.info(f"Saving {filename}")
         np.save(filename, achievable_losses)
 
-    if rho_fns is None:
-        rho_fns = (concave_rho_fn, concave_rho_fn)
-    elif len(rho_fns) == 1:
+    if callable(rho_fns):
+        # Use same rho for both groups
         rho_fns = (rho_fns, rho_fns)
 
     env = Env(
