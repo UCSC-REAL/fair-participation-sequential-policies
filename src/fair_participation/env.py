@@ -1,7 +1,7 @@
+from functools import partial
 from typing import Optional, Callable
 
-import numpy as onp  # TODO FIX
-import jax.numpy as np
+import jax.numpy as np  # TODO FIX
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
 from numpy.typing import ArrayLike
@@ -9,10 +9,8 @@ from numpy.typing import ArrayLike
 from fair_participation.base_logger import log
 from fair_participation.opt import get_hull
 from fair_participation.updates import (
-    rrm_step,
-    rrm_grad_step,
-    perf_step,
-    perf_grad_step,
+    naive_step,
+    naive_grad_step,
     fair_step,
     fair_grad_step,
     disparity_fn,
@@ -20,11 +18,11 @@ from fair_participation.updates import (
 
 
 class Env:
-    update_funcs = {
-        "RRM": rrm_step,
-        "RRM_grad": rrm_grad_step,
-        "LPU": perf_step,
-        "LPU_grad": perf_grad_step,
+    state_update_funcs = {
+        "RRM": naive_step("rrm"),
+        "RRM_grad": naive_grad_step("rrm"),
+        "LPU": naive_step("perf"),
+        "LPU_grad": naive_step("perf"),
         "Fair": fair_step,
         "Fair_grad": fair_grad_step,
     }
@@ -64,40 +62,40 @@ class Env:
             "total_disparity": None,
         }
         self.history = []
-        self.update_state: Callable = self.update_funcs[update_method]  # TODO FIXXX
+        # TODO FIX if jit
+        if update_method is None:
+            raise NotImplementedError
+        else:
+            self.state_update_fn = Env.state_update_funcs[update_method]
 
     def update(self) -> dict:
         """
         Updates state and returns a dictionary of the new state.
+        # TODO might have to factor stuff out to make this jittable
         :return:
         """
-        state = dict(**self.state)
-        if len(self.history) == 0:
-            # todo should have consistent ordering
-            update_state = lambda t, l, r: (l, t)
-        else:
-            update_state = self.update_state
-        state["lambda"], state["theta"] = update_state(
-            state["theta"], state["losses"], state["rhos"]
-        )
-        state["losses"] = self.update_losses(state["theta"])
-        state["rhos"] = self.update_rhos(state["losses"])
-        state["total_loss"] = self.update_total_loss(state["losses"], state["rhos"])
+        state = dict(**self.state)  # will unpack init values
+        if len(self.history) > 0:
+            state["lambda"], state["theta"] = self.state_update_fn(
+                state["theta"], state["losses"], state["rhos"], self.group_sizes
+            )
+        state["losses"] = update_losses(state["theta"], self.xs, self.ys, self.ts)
+        state["rhos"] = np.array([r(l) for r, l in zip(self.rho_fns, state["losses"])])
+        state["total_loss"] = np.sum(state["losses"] * state["rhos"] * self.group_sizes)
         state["total_disparity"] = disparity_fn(state["rhos"])
         self.history.append(state)
         return state
 
-    def update_losses(self, theta):
-        """
-        theta [0, 1] -> group_specific losses
-        """
 
-        x = np.interp(theta, self.ts, self.xs)
-        y = np.interp(theta, self.ts, self.ys)
-        return np.array([x, y])
+# TODO jit
+def update_losses(
+    theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike
+) -> ArrayLike:
+    """
+    TODO
+    theta [0, 1] -> group_specific losses
+    """
 
-    def update_rhos(self, losses):
-        return np.array([self.rho_fns[g](losses[g]) for g in range(2)])
-
-    def update_total_loss(self, losses, rhos):
-        return np.einsum("g,g,g->", losses, rhos, self.group_sizes)
+    x = np.interp(theta, ts, xs)
+    y = np.interp(theta, ts, ys)
+    return np.array([x, y])

@@ -1,9 +1,8 @@
 import os
 from typing import Callable, Optional
 
-import jax
 import jax.numpy as np
-import jax.scipy.optimize
+import pandas as pd
 from numpy.typing import ArrayLike
 from tqdm import tqdm
 
@@ -61,19 +60,11 @@ def run_problem(
         achievable_losses,
         rho_fns=rho_fns,
         group_sizes=np.array([0.5, 0.5]),
-        disparity_fn=disparity_fn,
-        inverse_disparity_curve=inverse_disparity_curve,
         eta=eta,
         init_theta=init_theta,
-        jit=jit,
         update_method=method,
+        jit=jit,
     )
-
-    if method is not None:
-        if jit:
-            update_func = jax.jit(env.update_funcs[method])
-        else:
-            update_func = env.update_funcs[method]
 
     # save initial figures
     # save video if method is defined
@@ -97,8 +88,9 @@ def run_problem(
 
             except FileNotFoundError:
                 pars = dict()
-                for i in tqdm(range(num_steps)):
-                    # # TODO change this to a nice update structure
+                for _ in tqdm(range(num_steps)):
+                    state = env.update()
+                    viz.render_frame(render_pars=state)
                     # if i == 0:
                     #     lambda_, theta = 0, init_theta
                     # else:
@@ -106,7 +98,6 @@ def run_problem(
                     # losses = env.get_losses(theta)
                     # rhos = env.get_rhos(losses)
                     #
-                    env.update()
                     #
                     # pars.setdefault("lambdas", []).append(lambda_)
                     # pars.setdefault("thetas", []).append(theta)
@@ -116,9 +107,8 @@ def run_problem(
                     # pars.setdefault("total_disparity", []).append(
                     #     env.get_total_disparity(theta)
                     # )
-
-                    viz.render_frame(render_pars=env.state)
-
+                # TODO unpack history
+                history = pd.DataFrame(env.history).to_dict("series", index=False)
                 np.savez(filename, **pars)
 
 
