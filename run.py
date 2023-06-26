@@ -7,7 +7,12 @@ from fair_participation.base_logger import log
 
 
 def main(problems: list[dict]) -> None:
-    # TODO clean dir version
+    """
+    TODO
+    :param problems:
+    :return:
+    """
+    # TODO parameterize clearing directories
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npz", "pdf"):
         os.makedirs(folder, exist_ok=True)

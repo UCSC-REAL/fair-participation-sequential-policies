@@ -177,7 +177,7 @@ class Viz(Video):
         ax.plot(*achievable_rhos.T, color="black", label="Pareto Boundary")
         ax.set_title(title)
 
-        cx, cy = self.env.inverse_disparity_curve()
+        cx, cy = inverse_disparity_curve()
         ax.plot(cx, cy, color="red", linestyle="--", label="Fair Boundary")
         ax.plot(cy, cx, color="red", linestyle="--")
         ax.set_xlim(0, 1)
