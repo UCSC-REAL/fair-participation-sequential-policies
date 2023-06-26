@@ -1,6 +1,9 @@
 import numpy as onp
 import jax.numpy as np
+from numpy.typing import ArrayLike
 from scipy.spatial import ConvexHull
+
+from cvxpy import Problem, Minimize, Variable, norm
 
 
 def get_hull(achievable_loss):
@@ -57,11 +60,11 @@ def get_hull(achievable_loss):
     return p_hull, xs, ys, ts
 
 
-def quadratic_program(self, loss, dual, cp=None):
+def solve_qp(theta: float, loss: ArrayLike, dual: ArrayLike, eta: float):
     """
     return theta that solves convex proximal update
     """
-    x = cp.Variable(2)
+    x = Variable(2)
     constraints = [
         onp.array([1, 0]) @ x <= 0,
         onp.array([0, 1]) @ x <= 0,
@@ -72,10 +75,8 @@ def quadratic_program(self, loss, dual, cp=None):
         d = np.array([r[1] - l[1], l[0] - r[0]])
         constraints.append(d.T @ x <= d.T @ l)
 
-    prob = cp.Problem(
-        cp.Minimize(
-            (1 / 2) * cp.quad_form(x - loss, onp.eye(2)) + self.eta * dual.T @ x
-        ),
+    prob = Problem(
+        Minimize((1 / 2) * np.sum(norm(x - loss) ** 2) + eta * np.dot(x, dual)),
         constraints,
     )
     prob.solve()
@@ -85,3 +86,15 @@ def quadratic_program(self, loss, dual, cp=None):
     # TODO this fn should be factored out
     def get_theta(self, loss):
         return ((np.arctan2(loss[1], loss[0]) / (np.pi / 2) + 4.0) % 2.0) * (np.pi / 2)
+
+
+def direct_qp_step(
+    theta: float,  # TODO add
+    loss: ArrayLike,
+    dual: ArrayLike,
+    eta: float,
+) -> float:
+    """Takes a single step on QP (6)"""
+    # dl/dtheta
+    grad_theta_loss = get_grad_loss(theta)
+    return theta - eta * np.dot(dual * grad_theta_loss)

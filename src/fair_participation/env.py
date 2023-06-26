@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Optional, Callable
 
 import jax.numpy as np  # TODO FIX
