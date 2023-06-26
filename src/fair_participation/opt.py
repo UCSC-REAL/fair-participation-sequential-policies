@@ -3,35 +3,35 @@ import jax.numpy as np
 from scipy.spatial import ConvexHull
 
 
-def get_hull(achievable_losses):
-    min_g1_loss = np.min(achievable_losses[:, 0])
-    min_g2_loss = np.min(achievable_losses[:, 1])
-    achievable_losses = list(achievable_losses)
-    achievable_losses.append([min_g1_loss, 0])
-    achievable_losses.append([0, min_g2_loss])
-    achievable_losses = np.array(achievable_losses)
+def get_hull(achievable_loss):
+    min_g1_loss = np.min(achievable_loss[:, 0])
+    min_g2_loss = np.min(achievable_loss[:, 1])
+    achievable_loss = list(achievable_loss)
+    achievable_loss.append([min_g1_loss, 0])
+    achievable_loss.append([0, min_g2_loss])
+    achievable_loss = np.array(achievable_loss)
 
-    hull = ConvexHull(achievable_losses)
+    hull = ConvexHull(achievable_loss)
 
     # filter for Pareto property
     def is_pareto(idx):
         """
         remove all points that can be strictly improved upon
         """
-        x = achievable_losses[idx][0]
-        y = achievable_losses[idx][1]
+        x = achievable_loss[idx][0]
+        y = achievable_loss[idx][1]
         for idx_p in hull.vertices:
             if idx == idx_p:
                 continue
-            x_p = achievable_losses[idx_p][0]
-            y_p = achievable_losses[idx_p][1]
+            x_p = achievable_loss[idx_p][0]
+            y_p = achievable_loss[idx_p][1]
             if (x > x_p) and (y > y_p):
                 return False
 
         return True
 
     pareto_hull = np.array(
-        [achievable_losses[idx] for idx in hull.vertices if is_pareto(idx)]
+        [achievable_loss[idx] for idx in hull.vertices if is_pareto(idx)]
     )
     # sort by increasing group 1 loss
     p_hull = pareto_hull[pareto_hull[:, 0].argsort()]
@@ -57,7 +57,7 @@ def get_hull(achievable_losses):
     return p_hull, xs, ys, ts
 
 
-def quadratic_program(self, losses, dual, cp=None):
+def quadratic_program(self, loss, dual, cp=None):
     """
     return theta that solves convex proximal update
     """
@@ -74,7 +74,7 @@ def quadratic_program(self, losses, dual, cp=None):
 
     prob = cp.Problem(
         cp.Minimize(
-            (1 / 2) * cp.quad_form(x - losses, onp.eye(2)) + self.eta * dual.T @ x
+            (1 / 2) * cp.quad_form(x - loss, onp.eye(2)) + self.eta * dual.T @ x
         ),
         constraints,
     )
@@ -83,7 +83,5 @@ def quadratic_program(self, losses, dual, cp=None):
     return self.get_theta(x.value)
 
     # TODO this fn should be factored out
-    def get_theta(self, losses):
-        return ((np.arctan2(losses[1], losses[0]) / (np.pi / 2) + 4.0) % 2.0) * (
-            np.pi / 2
-        )
+    def get_theta(self, loss):
+        return ((np.arctan2(loss[1], loss[0]) / (np.pi / 2) + 4.0) % 2.0) * (np.pi / 2)

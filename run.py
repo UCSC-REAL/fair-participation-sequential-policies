@@ -14,7 +14,7 @@ def main(problems: list[dict]) -> None:
     """
     # TODO parameterize clearing directories
     # Create needed directories if they don't exist
-    for folder in ("losses", "data", "mp4", "npz", "pdf"):
+    for folder in ("loss", "data", "mp4", "npz", "pdf"):
         os.makedirs(folder, exist_ok=True)
 
     for problem in problems:

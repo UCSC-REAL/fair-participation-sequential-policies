@@ -13,12 +13,12 @@ from fair_participation.utils import rng_old
 from fair_participation.base_logger import log
 
 
-def get_achievable_losses(
+def get_achievable_loss(
     problem_name: str,
     n_samples: int = 100,
 ) -> NDArray:
     """
-    Compute achievable losses for a given problem.
+    Compute achievable loss for a given problem.
 
     :param problem_name: key in acs_problems dictionary
     :param n_samples: sampling resolution for sweeping over group weights
@@ -42,18 +42,18 @@ def get_achievable_losses(
         for t in np.linspace(0, np.pi / 2, n_samples)
     ]
 
-    achievable_losses = []
+    achievable_loss = []
     for sample_weight in tqdm(sample_weights):
         pipeline.fit(x, y, logisticregression__sample_weight=sample_weight)
         y_pred = pipeline.predict(x)
-        # losses = negative accuracies per group
-        achievable_losses.append(
+        # loss = negative accuracies per group
+        achievable_loss.append(
             [-accuracy_score(y[~g], y_pred[~g]), -accuracy_score(y[g], y_pred[g])]
         )
-    return np.array(achievable_losses)
+    return np.array(achievable_loss)
 
 
 if __name__ == "__main__":
     for name in problems.keys():
         log.info(f"Problem: {name}")
-        get_achievable_losses(name)
+        get_achievable_loss(name)

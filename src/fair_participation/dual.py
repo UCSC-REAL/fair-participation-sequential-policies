@@ -38,22 +38,22 @@ fig, axs = plt.subplots(1, 4, figsize=(10, 10))
 left, right, inset_l, inset_r = axs
 
 
-def get_losses(theta):
+def get_loss(theta):
     return np.array([-np.cos(theta), -np.sin(theta)]).T
 
 
 rho_fn = partial(localized_rho_fn, -0.62, 20)
 
 
-def get_rhos(losses):
-    return np.array(list(zip(rho_fn(losses[:, 0]), rho_fn(losses[:, 1]))))
+def get_rho(loss):
+    return np.array(list(zip(rho_fn(loss[:, 0]), rho_fn(loss[:, 1]))))
 
 
 ts = np.linspace(0, np.pi / 2, 100)
-losses = get_losses(ts)
-rhos = get_rhos(losses)
+loss = get_loss(ts)
+rho = get_rho(loss)
 
-left.plot(*losses.T, color="black")
+left.plot(*loss.T, color="black")
 left.set_xlabel("Group 1 loss $\\ell_1$")
 left.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
 left.set_xlim(-1, 0)
@@ -61,7 +61,7 @@ left.set_ylim(-1, 0)
 use_two_ticks_x(left)
 use_two_ticks_y(left)
 
-right.plot(*rhos.T, color="black")
+right.plot(*rho.T, color="black")
 right.yaxis.tick_right()
 right.yaxis.set_label_position("right")
 right.xaxis.tick_top()
@@ -75,10 +75,10 @@ use_two_ticks_y(right)
 
 a = 0.45 * np.pi / 2
 b = 0.55 * np.pi / 2
-la = get_losses(a)
-lb = get_losses(b)
-ra = get_rhos(np.array([la]))[0]
-rb = get_rhos(np.array([lb]))[0]
+la = get_loss(a)
+lb = get_loss(b)
+ra = get_rho(np.array([la]))[0]
+rb = get_rho(np.array([lb]))[0]
 
 ms = 100  # markersize
 
@@ -149,7 +149,7 @@ left.add_patch(
 )
 left.text(-0.3, -0.8, "$\\ell_1^2 + \\ell_2^2 = 1$")
 
-inset_l.plot(losses[:, 0], rhos[:, 0], color="black")
+inset_l.plot(loss[:, 0], rho[:, 0], color="black")
 inset_l.set_xlabel("Group 1 loss $\\ell_1$")
 inset_l.set_xlim(-1, 0)
 inset_l.set_ylabel("Group 1 Participation Rate $\\rho_1$")
@@ -170,7 +170,7 @@ la = np.einsum("i,i->", ra, la) / 2
 lb = np.einsum("i,i->", rb, lb) / 2
 inset_r.plot(
     ts,
-    np.einsum("ti,ti->t", losses, rhos) / 2,
+    np.einsum("ti,ti->t", loss, rho) / 2,
     color="black",
 )
 inset_r.yaxis.set_label_position("right")

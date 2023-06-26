@@ -9,7 +9,7 @@ from tqdm import tqdm
 from fair_participation.animation import Viz
 from fair_participation.base_logger import log
 from fair_participation.env import Env
-from fair_participation.folktasks import get_achievable_losses
+from fair_participation.folktasks import get_achievable_loss
 
 
 def concave_rho_fn(loss):
@@ -42,22 +42,22 @@ def run_problem(
     :param jit:
     :param viz_kwargs:
     """
-    filename = os.path.join("losses", f"{name}.npy")
+    filename = os.path.join("loss", f"{name}.npy")
     try:  # load cached values
-        achievable_losses = np.load(filename)
-        log.info(f"Loaded cached achievable losses from {filename}.")
+        achievable_loss = np.load(filename)
+        log.info(f"Loaded cached achievable loss from {filename}.")
     except FileNotFoundError:
-        log.info("Calculating achievable losses...")
-        achievable_losses = get_achievable_losses(name)
+        log.info("Calculating achievable loss...")
+        achievable_loss = get_achievable_loss(name)
         log.info(f"Saving {filename}")
-        np.save(filename, achievable_losses)
+        np.save(filename, achievable_loss)
 
     if callable(rho_fns):
         # Use same rho for both groups
         rho_fns = (rho_fns, rho_fns)
 
     env = Env(
-        achievable_losses,
+        achievable_loss,
         rho_fns=rho_fns,
         group_sizes=np.array([0.5, 0.5]),
         eta=eta,
@@ -79,8 +79,7 @@ def run_problem(
                 npz = np.load(filename)
                 for i in tqdm(range(100)):
                     pars = {
-                        par: npz[par][i]
-                        for par in ("lambdas", "thetas", "losses", "rhos")
+                        par: npz[par][i] for par in ("lambdas", "thetas", "loss", "rho")
                     }
                     viz.render_frame(
                         render_pars=pars,
@@ -94,15 +93,15 @@ def run_problem(
                     # if i == 0:
                     #     lambda_, theta = 0, init_theta
                     # else:
-                    #     lambda_, theta = update_func(theta, losses, rhos)
-                    # losses = env.get_losses(theta)
-                    # rhos = env.get_rhos(losses)
+                    #     lambda_, theta = update_func(theta, loss, rho)
+                    # loss = env.get_loss(theta)
+                    # rho = env.get_rho(loss)
                     #
                     #
                     # pars.setdefault("lambdas", []).append(lambda_)
                     # pars.setdefault("thetas", []).append(theta)
-                    # pars.setdefault("losses", []).append(losses)
-                    # pars.setdefault("rhos", []).append(rhos)
+                    # pars.setdefault("loss", []).append(loss)
+                    # pars.setdefault("rho", []).append(rho)
                     # pars.setdefault("total_loss", []).append(env.get_total_loss(theta))
                     # pars.setdefault("total_disparity", []).append(
                     #     env.get_total_disparity(theta)

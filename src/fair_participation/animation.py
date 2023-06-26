@@ -86,7 +86,7 @@ class Viz(Video):
             super().__init__(f"{title}_{method}", self.fig, fps=15, dpi=100)
 
         # TODO why are we calling this twice
-        self.setup("left", "Group Losses", **kw)
+        self.setup("left", "Group loss", **kw)
         self.setup("center", "Group Participation Rates", **kw)
         self.setup("right", "Loss and Disparity Surfaces", **kw)
 
@@ -116,10 +116,10 @@ class Viz(Video):
 
     def setup_left(self, left, title, **kw):
         ax = self.left
-        # Plot achievable losses
-        achievable_losses = self.env.achievable_losses
+        # Plot achievable loss
+        achievable_loss = self.env.achievable_loss
 
-        ax.scatter(*achievable_losses.T, color="black", label="Fixed Policies")
+        ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
 
         ax.plot(self.env.xs, self.env.ys, "black", label="Pareto Boundary")
 
@@ -147,12 +147,12 @@ class Viz(Video):
 
         lims = [
             [
-                np.min(self.env.achievable_losses[:, 0]),
-                np.max(self.env.achievable_losses[:, 0]),
+                np.min(self.env.achievable_loss[:, 0]),
+                np.max(self.env.achievable_loss[:, 0]),
             ],
             [
-                np.min(self.env.achievable_losses[:, 1]),
-                np.max(self.env.achievable_losses[:, 1]),
+                np.min(self.env.achievable_loss[:, 1]),
+                np.max(self.env.achievable_loss[:, 1]),
             ],
         ]
         if (lims[0][0] > -1 and lims[0][1] < 0) and (
@@ -161,7 +161,7 @@ class Viz(Video):
             left_inset = ax.inset_axes([0.5, 0.5, 0.3, 0.3])
             left_inset.set_xlim(lims[0][0] - 0.02, lims[0][1] + 0.02)
             left_inset.set_ylim(lims[1][0] - 0.02, lims[1][1] + 0.02)
-            left_inset.scatter(*achievable_losses.T, color="black")
+            left_inset.scatter(*achievable_loss.T, color="black")
             left_inset.plot(self.env.xs, self.env.ys, "black")
             left_inset.set_xticks([])
             left_inset.set_yticks([])
@@ -169,12 +169,12 @@ class Viz(Video):
 
     def setup_center(self, title, **kw):
         ax = self.center
-        # plot achievable rhos
+        # plot achievable rho
         theta_range = np.linspace(0, np.pi / 2, 1000)
-        achievable_rhos = np.array(
-            [self.env.get_rhos(self.env.get_losses(theta)) for theta in theta_range]
+        achievable_rho = np.array(
+            [self.env.get_rho(self.env.get_loss(theta)) for theta in theta_range]
         )
-        ax.plot(*achievable_rhos.T, color="black", label="Pareto Boundary")
+        ax.plot(*achievable_rho.T, color="black", label="Pareto Boundary")
         ax.set_title(title)
 
         cx, cy = inverse_disparity_curve()
@@ -322,37 +322,35 @@ class Viz(Video):
         use_two_ticks_y(ax)
 
     def update_left(
-        self, losses: Optional[ArrayLike] = None, rhos: Optional[ArrayLike] = None
+        self, loss: Optional[ArrayLike] = None, rho: Optional[ArrayLike] = None
     ):
         """
         - Plot current location on achievable loss curve (point)
-        - Plot vector in direction opposite rhos
+        - Plot vector in direction opposite rho
         """
-        if losses is None:
-            raise ValueError("losses must be provided")
-        if rhos is None:
-            raise ValueError("rhos must be provided")
+        if loss is None:
+            raise ValueError("loss must be provided")
+        if rho is None:
+            raise ValueError("rho must be provided")
         ax = self.left
-        artifacts = [
-            ax.scatter([losses[0]], [losses[1]], color="red", marker="^", s=100)
-        ]
+        artifacts = [ax.scatter([loss[0]], [loss[1]], color="red", marker="^", s=100)]
 
         if self.method.startswith("RRM"):
-            t = np.arctan(rhos[1] / rhos[0])
-            l = self.env.get_losses(t)
-            d = np.einsum("g,g->", rhos, l) / np.einsum("g,g->", rhos, rhos)
-            artifacts += [ax.plot([d * rhos[0], 0], [d * rhos[1], 0], "red")[0]]
+            t = np.arctan(rho[1] / rho[0])
+            l = self.env.get_loss(t)
+            d = np.einsum("g,g->", rho, l) / np.einsum("g,g->", rho, rho)
+            artifacts += [ax.plot([d * rho[0], 0], [d * rho[1], 0], "red")[0]]
 
         return artifacts
 
-    def update_center(self, rhos: Optional[ArrayLike] = None):
+    def update_center(self, rho: Optional[ArrayLike] = None):
         """
         plot achieved rho
         """
-        if rhos is None:
-            raise ValueError("rhos must be provided")
+        if rho is None:
+            raise ValueError("rho must be provided")
         ax = self.center
-        return [ax.scatter([rhos[0]], [rhos[1]], color="red", marker="^", s=100)]
+        return [ax.scatter([rho[0]], [rho[1]], color="red", marker="^", s=100)]
 
     def update_right(self, ax, theta: float = -1):
         """

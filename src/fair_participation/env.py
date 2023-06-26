@@ -29,7 +29,7 @@ class Env:
 
     def __init__(
         self,
-        achievable_losses: ArrayLike,
+        achievable_loss: ArrayLike,
         rho_fns: tuple[Callable],
         group_sizes: ArrayLike,
         eta: float,
@@ -38,26 +38,26 @@ class Env:
         jit: bool = True,  # TODO remove or bake in
     ):
         """
-        achievable losses: an array of losses acheivable with fixed policies.
+        achievable loss: an array of loss acheivable with fixed policies.
         rho_fns: two functions (one per group) that maps group loss -> participation.
         group_sizes: array of relative group sizes.
         eta: learning rate
         """
-        self.achievable_losses = achievable_losses
+        self.achievable_loss = achievable_loss
         self.rho_fns = rho_fns
         self.group_sizes = group_sizes
         self.eta = eta
         self.init_theta = init_theta
 
-        self.hull, self.xs, self.ys, self.ts = get_hull(achievable_losses)
+        self.hull, self.xs, self.ys, self.ts = get_hull(achievable_loss)
         self.grad_rho_fns = [
             jax.jacfwd(rho_fn) for rho_fn in rho_fns
         ]  # TODO might have to change this
         self.state = {
             "lambda": 0,
             "theta": init_theta,
-            "losses": None,
-            "rhos": None,
+            "loss": None,
+            "rho": None,
             "total_loss": None,
             "total_disparity": None,
         }
@@ -77,23 +77,21 @@ class Env:
         state = dict(**self.state)  # will unpack init values
         if len(self.history) > 0:
             state["lambda"], state["theta"] = self.state_update_fn(
-                state["theta"], state["losses"], state["rhos"], self.group_sizes
+                state["theta"], state["loss"], state["rho"], self.group_sizes
             )
-        state["losses"] = update_losses(state["theta"], self.xs, self.ys, self.ts)
-        state["rhos"] = np.array([r(l) for r, l in zip(self.rho_fns, state["losses"])])
-        state["total_loss"] = np.sum(state["losses"] * state["rhos"] * self.group_sizes)
-        state["total_disparity"] = disparity_fn(state["rhos"])
+        state["loss"] = update_loss(state["theta"], self.xs, self.ys, self.ts)
+        state["rho"] = np.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
+        state["total_loss"] = np.sum(state["loss"] * state["rho"] * self.group_sizes)
+        state["total_disparity"] = disparity_fn(state["rho"])
         self.history.append(state)
         return state
 
 
 # TODO jit
-def update_losses(
-    theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike
-) -> ArrayLike:
+def update_loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> ArrayLike:
     """
     TODO
-    theta [0, 1] -> group_specific losses
+    theta [0, 1] -> group_specific loss
     """
 
     x = np.interp(theta, ts, xs)
