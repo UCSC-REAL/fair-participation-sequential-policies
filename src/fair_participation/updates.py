@@ -15,16 +15,7 @@ def inverse_disparity_curve():
     return rho_1, rho_2
 
 
-# TODO replace with autodiff -- is this already being passed in?
-# TODO remember bad autodiff bug!
-# def get_grad_loss(theta):
-#     """
-#     Use finite differences.
-#     """
-#     h = 0.0001
-#     return (get_loss(theta + h / 2) - get_loss(theta - h / 2)) / h
-
-
+# TODO maybe encapsulate this out
 def get_tangent(self, theta):
     i = np.sum(self.ts < theta) - 1
     return np.array([self.xs[i + 1] - self.xs[i], self.ys[i + 1] - self.ys[i]])
@@ -47,7 +38,6 @@ def disparity_fn(rho: ArrayLike):
         rho: array of participation rates indexed by g
     """
     return np.var(rho) - 0.01
-    # return
 
 
 grad_disparity_fn = grad(disparity_fn)
@@ -65,7 +55,7 @@ qp_solve_fn = {
 
 def step(
     type_: str,
-    quad: bool,
+    quad: bool = True,
 ) -> Callable:
     def _step(
         theta: float,
@@ -99,16 +89,6 @@ def step(
 
         d = np.dot(rho_hat * proj_grad_disparity) / np.sum(proj_grad_disparity**2)
         lambda_ = np.maximum(disparity - d, 0)
-
-        # log.debug("loss", loss)
-        # log.debug("g", g)
-        # log.debug("d", d)
-        # log.debug("perf_grad", perf_grad)
-        # log.debug("fair_proj_grad", fair_proj_grad)
-        # log.debug(
-        #     "update",
-        #     np.sum((perf_grad + lambda_ * fair_proj_grad) * fair_proj_grad),
-        # )
 
         # solve_qp(x,y) minimizes 1/2 *||x - loss||^2 + eta * y'x
         return lambda_, qp_solve_fn[quad](

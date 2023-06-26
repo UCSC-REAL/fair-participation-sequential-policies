@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 import matplotlib.patches as patches
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy._typing import ArrayLike
+from numpy.typing import ArrayLike
 
 from fair_participation.plotting import savefig, use_two_ticks_x, use_two_ticks_y
 from fair_participation.base_logger import log

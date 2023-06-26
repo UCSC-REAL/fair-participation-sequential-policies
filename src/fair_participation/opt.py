@@ -14,29 +14,34 @@ def get_hull(achievable_loss):
     achievable_loss.append([0, min_g2_loss])
     achievable_loss = np.array(achievable_loss)
 
+    # TODO check this one -> convex is already pareto
     hull = ConvexHull(achievable_loss)
-
-    # filter for Pareto property
-    def is_pareto(idx):
-        """
-        remove all points that can be strictly improved upon
-        """
-        x = achievable_loss[idx][0]
-        y = achievable_loss[idx][1]
-        for idx_p in hull.vertices:
-            if idx == idx_p:
-                continue
-            x_p = achievable_loss[idx_p][0]
-            y_p = achievable_loss[idx_p][1]
-            if (x > x_p) and (y > y_p):
-                return False
-
-        return True
-
-    pareto_hull = np.array(
-        [achievable_loss[idx] for idx in hull.vertices if is_pareto(idx)]
-    )
-    # sort by increasing group 1 loss
+    vertices = (achievable_loss[ix] for ix in hull.vertices)
+    for pt in vertices:
+        achievable_loss = achievable_loss[~np.all(pt > achievable_loss, axis=1)]
+    achievable_loss = onp.sort(achievable_loss)
+    #
+    # # filter for Pareto property
+    # def is_pareto(idx):
+    #     """
+    #     remove all points that can be strictly improved upon
+    #     """
+    #     x = achievable_loss[idx][0]
+    #     y = achievable_loss[idx][1]
+    #     for idx_p in hull.vertices:
+    #         if idx == idx_p:
+    #             continue
+    #         x_p = achievable_loss[idx_p][0]
+    #         y_p = achievable_loss[idx_p][1]
+    #         if (x > x_p) and (y > y_p):
+    #             return False
+    #
+    #     return True
+    #
+    # pareto_hull = np.array(
+    #     [achievable_loss[idx] for idx in hull.vertices if is_pareto(idx)]
+    # )
+    # # sort by increasing group 1 loss
     p_hull = pareto_hull[pareto_hull[:, 0].argsort()]
 
     n = len(p_hull)

@@ -1,5 +1,6 @@
 from typing import Optional, Callable
 
+from jax import grad, value_and_grad
 import jax.numpy as np  # TODO FIX
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
@@ -7,23 +8,17 @@ from numpy.typing import ArrayLike
 
 from fair_participation.base_logger import log
 from fair_participation.opt import get_hull
-from fair_participation.updates import (
-    naive_step,
-    naive_grad_step,
-    fair_step,
-    fair_grad_step,
-    disparity_fn,
-)
+from fair_participation.updates import step, disparity_fn
 
 
 class Env:
     state_update_funcs = {
-        "RRM": naive_step("rrm"),
-        "RRM_grad": naive_grad_step("rrm"),
-        "LPU": naive_step("perf"),
-        "LPU_grad": naive_step("perf"),
-        "Fair": fair_step,
-        "Fair_grad": fair_grad_step,
+        "RRM": step("rrm"),
+        "RRM_grad": step("rrm", quad=False),
+        "LPU": step("lpu"),
+        "LPU_grad": step("lpu", quad=False),
+        "Fair": step("fair_lpu"),
+        "Fair_grad": step("fair_lpu", quad=False),
     }
 
     def __init__(
@@ -61,7 +56,6 @@ class Env:
             "total_disparity": None,
         }
         self.history = []
-        # TODO FIX if jit
         if update_method is None:
             raise NotImplementedError
         else:
@@ -73,12 +67,14 @@ class Env:
         # TODO might have to factor stuff out to make this jittable
         :return:
         """
-        state = dict(**self.state)  # will unpack init values
+        state = dict(**self.state)  # unpacks previous
         if len(self.history) > 0:
             state["lambda"], state["theta"] = self.state_update_fn(
                 state["theta"], state["loss"], state["rho"], self.group_sizes
             )
-        state["loss"] = update_loss(state["theta"], self.xs, self.ys, self.ts)
+        state["loss"], state["grad_loss"] = val_grad_loss(
+            state["theta"], self.xs, self.ys, self.ts
+        )
         state["rho"] = np.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
         state["total_loss"] = np.sum(state["loss"] * state["rho"] * self.group_sizes)
         state["total_disparity"] = disparity_fn(state["rho"])
@@ -87,7 +83,7 @@ class Env:
 
 
 # TODO jit
-def update_loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> ArrayLike:
+def loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> ArrayLike:
     """
     TODO
     theta [0, 1] -> group_specific loss
@@ -96,3 +92,6 @@ def update_loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> Ar
     x = np.interp(theta, ts, xs)
     y = np.interp(theta, ts, ys)
     return np.array([x, y])
+
+
+val_grad_loss = value_and_grad(loss, argnums=0)
