@@ -18,7 +18,7 @@ def get_achievable_loss(
     n_samples: int = 100,
 ) -> NDArray:
     """
-    Compute achievable loss for a given problem.
+    Compute achievable loss vector for a given problem.
 
     :param problem_name: key in acs_problems dictionary
     :param n_samples: sampling resolution for sweeping over group weights

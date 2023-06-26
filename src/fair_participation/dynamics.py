@@ -86,26 +86,9 @@ def run_problem(
                     )
 
             except FileNotFoundError:
-                pars = dict()
                 for _ in tqdm(range(num_steps)):
                     state = env.update()
                     viz.render_frame(render_pars=state)
-                    # if i == 0:
-                    #     lambda_, theta = 0, init_theta
-                    # else:
-                    #     lambda_, theta = update_func(theta, loss, rho)
-                    # loss = env.get_loss(theta)
-                    # rho = env.get_rho(loss)
-                    #
-                    #
-                    # pars.setdefault("lambdas", []).append(lambda_)
-                    # pars.setdefault("thetas", []).append(theta)
-                    # pars.setdefault("loss", []).append(loss)
-                    # pars.setdefault("rho", []).append(rho)
-                    # pars.setdefault("total_loss", []).append(env.get_total_loss(theta))
-                    # pars.setdefault("total_disparity", []).append(
-                    #     env.get_total_disparity(theta)
-                    # )
                 # TODO unpack history
                 history = pd.DataFrame(env.history).to_dict("series", index=False)
                 np.savez(filename, **pars)
