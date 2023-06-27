@@ -6,63 +6,20 @@ from scipy.spatial import ConvexHull
 from cvxpy import Problem, Minimize, Variable, norm
 
 
-def get_hull(achievable_loss):
-    min_g1_loss = np.min(achievable_loss[:, 0])
-    min_g2_loss = np.min(achievable_loss[:, 1])
-    achievable_loss = list(achievable_loss)
-    achievable_loss.append([min_g1_loss, 0])
-    achievable_loss.append([0, min_g2_loss])
-    achievable_loss = np.array(achievable_loss)
-
-    # TODO check this one -> convex is already pareto
-    hull = ConvexHull(achievable_loss)
-    vertices = (achievable_loss[ix] for ix in hull.vertices)
-    for pt in vertices:
-        achievable_loss = achievable_loss[~np.all(pt > achievable_loss, axis=1)]
-    achievable_loss = onp.sort(achievable_loss)
-    #
-    # # filter for Pareto property
-    # def is_pareto(idx):
-    #     """
-    #     remove all points that can be strictly improved upon
-    #     """
-    #     x = achievable_loss[idx][0]
-    #     y = achievable_loss[idx][1]
-    #     for idx_p in hull.vertices:
-    #         if idx == idx_p:
-    #             continue
-    #         x_p = achievable_loss[idx_p][0]
-    #         y_p = achievable_loss[idx_p][1]
-    #         if (x > x_p) and (y > y_p):
-    #             return False
-    #
-    #     return True
-    #
-    # pareto_hull = np.array(
-    #     [achievable_loss[idx] for idx in hull.vertices if is_pareto(idx)]
-    # )
-    # # sort by increasing group 1 loss
-    p_hull = pareto_hull[pareto_hull[:, 0].argsort()]
-
-    n = len(p_hull)
-    xs = p_hull[:, 0]
-    ys = p_hull[:, 1]
-    ts = (
-        (
-            (
-                np.array(
-                    [  # between 0 and 1
-                        (np.arctan2(ys[idx], xs[idx])) / (np.pi / 2) for idx in range(n)
-                    ]
-                )
-                + 4.0
-            )
-            % 2.0
-        )
-        * np.pi
-        / 2
-    )
-    return p_hull, xs, ys, ts
+def get_hull(losses: ArrayLike):
+    # losses is n x 2
+    # convex hull vertices dominate suboptimal points
+    # TODO restrict output losses to points on hull -- shouldnt this just be the vertices?
+    hull = ConvexHull(losses)
+    vertices = [losses[ix] for ix in hull.vertices]
+    for vertex in vertices:
+        losses = losses[~np.all(vertex > losses, axis=1)]
+    # sorts by increasing group 0 loss, then by group 1
+    losses = losses[np.lexsort(losses.T)]
+    # Make ts 0 to 1 ccw
+    angle = np.arctan2(losses[:, 1], losses[:, 0])
+    ts = -(angle / (np.pi / 2) + 1)
+    return losses, ts
 
 
 def solve_qp(theta: float, loss: ArrayLike, dual: ArrayLike, eta: float):

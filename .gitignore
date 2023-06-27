@@ -5,7 +5,7 @@ tmp/
 data/
 losses/
 mp4/
-npy/
+npz/
 pdf/
 
 *.py[cod]

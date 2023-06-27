@@ -42,7 +42,7 @@ def run_problem(
     :param jit:
     :param viz_kwargs:
     """
-    filename = os.path.join("loss", f"{name}.npy")
+    filename = os.path.join("losses", f"{name}.npy")
     try:  # load cached values
         achievable_loss = np.load(filename)
         log.info(f"Loaded cached achievable loss from {filename}.")
