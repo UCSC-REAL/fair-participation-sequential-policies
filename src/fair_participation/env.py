@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 import jax.numpy as jnp
 from jax.typing import ArrayLike
-from jax import grad, value_and_grad
+from jax import grad, value_and_grad, vmap
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
 
@@ -88,17 +88,15 @@ class Env:
 
 
 # TODO jit
-def loss(theta: float, hull: ArrayLike, ts: ArrayLike) -> ArrayLike:
-    """
-    TODO
-    theta [0, 1] -> group_specific loss
-    """
-    # TODO see if you actually need this
-    xs = hull[:, 0]
-    ys = hull[:, 1]
-    x = jnp.interp(theta, ts, xs)
-    y = jnp.interp(theta, ts, ys)
-    return jnp.array([x, y])
+def _loss(
+    theta: float,
+    ts: ArrayLike,
+    xp: ArrayLike,
+) -> ArrayLike:
+    """TODO"""
+    return jnp.interp(theta, ts, xp)
 
+
+loss = vmap(_loss, in_axes=(None, None, 0), out_axes=0)
 
 val_grad_loss = value_and_grad(loss, argnums=0)
