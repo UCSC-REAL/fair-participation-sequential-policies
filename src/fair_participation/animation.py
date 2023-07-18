@@ -30,7 +30,7 @@ class Video:
             ax.cla()
     """
 
-    def __init__(self, title, fig, render_flag=True, fps=10):
+    def __init__(self, title, fig, render_flag=True, fps=15, dpi=100):
         self.video_file = title + ".mp4"
 
         # whether to actually do anything
@@ -42,11 +42,12 @@ class Video:
             )
 
         self.fig = fig
+        self.dpi = dpi
 
     def __enter__(self):
         if self.render_flag:
             # make file
-            self.writer.setup(self.fig, self.video_file, dpi=100)
+            self.writer.setup(self.fig, self.video_file, dpi=self.dpi)
 
         return self
 
@@ -66,7 +67,12 @@ class Video:
 
 class Viz(Video):
     def __init__(
-        self, title: str, env, method: Optional[str] = None, save_init=True, **kw
+        self,
+        title: str,
+        env,
+        method: Optional[str] = None,
+        save_init=True,
+        plot_kwargs: Optional[dict] = None,
     ):
         """
         problem:
@@ -77,26 +83,29 @@ class Viz(Video):
         self.title = title
         self.env = env
         self.method = method
+        if plot_kwargs is None:
+            plot_kwargs = dict()
 
         self.fig, (self.left, self.center, self.right) = plt.subplots(
             1, 3, figsize=(18, 6)
         )
 
         if method is not None:
-            super().__init__(f"{title}_{method}", self.fig, fps=15, dpi=100)
+            super().__init__(f"{title}_{method}", self.fig)
+        # TODO else?
 
-        # TODO why are we calling this twice
-        self.setup("left", "Group loss", **kw)
-        self.setup("center", "Group Participation Rates", **kw)
-        self.setup("right", "Loss and Disparity Surfaces", **kw)
-
-        if save_init:
-            self.fig.tight_layout()
-            savefig(self.fig, os.path.join("pdf", f"{self.title}_init.pdf"))
-            for loc in ("left", "center", "right"):
-                fig, _ = plt.subplots(1, 1, figsize=(6, 6))
-                self.setup(loc, self.title, **kw)
-                savefig(fig, os.path.join("pdf", f"{self.title}_{loc}.pdf"))
+        # # TODO why are we calling this twice
+        # self.setup("left", "Group Loss", **plot_kwargs)
+        # self.setup("center", "Group Participation Rates", **plot_kwargs)
+        # self.setup("right", "Loss and Disparity Surfaces", **plot_kwargs)
+        #
+        # if save_init:
+        #     self.fig.tight_layout()
+        #     savefig(self.fig, os.path.join("pdf", f"{self.title}_init.pdf"))
+        #     for loc in ("left", "center", "right"):
+        #         fig, _ = plt.subplots(1, 1, figsize=(6, 6))
+        #         self.setup(loc, self.title, **plot_kwargs)
+        #         savefig(fig, os.path.join("pdf", f"{self.title}_{loc}.pdf"))
 
     def __enter__(self):
         if self.method is not None:
@@ -114,14 +123,14 @@ class Viz(Video):
             "center": self.setup_center,
         }[loc](*args, **kwargs)
 
-    def setup_left(self, left, title, **kw):
+    def setup_left(self, title, **kw):
         ax = self.left
         # Plot achievable loss
         achievable_loss = self.env.achievable_loss
 
         ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
 
-        ax.plot(self.env.xs, self.env.ys, "black", label="Pareto Boundary")
+        ax.plot(*self.env.loss_hull.T, "black", label="Pareto Boundary")
 
         ax.set_xlim(-1, 0)
         ax.set_ylim(-1, 0)
@@ -142,8 +151,8 @@ class Viz(Video):
         )
         ax.annotate("$\\theta$", (-0.85, -0.1))
 
-        use_two_ticks_x(left)
-        use_two_ticks_y(left)
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
 
         lims = [
             [

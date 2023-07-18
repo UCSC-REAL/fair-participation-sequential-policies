@@ -19,6 +19,7 @@ def run_problems(problems: list[dict]) -> None:
 
     for problem in problems:
         simulate(**problem)
+        # TODO finish updating compare
         compare(problem, grad=False)
         # compare(problem, grad=True)
 
@@ -30,7 +31,7 @@ def main():
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_theta": 0.57 * np.pi / 2,
-            "viz_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, np.pi / 2]},
+            "plot_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, np.pi / 2]},
         },
         {
             "name": "Mobility",
@@ -42,13 +43,13 @@ def main():
             "name": "PublicCoverage",
             "rho_fns": localized_rho_fn(-0.7, 50),
             "init_theta": 0.6 * np.pi / 2,
-            "viz_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2]},
+            "plot_kwargs": {"theta_plot_range": [0.3 * np.pi / 2, 0.7 * np.pi / 2]},
         },
         {
             "name": "TravelTime",
             "rho_fns": localized_rho_fn(-0.58, 100),
             "init_theta": 0.51 * np.pi / 2,
-            "viz_kwargs": {"theta_plot_range": [0.4 * np.pi / 2, 0.6 * np.pi / 2]},
+            "plot_kwargs": {"theta_plot_range": [0.4 * np.pi / 2, 0.6 * np.pi / 2]},
         },
     ]
     for prob in base_problems:

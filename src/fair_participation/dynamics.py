@@ -5,7 +5,7 @@ from typing import Callable, Optional
 import jax.numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from tqdm import tqdm
+from tqdm import trange
 
 from fair_participation.animation import Viz
 from fair_participation.base_logger import logger
@@ -29,7 +29,7 @@ def simulate(
     num_steps: int = 100,
     init_theta: float = 0.6 * np.pi / 2,
     jit: bool = False,  # TODO why not always true?
-    viz_kwargs: Optional[dict] = None,
+    plot_kwargs: Optional[dict] = None,
 ):
     """
     TODO
@@ -41,7 +41,7 @@ def simulate(
     :param num_steps:
     :param init_theta:
     :param jit:
-    :param viz_kwargs:
+    :param plot_kwargs:
     """
 
     logger.info(f"Simulating {name}.")
@@ -72,18 +72,14 @@ def simulate(
         jit=jit,
     )
 
-    # save initial figures
-    # save video if method is defined
-    if viz_kwargs is None:
-        viz_kwargs = dict()
-    # TODO should update this with fast version
-    with Viz(name, env, method, save_init, viz_kwargs) as viz:
+    # TODO update this with fast version
+    with Viz(name, env, method, save_init, plot_kwargs) as viz:
         if method is not None:
             filename = os.path.join("npz", f"{name}_{method}.npz")
             try:  # load cached values
                 # TODO load/save as npz
                 npz = np.load(filename)
-                for i in tqdm(range(100)):
+                for i in trange(100):
                     pars = {
                         par: npz[par][i] for par in ("lambdas", "thetas", "loss", "rho")
                     }
@@ -92,7 +88,7 @@ def simulate(
                     )
 
             except FileNotFoundError:
-                for _ in tqdm(range(num_steps)):
+                for _ in trange(num_steps):
                     state = env.update()
                     viz.render_frame(render_pars=state)
                 # TODO unpack history
