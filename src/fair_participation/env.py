@@ -37,7 +37,7 @@ class Env:
         self.init_theta = init_theta
 
         loss_hull, self.ts = parameterize_convex_hull(achievable_loss)
-        self.vg_loss_fn = value_grad_loss(
+        self.vg_loss_fn = value_and_grad_loss(
             self.ts, loss_hull
         )  # theta -> vec(loss), vec(grad_loss)
         self.vg_rho_fn = value_and_grad_rho(

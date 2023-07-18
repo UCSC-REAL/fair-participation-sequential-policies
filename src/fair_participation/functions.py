@@ -1,7 +1,7 @@
 from typing import Callable
 
 import jax.numpy as jnp
-from jax import Array, vmap, value_and_grad
+from jax import Array, vmap, value_and_grad, jacfwd
 from jax.typing import ArrayLike
 
 
@@ -42,7 +42,7 @@ def value_and_grad_loss(ts: ArrayLike, losses: ArrayLike) -> Callable:
         return jnp.interp(theta, ts, losses_, left="extrapolate", right="extrapolate")
 
     _vg_loss = value_and_grad(_loss, argnums=0)  # value and grad for a single group
-    vg_loss = vmap(_vg_loss, in_axes=(1, 1))  # value and grad for all groups
+    vg_loss = vmap(_vg_loss, in_axes=(None, 1))  # value and grad for all groups
 
     def _vg_loss_all(theta: float) -> tuple[Array, Array]:
         return vg_loss(theta, losses)
@@ -51,10 +51,10 @@ def value_and_grad_loss(ts: ArrayLike, losses: ArrayLike) -> Callable:
 
 
 def value_and_grad_rho(rho_fns: tuple[Callable]) -> Callable:
-    # TODO this probably isn't great
-    val_grads = [value_and_grad(rho_fn) for rho_fn in rho_fns]
+    val_grads = [value_and_grad(rho) for rho in rho_fns]
 
-    def _vg_rho(losses: ArrayLike) -> Array:
-        return jnp.array([vg(losses) for vg in val_grads])
+    def _vg_rho(losses: ArrayLike) -> tuple[Array, Array]:
+        vg = jnp.array([vg(loss) for vg, loss in zip(val_grads, losses)])
+        return vg[:, 0], vg[:, 1]
 
     return _vg_rho
