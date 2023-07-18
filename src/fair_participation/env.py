@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 import jax.numpy as jnp
 from jax.typing import ArrayLike
-from jax import grad, value_and_grad, vmap
+from jax import value_and_grad, vmap
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
 
@@ -77,8 +77,10 @@ class Env:
             state["lambda"], state["theta"] = self.state_update_fn(
                 state["theta"], state["loss"], state["rho"], self.group_sizes
             )
-        state["loss"], state["grad_loss"] = val_grad_loss(
-            state["theta"], self.loss_hull, self.ts
+        state["loss"], state["grad_loss"] = value_grad_loss(
+            state["theta"],
+            self.ts,
+            self.loss_hull,
         )
         state["rho"] = jnp.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
         state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
@@ -87,16 +89,8 @@ class Env:
         return state
 
 
+# value and grad wrt a single group
+_value_grad_loss = value_and_grad(jnp.interp, argnums=0)
 # TODO jit
-def _loss(
-    theta: float,
-    ts: ArrayLike,
-    xp: ArrayLike,
-) -> ArrayLike:
-    """TODO"""
-    return jnp.interp(theta, ts, xp)
-
-
-loss = vmap(_loss, in_axes=(None, None, 0), out_axes=0)
-
-val_grad_loss = value_and_grad(loss, argnums=0)
+# value and grad wrt all groups - vmap over last axis
+value_grad_loss = vmap(_value_grad_loss, (None, None, 1))
