@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 import jax.numpy as jnp
 from jax.typing import ArrayLike
-from jax import value_and_grad, vmap
+from jax import value_and_grad, vmap, Array
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
 
@@ -43,7 +43,7 @@ class Env:
         :return:
         """
         self.achievable_loss = achievable_loss
-        self.rho_fns = rho_fns
+        self.rho_fns = rho_fns  # rho(loss) -> participation
         self.group_sizes = group_sizes
         self.eta = eta
         self.init_theta = init_theta
@@ -89,8 +89,20 @@ class Env:
         return state
 
 
-# value and grad wrt a single group
-_value_grad_loss = value_and_grad(jnp.interp, argnums=0)
+def _loss(theta: float, ts: ArrayLike, loss: ArrayLike) -> Array:
+    """
+    Loss for a single group.
+    :param theta:
+    :param ts:
+    :param loss:
+    :return:
+    """
+    # Use 'extrapolate' to avoid zero gradient issue
+    return jnp.interp(theta, ts, loss, left="extrapolate", right="extrapolate")
+
+
+# value and grad_theta wrt a single group
+_value_grad_loss = value_and_grad(_loss, argnums=0)
 # TODO jit
-# value and grad wrt all groups - vmap over last axis
+# value and grad_grad_theta wrt all groups - vmap over last axis
 value_grad_loss = vmap(_value_grad_loss, (None, None, 1))

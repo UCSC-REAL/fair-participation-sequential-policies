@@ -16,14 +16,11 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
     if d != 2:
         raise NotImplementedError("Only d=2 supported.")
     # convex hull vertices dominate suboptimal points
-    # TODO why do we need to check points? shouldn't the hull just be the vertices?
+    # TODO why wpi;d we need to check points? shouldn't the hull just be the vertices?
     hull = ConvexHull(points)
-    vertices = [points[ix] for ix in hull.vertices]
-    for vertex in vertices:
-        points = points[~jnp.all(vertex > points, axis=1)]
-    # sorts by increasing x1, then increasing x2
+    points = jnp.array([points[ix] for ix in hull.vertices])
     points = points[jnp.lexsort(points.T)]
-    # Make ts 0 to 1 ccw
+    # Make ts 0 to 1 ccw. Not smooth with interpolation, but good enough?
     angle: ArrayLike = jnp.arctan2(points[:, 1], points[:, 0])
     ts = -(angle / (jnp.pi / 2) + 1)
     return points, ts
