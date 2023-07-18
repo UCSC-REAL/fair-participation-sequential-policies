@@ -54,13 +54,14 @@ def simulate(
         achievable_loss = achievable_losses(name)
         logger.info(f"Saving achievable loss to {filename}.")
         np.save(filename, achievable_loss)
+    n_groups = achievable_loss.shape[1]
 
     if callable(rho_fns):
         # Use same rho for all groups
-        rho_fns = tuple(rho_fns for _ in range(len(achievable_loss)))
+        rho_fns = tuple(rho_fns for _ in range(n_groups))
 
     # Assume even group sizes for now
-    group_sizes = np.ones_like(achievable_loss) / len(achievable_loss)
+    group_sizes = np.ones(n_groups) / n_groups
 
     env = Env(
         achievable_loss,
