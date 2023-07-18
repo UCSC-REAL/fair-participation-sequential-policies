@@ -64,16 +64,15 @@ class Env:
         Updates state and returns a dictionary of the new state.
         :return:
         """
+        # TODO have some off-by-one stuff here
         state = dict(**self.state)  # unpacks previous state
         if len(self.history) > 0:
             state["lambda"], state["theta"] = self.state_update_fn(state["theta"])
-        state["loss"], state["grad_loss"] = value_grad_loss(
+        state["loss"], state["grad_loss"] = self.vg_loss_fn(
             state["theta"],
-            self.ts,
-            self.loss_hull,
         )
-        state["rho"] = jnp.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
+        state["rho"] = self.vg_rho_fn(state["loss"])[0]
         state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
-        state["total_disparity"] = disparity_fn(state["rho"])
+        # state["total_disparity"] = disparity_fn(state["rho"])
         self.history.append(state)
         return state

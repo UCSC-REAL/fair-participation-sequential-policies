@@ -1,6 +1,6 @@
 from typing import Callable
 
-from jax import grad, vmap, Array, value_and_grad
+from jax import Array, value_and_grad
 import jax.numpy as jnp
 from numpy.typing import ArrayLike
 
@@ -16,9 +16,9 @@ def inverse_disparity_curve():
 
 
 rho_updates = {
-    "rrm": lambda rho, grad_rho, loss: rho,
-    "lpu": lambda rho, grad_rho, loss: rho + grad_rho * loss,
-    "fair_lpu": lambda rho, grad_rho, loss: rho + grad_rho * loss,  # TODO check
+    "RRM": lambda rho, grad_rho, loss: rho,
+    "LPU": lambda rho, grad_rho, loss: rho + grad_rho * loss,
+    "FairLPU": lambda rho, grad_rho, loss: rho + grad_rho * loss,  # TODO check
 }
 
 
@@ -35,9 +35,9 @@ def fairness_disparity(rho: ArrayLike) -> Array:
 
 
 disparity_fns = {
-    "rrm": lambda rho: 0.0,
-    "lpu": lambda rho: 0.0,
-    "fair_lpu": fairness_disparity,
+    "RRM": lambda rho: 0.0,
+    "LPU": lambda rho: 0.0,
+    "FairLPU": fairness_disparity,
 }
 # grad (bool) => fn
 qp_solve_fn = {
@@ -58,17 +58,18 @@ def step(
 
     # If method is "perf" or "rrm", then g and lambda_ are zero (no fairness constraint)
     disparity_fn = disparity_fns[method]  # vector -> scalar
+    # TODO need to incorporate ths part
     rho_hat_fn = rho_updates[method]
 
     def total_loss(loss: ArrayLike) -> Array:
         rho, _ = value_and_grad_rho_fn(loss)
         return jnp.sum(loss * rho * group_sizes)
 
-    vg_total_loss = value_and_grad(total_loss)
+    vg_total_loss = value_and_grad(total_loss, has_aux=True)
 
     def disparity_loss_f(loss: ArrayLike) -> Array:
-        rho = value_and_grad_rho_fn(loss)
-        return disparity_fn(rho(loss))
+        rho, _ = value_and_grad_rho_fn(loss)
+        return disparity_fn(rho)
 
     vg_disparity_loss = value_and_grad(disparity_loss_f)
 
@@ -92,7 +93,7 @@ def step(
             * jnp.dot(grad_loss, grad_disparity_loss)
             / jnp.linalg.norm(grad_loss) ** 2
         )
-
+        # TODO FIX make sure this isnt zero
         d = jnp.dot(rho_hat * proj_grad_disparity) / jnp.sum(proj_grad_disparity**2)
         lambda_ = jnp.maximum(disparity - d, 0)
         return loss, rho_hat, proj_grad_disparity, lambda_
