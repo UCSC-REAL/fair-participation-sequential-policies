@@ -70,7 +70,6 @@ def simulate(
         eta=eta,
         init_theta=init_theta,
         update_method=method,
-        jit=jit,
     )
 
     # TODO update this with fast version
@@ -95,26 +94,3 @@ def simulate(
                 # TODO unpack history
                 history = pd.DataFrame(env.history).to_dict("series", index=False)
                 np.savez(filename, **pars)
-
-
-def logistic(x):
-    return 1 / (1 + np.exp(-x))
-
-
-def localized_rho_fn(
-    sensitivity: float, loss: float
-) -> Callable[[ArrayLike], ArrayLike]:
-    """
-    Returns a callable rho function centered at `loss`.
-    :param sensitivity: Sensitivity of the rho function.
-    :param loss: Center of the rho function.
-    :return: Callable
-    """
-
-    def localized_rho(center: ArrayLike) -> ArrayLike:
-        """
-        Monotonically decreasing. Not concave.
-        """
-        return 1 - np.clip(logistic((loss - center) * sensitivity), 0, 1)
-
-    return localized_rho
