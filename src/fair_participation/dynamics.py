@@ -8,9 +8,9 @@ from numpy.typing import ArrayLike
 from tqdm import tqdm
 
 from fair_participation.animation import Viz
-from fair_participation.base_logger import log
+from fair_participation.base_logger import logger
 from fair_participation.env import Env
-from fair_participation.folktasks import get_achievable_loss
+from fair_participation.folktasks import achievable_losses
 
 
 def concave_rho_fn(loss):
@@ -43,19 +43,21 @@ def simulate(
     :param jit:
     :param viz_kwargs:
     """
+
+    logger.info(f"Simulating {name}.")
     filename = os.path.join("losses", f"{name}.npy")
     try:  # load cached values
         achievable_loss = np.load(filename)
-        log.info(f"Loaded cached achievable loss from {filename}.")
+        logger.info(f"Loaded cached achievable loss from {filename}.")
     except FileNotFoundError:
-        log.info("Calculating achievable loss...")
-        achievable_loss = get_achievable_loss(name)
-        log.info(f"Saving {filename}")
+        logger.info("Computing achievable loss.")
+        achievable_loss = achievable_losses(name)
+        logger.info(f"Saving achievable loss to {filename}.")
         np.save(filename, achievable_loss)
 
     if callable(rho_fns):
-        # Use same rho for both groups
-        rho_fns = (rho_fns, rho_fns)
+        # Use same rho for all groups
+        rho_fns = tuple(rho_fns for _ in range(len(achievable_loss)))
 
     env = Env(
         achievable_loss,

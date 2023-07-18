@@ -8,3 +8,5 @@ log.basicConfig(
     level=logging.INFO,
     datefmt="%H:%M:%S",
 )
+
+logger = log.getLogger(__name__)

@@ -7,13 +7,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 from folktables import ACSDataSource
 from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from fair_participation.acs import problems
 from fair_participation.utils import rng_old
-from fair_participation.base_logger import log
+from fair_participation.base_logger import logger
 
 
-def get_achievable_loss(
+def achievable_losses(
     problem_name: str,
     n_samples: int = 100,
 ) -> NDArray:
@@ -43,17 +44,12 @@ def get_achievable_loss(
     ]
 
     achievable_loss = []
-    for sample_weight in tqdm(sample_weights):
-        pipeline.fit(x, y, logisticregression__sample_weight=sample_weight)
-        y_pred = pipeline.predict(x)
-        # loss = negative accuracies per group
-        achievable_loss.append(
-            [-accuracy_score(y[~g], y_pred[~g]), -accuracy_score(y[g], y_pred[g])]
-        )
+    with logging_redirect_tqdm():
+        for sample_weight in tqdm(sample_weights):
+            pipeline.fit(x, y, logisticregression__sample_weight=sample_weight)
+            y_pred = pipeline.predict(x)
+            # loss = negative accuracies per group
+            achievable_loss.append(
+                [-accuracy_score(y[~g], y_pred[~g]), -accuracy_score(y[g], y_pred[g])]
+            )
     return np.array(achievable_loss)
-
-
-if __name__ == "__main__":
-    for name in problems.keys():
-        log.info(f"Problem: {name}")
-        get_achievable_loss(name)

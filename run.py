@@ -3,7 +3,7 @@ import numpy as np
 
 from fair_participation.dynamics import localized_rho_fn, simulate
 from fair_participation.plotting import compare, compare_2
-from fair_participation.base_logger import log
+from fair_participation.base_logger import logger
 
 
 def run_problems(problems: list[dict]) -> None:
@@ -18,7 +18,6 @@ def run_problems(problems: list[dict]) -> None:
         os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
-        log.info(f"Running problem: {problem['name']}")
         simulate(**problem)
         compare(problem, grad=False)
         # compare(problem, grad=True)
