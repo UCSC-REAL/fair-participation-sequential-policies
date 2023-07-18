@@ -1,6 +1,7 @@
 import os
 from typing import Callable, Optional
 
+
 import jax.numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -19,7 +20,7 @@ def concave_rho_fn(loss):
     return 1 - 1 / (1 - loss * 2)
 
 
-def run_problem(
+def simulate(
     name: str = "",
     rho_fns: Optional[Callable | tuple[Callable]] = concave_rho_fn,
     method: Optional[str] = None,
@@ -101,7 +102,14 @@ def logistic(x):
 def localized_rho_fn(
     sensitivity: float, loss: float
 ) -> Callable[[ArrayLike], ArrayLike]:
-    def localized_rho(center: ArrayLike):
+    """
+    Returns a callable rho function centered at `loss`.
+    :param sensitivity: Sensitivity of the rho function.
+    :param loss: Center of the rho function.
+    :return: Callable
+    """
+
+    def localized_rho(center: ArrayLike) -> ArrayLike:
         """
         Monotonically decreasing. Not concave.
         """

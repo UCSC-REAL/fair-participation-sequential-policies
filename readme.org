@@ -5,7 +5,7 @@
 TODO: other datasets
 
 - dual.py generates publication figure that explains how RRM can fail
-- main.py generates three-panel figures of losses, rhos, and loss-surface,
+- run_problems.py generates three-panel figures of losses, rhos, and loss-surface,
           and how these values update according to the proposed methods
   + RRM
   + RRM with rho_hat (to be performatively optimal)

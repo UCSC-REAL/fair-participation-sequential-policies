@@ -1,31 +1,31 @@
 import os
 import numpy as np
 
-from fair_participation.dynamics import localized_rho_fn, run_problem
+from fair_participation.dynamics import localized_rho_fn, simulate
 from fair_participation.plotting import compare, compare_2
 from fair_participation.base_logger import log
 
 
-def main(problems: list[dict]) -> None:
+def run_problems(problems: list[dict]) -> None:
     """
     TODO
     :param problems:
     :return:
     """
-    # TODO parameterize clearing directories
+    # TODO add a flag to clear directories
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npz", "pdf"):
         os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
         log.info(f"Running problem: {problem['name']}")
-        run_problem(**problem)
+        simulate(**problem)
         compare(problem, grad=False)
         # compare(problem, grad=True)
 
 
-if __name__ == "__main__":
-    all_problems = []
+def main():
+    problems = []
     base_problems = [
         {
             "name": "Income",
@@ -54,11 +54,11 @@ if __name__ == "__main__":
     ]
     for prob in base_problems:
         for method in ("RRM", "LPU", "Fair"):
-            all_problems.append(dict(**prob, method=method, save_init=False))
-            # all_problems.append(
+            problems.append(dict(**prob, method=method, save_init=False))
+            # problems.append(
             #     dict(**prob, method=f"{method}_grad", jit=True)
             # )
-        # all_problems.append(
+        # problems.append(
         #     dict(
         #         **prob,
         #         save_init=True,
@@ -68,4 +68,8 @@ if __name__ == "__main__":
         #         t_init=prob["init_theta"],
         #     )
         # )
-    main(all_problems)
+    run_problems(problems)
+
+
+if __name__ == "__main__":
+    main()
