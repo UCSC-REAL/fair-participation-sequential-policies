@@ -59,10 +59,13 @@ def simulate(
         # Use same rho for all groups
         rho_fns = tuple(rho_fns for _ in range(len(achievable_loss)))
 
+    # Assume even group sizes for now
+    group_sizes = np.ones_like(achievable_loss) / len(achievable_loss)
+
     env = Env(
         achievable_loss,
         rho_fns=rho_fns,
-        group_sizes=np.array([0.5, 0.5]),
+        group_sizes=group_sizes,
         eta=eta,
         init_theta=init_theta,
         update_method=method,

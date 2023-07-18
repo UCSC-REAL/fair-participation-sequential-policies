@@ -1,12 +1,12 @@
 from typing import Optional, Callable
 
+from numpy.typing import ArrayLike
+import jax.numpy as jnp
 from jax import grad, value_and_grad
-import jax.numpy as np  # TODO FIX
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
-from numpy.typing import ArrayLike
 
-from fair_participation.base_logger import log
+from fair_participation.base_logger import logger
 from fair_participation.opt import get_hull
 from fair_participation.updates import step, disparity_fn
 
@@ -32,10 +32,15 @@ class Env:
         jit: bool = True,  # TODO remove or bake in
     ):
         """
-        achievable loss: an array of loss acheivable with fixed policies.
-        rho_fns: two functions (one per group) that maps group loss -> participation.
-        group_sizes: array of relative group sizes.
-        eta: learning rate
+        TODO
+        :param achievable_loss: an array of losses achievable with fixed policies.
+        :param rho_fns: two functions (one per group) that maps group loss -> participation.
+        :param group_sizes: array of relative group sizes.
+        :param eta: learning rate
+        :param init_theta:
+        :param update_method:
+        :param jit:
+        :return:
         """
         self.achievable_loss = achievable_loss
         self.rho_fns = rho_fns
@@ -75,8 +80,8 @@ class Env:
         state["loss"], state["grad_loss"] = val_grad_loss(
             state["theta"], self.xs, self.ys, self.ts
         )
-        state["rho"] = np.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
-        state["total_loss"] = np.sum(state["loss"] * state["rho"] * self.group_sizes)
+        state["rho"] = jnp.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
+        state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
         state["total_disparity"] = disparity_fn(state["rho"])
         self.history.append(state)
         return state
@@ -89,9 +94,9 @@ def loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> ArrayLike
     theta [0, 1] -> group_specific loss
     """
 
-    x = np.interp(theta, ts, xs)
-    y = np.interp(theta, ts, ys)
-    return np.array([x, y])
+    x = jnp.interp(theta, ts, xs)
+    y = jnp.interp(theta, ts, ys)
+    return jnp.array([x, y])
 
 
 val_grad_loss = value_and_grad(loss, argnums=0)
