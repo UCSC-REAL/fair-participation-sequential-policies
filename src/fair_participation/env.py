@@ -1,13 +1,13 @@
 from typing import Optional, Callable
 
-from numpy.typing import ArrayLike
 import jax.numpy as jnp
+from jax.typing import ArrayLike
 from jax import grad, value_and_grad
 from jaxlib.mlir import jax  # what is this TODO
 import jax.scipy.optimize
 
 from fair_participation.base_logger import logger
-from fair_participation.opt import get_hull
+from fair_participation.opt import parameterize_convex_hull
 from fair_participation.updates import step, disparity_fn
 
 
@@ -48,7 +48,7 @@ class Env:
         self.eta = eta
         self.init_theta = init_theta
 
-        self.hull, self.xs, self.ys, self.ts = get_hull(achievable_loss)
+        self.hull, self.ts = parameterize_convex_hull(achievable_loss)
         self.grad_rho_fns = [
             jax.jacfwd(rho_fn) for rho_fn in rho_fns
         ]  # TODO might have to change this
