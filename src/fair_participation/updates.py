@@ -1,7 +1,7 @@
 from typing import Callable
 
 from jax import grad
-import jax.numpy as np
+import jax.numpy as jnp
 from numpy.typing import ArrayLike
 
 from fair_participation.base_logger import log
@@ -10,15 +10,15 @@ from fair_participation.opt import solve_qp, direct_qp_step
 
 # TODO why is this here?
 def inverse_disparity_curve():
-    rho_1 = np.linspace(0, 1, 100)
-    rho_2 = np.sqrt(4 * 0.01) + rho_1
+    rho_1 = jjnp.linspace(0, 1, 100)
+    rho_2 = jjnp.sqrt(4 * 0.01) + rho_1
     return rho_1, rho_2
 
 
-# TODO maybe encapsulate this out
-def get_tangent(self, theta):
-    i = np.sum(self.ts < theta) - 1
-    return np.array([self.xs[i + 1] - self.xs[i], self.ys[i + 1] - self.ys[i]])
+# # TODO maybe encapsulate this out
+# def get_tangent(self, theta):
+#     i = jnp.sum(self.ts < theta) - 1
+#     return jnp.array([self.xs[i + 1] - self.xs[i], self.ys[i + 1] - self.ys[i]])
 
 
 rho_updates = {
@@ -37,7 +37,7 @@ def disparity_fn(rho: ArrayLike):
     Args:
         rho: array of participation rates indexed by g
     """
-    return np.var(rho) - 0.01
+    return jnp.var(rho) - 0.01
 
 
 grad_disparity_fn = grad(disparity_fn)
@@ -81,14 +81,14 @@ def step(
         tangent = get_tangent(theta)
         proj_grad_disparity = (
             tangent
-            * np.dot(tangent, grad_disparity * grad_rho)
-            / np.linalg.norm(tangent) ** 2
+            * jnp.dot(tangent, grad_disparity * grad_rho)
+            / jnp.linalg.norm(tangent) ** 2
         )
         # If type_ is "perf" or "rrm", then g and lambda_ are zero (no fairness constraint)
         disparity = disparity_fns[type_](rho)
 
-        d = np.dot(rho_hat * proj_grad_disparity) / np.sum(proj_grad_disparity**2)
-        lambda_ = np.maximum(disparity - d, 0)
+        d = jnp.dot(rho_hat * proj_grad_disparity) / jnp.sum(proj_grad_disparity**2)
+        lambda_ = jnp.maximum(disparity - d, 0)
 
         # solve_qp(x,y) minimizes 1/2 *||x - loss||^2 + eta * y'x
         return lambda_, qp_solve_fn[quad](

@@ -91,7 +91,7 @@ def simulate(
             except FileNotFoundError:
                 for _ in trange(num_steps):
                     state = env.update()
-                    viz.render_frame(render_pars=state)
+                    # viz.render_frame(render_pars=state)
                 # TODO unpack history
                 history = pd.DataFrame(env.history).to_dict("series", index=False)
                 np.savez(filename, **pars)
