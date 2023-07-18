@@ -48,12 +48,12 @@ class Env:
         self.eta = eta
         self.init_theta = init_theta
 
-        self.hull, self.ts = parameterize_convex_hull(achievable_loss)
+        self.loss_hull, self.ts = parameterize_convex_hull(achievable_loss)
         self.grad_rho_fns = [
             jax.jacfwd(rho_fn) for rho_fn in rho_fns
         ]  # TODO might have to change this
         self.state = {
-            "lambda": 0,
+            "lambda": 0.0,
             "theta": init_theta,
             "loss": None,
             "rho": None,
@@ -72,13 +72,13 @@ class Env:
         # TODO might have to factor stuff out to make this jittable
         :return:
         """
-        state = dict(**self.state)  # unpacks previous
+        state = dict(**self.state)  # unpacks previous state
         if len(self.history) > 0:
             state["lambda"], state["theta"] = self.state_update_fn(
                 state["theta"], state["loss"], state["rho"], self.group_sizes
             )
         state["loss"], state["grad_loss"] = val_grad_loss(
-            state["theta"], self.xs, self.ys, self.ts
+            state["theta"], self.loss_hull, self.ts
         )
         state["rho"] = jnp.array([r(l) for r, l in zip(self.rho_fns, state["loss"])])
         state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
@@ -88,12 +88,14 @@ class Env:
 
 
 # TODO jit
-def loss(theta: float, xs: ArrayLike, ys: ArrayLike, ts: ArrayLike) -> ArrayLike:
+def loss(theta: float, hull: ArrayLike, ts: ArrayLike) -> ArrayLike:
     """
     TODO
     theta [0, 1] -> group_specific loss
     """
-
+    # TODO see if you actually need this
+    xs = hull[:, 0]
+    ys = hull[:, 1]
     x = jnp.interp(theta, ts, xs)
     y = jnp.interp(theta, ts, ys)
     return jnp.array([x, y])

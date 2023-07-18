@@ -10,7 +10,7 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
     """
     TODO
     :param points:
-    :return:
+    :return: n x 2 array
     """
     n, d = points.shape
     if d != 2:
