@@ -4,6 +4,7 @@ from typing import Callable, Optional
 
 import jax.numpy as np
 import pandas as pd
+from numpy.lib.npyio import NpzFile
 from numpy.typing import ArrayLike
 from tqdm import trange
 
@@ -77,20 +78,20 @@ def simulate(
         if method is not None:
             filename = os.path.join("npz", f"{name}_{method}.npz")
             try:  # load cached values
-                # TODO load/save as npz
-                npz = np.load(filename)
-                for i in trange(100):
-                    pars = {
-                        par: npz[par][i] for par in ("lambdas", "thetas", "loss", "rho")
-                    }
-                    viz.render_frame(
-                        render_pars=pars,
-                    )
+                with np.load(filename) as npz:
+                    for k in trange(npz["loss"].shape[0]):
+                        # TODO update this to what you need
+                        pars = {f: npz[f][k] for f in npz.files}
+                        # viz.render_frame(
+                        #     render_pars=pars,
+                        # )
 
             except FileNotFoundError:
                 for _ in trange(num_steps):
                     state = env.update()
                     # viz.render_frame(render_pars=state)
-                # TODO unpack history
-                history = pd.DataFrame(env.history).to_dict("series", index=False)
-                np.savez(filename, **pars)
+                df = pd.DataFrame(env.history)
+                data = dict()
+                for col in df.columns:
+                    data[col] = np.array(df[col].to_list())
+                np.savez(filename, **data)

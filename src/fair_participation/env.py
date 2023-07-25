@@ -7,7 +7,7 @@ from jaxlib.mlir import jax  # what is this TODO
 
 from fair_participation.base_logger import logger
 from fair_participation.opt import parameterize_convex_hull
-from fair_participation.updates import step
+from fair_participation.updates import rrm_step, rrm_grad_step
 from fair_participation.functions import value_and_grad_loss, value_and_grad_rho
 
 
@@ -45,34 +45,42 @@ class Env:
         )  # vec(loss) -> vec(rho), vec(grad_rho)
 
         self.state = {
-            "lambda": 0.0,
-            "theta": init_theta,
-            "loss": None,
+            # "lambda": 0.0,
+            # "theta": init_theta,
+            "loss": self.vg_loss_fn(init_theta)[0],
             "rho": None,
             "total_loss": None,
             "total_disparity": None,
         }
         self.history = []
-        if update_method is None:
+
+        if update_method == "RRM":
+            self.state_update_fn = rrm_step(
+                self.vg_rho_fn,
+                self.group_sizes,
+                loss_hull,
+            )
+        elif update_method == "RRM_grad":
+            self.state_update_fn = rrm_grad_step(
+                self.vg_rho_fn, self.group_sizes, loss_hull, self.eta
+            )
+
+        else:
             raise NotImplementedError
-        self.state_update_fn = step(
-            update_method, self.vg_loss_fn, self.vg_rho_fn, self.group_sizes, self.eta
-        )
 
     def update(self) -> dict:
         """
         Updates state and returns a dictionary of the new state.
         :return:
         """
-        # TODO have some off-by-one stuff here
+        # TODO forget about theta for now
         state = dict(**self.state)  # unpacks previous state
         if len(self.history) > 0:
-            state["lambda"], state["theta"] = self.state_update_fn(state["theta"])
-        state["loss"], state["grad_loss"] = self.vg_loss_fn(
-            state["theta"],
-        )
+            state["loss"] = self.state_update_fn(state["loss"])
         state["rho"] = self.vg_rho_fn(state["loss"])[0]
+        # TODO maybe export this with state
         state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
         # state["total_disparity"] = disparity_fn(state["rho"])
         self.history.append(state)
+
         return state

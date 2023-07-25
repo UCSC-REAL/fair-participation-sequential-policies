@@ -21,12 +21,13 @@ def run_problems(problems: list[dict]) -> None:
     for problem in problems:
         simulate(**problem)
         # TODO finish updating compare
-        compare(problem, grad=False)
+        # compare(problem, grad=False)
         # compare(problem, grad=True)
 
 
 def main():
     problems = []
+    # TODO rename rho to base_rho or something
     base_problems = [
         {
             "name": "Income",
@@ -54,7 +55,7 @@ def main():
         },
     ]
     for prob in base_problems:
-        for method in ("RRM", "LPU", "Fair"):
+        for method in ("RRM_grad", "RRM", "LPU", "Fair"):
             problems.append(dict(**prob, method=method, save_init=False))
             # problems.append(
             #     dict(**prob, method=f"{method}_grad", jit=True)

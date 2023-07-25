@@ -1,111 +1,108 @@
-from typing import Callable
+from typing import Any, Callable
 
-from jax import Array, value_and_grad
 import jax.numpy as jnp
-from numpy.typing import ArrayLike
+from jax import value_and_grad, Array
+from jax.typing import ArrayLike, Array
 
-from fair_participation.base_logger import log
-from fair_participation.opt import solve_qp, direct_qp_step
-
-
-# TODO why is this here?
-def inverse_disparity_curve():
-    rho_1 = jnp.linspace(0, 1, 100)
-    rho_2 = jnp.sqrt(4 * 0.01) + rho_1
-    return rho_1, rho_2
+from fair_participation.opt import solve_rrm_qp
 
 
-rho_updates = {
-    "RRM": lambda rho, grad_rho, loss: rho,
-    "LPU": lambda rho, grad_rho, loss: rho + grad_rho * loss,
-    "FairLPU": lambda rho, grad_rho, loss: rho + grad_rho * loss,  # TODO check
-}
-
-
-def fairness_disparity(rho: ArrayLike) -> Array:
+def fairness_disparity(rho: ArrayLike) -> Any:
     """
-    Assumed to be symmetric
+    Assumed to be symmetric.
 
-    Get violation of fairness constraint
-
-    Args:
-        rho: array of participation rates indexed by g
+    :param: rho: array of participation rates indexed by g
+    :return: violation of fairness constraint
     """
     return jnp.var(rho) - 0.01
 
 
-disparity_fns = {
-    "RRM": lambda rho: 0.0,
-    "LPU": lambda rho: 0.0,
-    "FairLPU": fairness_disparity,
-}
+# disparity_fns = {
+#     "RRM": lambda rho: 0.0,
+#     "LPU": lambda rho: 0.0,
+#     "FairLPU": fairness_disparity,
+# }
 # grad (bool) => fn
-qp_solve_fn = {
-    False: solve_qp,
-    True: direct_qp_step,
-}
+# qp_solve_fn = {
+#     False: solve_qp,
+#     True: direct_qp_step,
+# }
 
 
-def step(
-    method: str,
-    value_and_grad_loss_fn: Callable,  # scalar -> (vector, vector)
+def create_total_augmented_loss(
     value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
     group_sizes: ArrayLike,
-    eta: float,
 ) -> Callable:
-    quad = not method.endswith("grad")
-    method = method.split("_")[0]
-
-    # If method is "perf" or "rrm", then g and lambda_ are zero (no fairness constraint)
-    disparity_fn = disparity_fns[method]  # vector -> scalar
-    # TODO need to incorporate ths part
-    rho_hat_fn = rho_updates[method]
-
-    def total_loss(loss: ArrayLike) -> Array:
-        rho, _ = value_and_grad_rho_fn(loss)
-        return jnp.sum(loss * rho * group_sizes)
-
-    vg_total_loss = value_and_grad(total_loss, has_aux=True)
-
-    def disparity_loss_f(loss: ArrayLike) -> Array:
-        rho, _ = value_and_grad_rho_fn(loss)
-        return disparity_fn(rho)
-
-    vg_disparity_loss = value_and_grad(disparity_loss_f)
-
-    # TODO should jit here (or above)
-    def _pre_solve(
-        theta: float,
-    ):
+    def total_augmented_loss(
+        loss: ArrayLike, loss_rho: ArrayLike, lambda_: float
+    ) -> Array:
         """
-        Perform update step with rho_hat
+        Maps loss [vector] x  loss_rho [vector] x lambda_ [scalar] -> total loss [scalar].
+        Can set lambda_ = 0 to have no fairness disparity involved.
+        :param loss:
+        :param loss_rho:
+        :param lambda_:
+        :return:
         """
-        loss, grad_loss = value_and_grad_loss_fn(theta)
-        # dL/dl = "rho_hat"
-        _, rho_hat = vg_total_loss(loss)
+        rho, _ = value_and_grad_rho_fn(loss_rho)
+        return jnp.sum(loss * rho * group_sizes) + lambda_ * fairness_disparity(
+            rho
+        )  # TODO uses second one
 
-        # dH/dl
-        disparity, grad_disparity_loss = vg_disparity_loss(loss)
+    # only takes gradient wrt first loss, not rho(loss)
+    vg_total_augmented_loss = value_and_grad(total_augmented_loss, argnums=0)
+    return vg_total_augmented_loss
 
-        # compute dH/dl projected onto tangent space of A = dloss/dtheta vector
-        proj_grad_disparity = (
-            grad_loss
-            * jnp.dot(grad_loss, grad_disparity_loss)
-            / jnp.linalg.norm(grad_loss) ** 2
-        )
-        # TODO FIX make sure this isnt zero
-        d = jnp.dot(rho_hat * proj_grad_disparity) / jnp.sum(proj_grad_disparity**2)
-        lambda_ = jnp.maximum(disparity - d, 0)
-        return loss, rho_hat, proj_grad_disparity, lambda_
 
-    def _step(theta: float) -> tuple[float, Array]:
-        loss, rho_hat, proj_grad_disparity, lambda_ = _pre_solve(theta)
-        # solve_qp(x,y) minimizes 1/2 *||x - loss||^2 + eta * y'x
-        return lambda_, qp_solve_fn[quad](
-            theta,
-            loss,
-            group_sizes * (rho_hat + lambda_ * proj_grad_disparity),
-            eta=eta,
-        )
+def rrm_step(
+    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
+    group_sizes: ArrayLike,
+    loss_hull: ArrayLike,
+):
+    """
+    Exactly solves the RRM problem:
+        min_l Sum_g (s_g * l_g * rho_g^t)
+        s.t. l in loss_hull
+
+    :param value_and_grad_rho_fn:
+    :param group_sizes:
+    :param loss_hull:
+    :return:
+    """
+
+    def _step(loss: ArrayLike) -> Array:
+        rho, _ = value_and_grad_rho_fn(loss)
+        return solve_rrm_qp(rho, group_sizes, loss_hull)
+
+    return _step
+
+
+def rrm_grad_step(
+    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
+    group_sizes: ArrayLike,
+    loss_hull: ArrayLike,
+    eta: float,
+):
+    """
+    Performs a single gradient step on the RRM problem:
+        l_{t+1} = l_t - eta * grad_x L(x, rho_t)|_{x=l_t}
+        # TODO need to project back onto loss_hull
+
+    :param value_and_grad_rho_fn:
+    :param group_sizes:
+    :param loss_hull:
+    :param eta:
+    :return:
+    """
+    vg_total_augmented_loss = create_total_augmented_loss(
+        value_and_grad_rho_fn, group_sizes
+    )
+
+    # TODO jit
+    def _step(loss: ArrayLike) -> Array:
+        rho, _ = value_and_grad_rho_fn(loss)
+        # Gets grad_x L(x, rho(l_t))|_{x=l_t}
+        _, g = vg_total_augmented_loss(loss, rho, 0.0)
+        return loss - eta * g
 
     return _step
