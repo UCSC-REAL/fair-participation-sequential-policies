@@ -55,21 +55,8 @@ def main():
         },
     ]
     for prob in base_problems:
-        for method in ("RRM_grad", "RRM", "LPU", "Fair"):
+        for method in ("RRM_grad", "RRM", "FairLPU", "FairLPU_grad"):
             problems.append(dict(**prob, method=method, save_init=False))
-            # problems.append(
-            #     dict(**prob, method=f"{method}_grad", jit=True)
-            # )
-        # problems.append(
-        #     dict(
-        #         **prob,
-        #         save_init=True,
-        #         t_rrm=np.load(f"npy/{prob['name']}_RRM_thetas.npy")[-1],
-        #         t_lpu=np.load(f"npy/{prob['name']}_LPU_thetas.npy")[-1],
-        #         t_fair=np.load(f"npy/{prob['name']}_Fair_thetas.npy")[-1],
-        #         t_init=prob["init_theta"],
-        #     )
-        # )
     run_problems(problems)
 
 

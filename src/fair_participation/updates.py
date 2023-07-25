@@ -1,57 +1,14 @@
-from typing import Any, Callable
+from typing import Callable
 
 import jax.numpy as jnp
-from jax import value_and_grad, Array
+from jax import jit, Array
 from jax.typing import ArrayLike, Array
 
-from fair_participation.opt import solve_rrm_qp
-
-
-def fairness_disparity(rho: ArrayLike) -> Any:
-    """
-    Assumed to be symmetric.
-
-    :param: rho: array of participation rates indexed by g
-    :return: violation of fairness constraint
-    """
-    return jnp.var(rho) - 0.01
-
-
-# disparity_fns = {
-#     "RRM": lambda rho: 0.0,
-#     "LPU": lambda rho: 0.0,
-#     "FairLPU": fairness_disparity,
-# }
-# grad (bool) => fn
-# qp_solve_fn = {
-#     False: solve_qp,
-#     True: direct_qp_step,
-# }
-
-
-def create_total_augmented_loss(
-    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
-    group_sizes: ArrayLike,
-) -> Callable:
-    def total_augmented_loss(
-        loss: ArrayLike, loss_rho: ArrayLike, lambda_: float
-    ) -> Array:
-        """
-        Maps loss [vector] x  loss_rho [vector] x lambda_ [scalar] -> total loss [scalar].
-        Can set lambda_ = 0 to have no fairness disparity involved.
-        :param loss:
-        :param loss_rho:
-        :param lambda_:
-        :return:
-        """
-        rho, _ = value_and_grad_rho_fn(loss_rho)
-        return jnp.sum(loss * rho * group_sizes) + lambda_ * fairness_disparity(
-            rho
-        )  # TODO uses second one
-
-    # only takes gradient wrt first loss, not rho(loss)
-    vg_total_augmented_loss = value_and_grad(total_augmented_loss, argnums=0)
-    return vg_total_augmented_loss
+from fair_participation.loss_functions import (
+    total_loss_fn,
+    fair_lpu_linear_fn,
+)
+from fair_participation.opt import solve_qp
 
 
 def rrm_step(
@@ -72,7 +29,8 @@ def rrm_step(
 
     def _step(loss: ArrayLike) -> Array:
         rho, _ = value_and_grad_rho_fn(loss)
-        return solve_rrm_qp(rho, group_sizes, loss_hull)
+        linear_term = rho * group_sizes
+        return solve_qp(rho, linear_term, loss_hull)
 
     return _step
 
@@ -86,7 +44,6 @@ def rrm_grad_step(
     """
     Performs a single gradient step on the RRM problem:
         l_{t+1} = l_t - eta * grad_x L(x, rho_t)|_{x=l_t}
-        # TODO need to project back onto loss_hull
 
     :param value_and_grad_rho_fn:
     :param group_sizes:
@@ -94,15 +51,48 @@ def rrm_grad_step(
     :param eta:
     :return:
     """
-    vg_total_augmented_loss = create_total_augmented_loss(
-        value_and_grad_rho_fn, group_sizes
-    )
+    vg_total_augmented_loss = total_loss_fn(value_and_grad_rho_fn, group_sizes)
 
-    # TODO jit
+    @jit
     def _step(loss: ArrayLike) -> Array:
         rho, _ = value_and_grad_rho_fn(loss)
-        # Gets grad_x L(x, rho(l_t))|_{x=l_t}
+        # gets grad_x L(x, rho(l_t))|_{x=l_t}
         _, g = vg_total_augmented_loss(loss, rho, 0.0)
         return loss - eta * g
+
+    # TODO could do this better - makes it unjittable
+    def _projected_step(loss: ArrayLike) -> Array:
+        new_loss = _step(loss)
+        # could do this with 2 points?
+        return solve_qp(jnp.zeros_like(new_loss), loss_hull, (1.0, new_loss))
+
+    return _projected_step
+
+
+def fair_lpu_step(
+    value_and_grad_loss_fn: Callable,  # scalar -> (vector, vector)
+    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
+    group_sizes: ArrayLike,
+    loss_hull: ArrayLike,
+    eta: float,
+):
+    """
+    Exactly solves the FairLPU problem QP.
+
+    :param value_and_grad_loss_fn:
+    :param value_and_grad_rho_fn:
+    :param group_sizes:
+    :param loss_hull:
+    :param eta:
+    :return:
+    """
+    fair_lpu_linear = jit(
+        fair_lpu_linear_fn(value_and_grad_loss_fn, value_and_grad_rho_fn, group_sizes)
+    )
+
+    def _step(loss: ArrayLike) -> Array:
+        linear_weights = fair_lpu_linear(loss)
+        quadratic = (1.0 / (2.0 * eta), loss)
+        return solve_qp(linear_weights, loss_hull, quadratic=quadratic)
 
     return _step

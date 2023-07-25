@@ -1,3 +1,5 @@
+from typing import Optional
+
 import jax.numpy as jnp
 from jax import Array
 from jax.typing import ArrayLike
@@ -27,12 +29,16 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
     return points, ts
 
 
-def solve_rrm_qp(rho: ArrayLike, group_sizes: ArrayLike, loss_hull: ArrayLike) -> Array:
+def solve_qp(
+    loss_weights: ArrayLike,
+    loss_hull: ArrayLike,
+    quadratic: Optional[tuple[float, ArrayLike]] = None,
+) -> Array:
     """
     Compute loss vector in conv(loss_hull) that solves RRM update equation.
-    :param group_sizes:
-    :param rho: current participation rates vector
+    :param loss_weights:
     :param loss_hull: convex hull of achievable loss vectors. Should be n x 2 array.
+    :param quadratic:
     :return:
     """
     n, d = loss_hull.shape
@@ -43,56 +49,15 @@ def solve_rrm_qp(rho: ArrayLike, group_sizes: ArrayLike, loss_hull: ArrayLike) -
         alpha >= 0.0,
         loss == alpha @ loss_hull,
     ]
+    obj = loss @ loss_weights
+    if quadratic is not None:
+        coeff, current_loss = quadratic
+        obj += coeff * cvx.sum_squares(loss - current_loss) ** 2
 
     prob = Problem(
-        Minimize(loss @ (rho * group_sizes)),
+        Minimize(obj),
         constraints,
     )
     prob.solve()
     # TODO do we need to return theta?
     return loss.value
-
-
-#
-# def solve_qp(theta: float, loss: ArrayLike, dual: ArrayLike, eta: float):
-#     """
-#     return theta that solves convex proximal update
-#     """
-#     x = Variable(2)
-#     # TODO fix this
-#     constraints = [
-#         np.array([1, 0]) @ x <= 0,
-#         np.array([0, 1]) @ x <= 0,
-#     ]
-#     # TODO regular convex hull implementation
-#     for i in range(len(self.hull) - 1):
-#         l = self.hull[i]
-#         r = self.hull[i + 1]
-#         d = jnp.array([r[1] - l[1], l[0] - r[0]])
-#         constraints.append(d.T @ x <= d.T @ l)
-#
-#     prob = Problem(
-#         Minimize((1 / 2) * np.sum(norm(x - loss) ** 2) + eta * jnp.dot(x, dual)),
-#         constraints,
-#     )
-#     prob.solve()
-#
-#     return self.get_theta(x.value)
-#
-#     # TODO this fn should be factored out
-#     def get_theta(self, loss):
-#         return ((jnp.arctan2(loss[1], loss[0]) / (jnp.pi / 2) + 4.0) % 2.0) * (
-#             jnp.pi / 2
-#         )
-#
-#
-# def direct_qp_step(
-#     theta: float,  # TODO add
-#     loss: ArrayLike,
-#     dual: ArrayLike,
-#     eta: float,
-# ) -> float:
-#     """Takes a single step on QP (6)"""
-#     # dl/dtheta
-#     grad_theta_loss = get_grad_loss(theta)
-#     return theta - eta * jnp.dot(dual * grad_theta_loss)

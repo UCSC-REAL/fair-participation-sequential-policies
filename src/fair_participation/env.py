@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 import jax.numpy as jnp
 from jax.typing import ArrayLike
-from jax import value_and_grad, vmap, Array
+from jax import jit
 from jaxlib.mlir import jax  # what is this TODO
 
 from fair_participation.base_logger import logger
@@ -40,8 +40,9 @@ class Env:
         self.vg_loss_fn = value_and_grad_loss(
             self.ts, loss_hull
         )  # theta -> vec(loss), vec(grad_loss)
-        self.vg_rho_fn = value_and_grad_rho(
-            rho_fns
+        # jitting here as cvxpy isn't jittable
+        self.vg_rho_fn = jit(
+            value_and_grad_rho(rho_fns)
         )  # vec(loss) -> vec(rho), vec(grad_rho)
 
         self.state = {

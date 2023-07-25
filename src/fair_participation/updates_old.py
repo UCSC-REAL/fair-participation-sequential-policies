@@ -107,7 +107,7 @@ def rrm_step(
     def _step(theta: float) -> float:
         current_loss, _ = value_and_grad_loss_fn(theta)
         current_rho, _ = value_and_grad_rho_fn(current_loss)
-        return solve_qp(loss, rho, group_sizes)
+        return solve_qp(rho,,
 
     return _step
 
