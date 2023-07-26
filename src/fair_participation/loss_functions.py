@@ -15,7 +15,7 @@ def fairness_disparity(rho: ArrayLike) -> Any:
     return jnp.var(rho) - 0.01
 
 
-def total_loss_fn(
+def value_and_grad_total_loss(
     rho_fn: Callable,  # vector -> vector
     group_sizes: ArrayLike,
 ) -> Callable:
@@ -29,8 +29,12 @@ def total_loss_fn(
         rho = rho_fn(loss_rho)
         return jnp.sum(loss * rho * group_sizes)
 
+    _vg_total_loss = value_and_grad(_total_loss, argnums=0)
+
     # only takes gradient wrt first loss, not rho(loss)
-    vg_total_loss = value_and_grad(_total_loss, argnums=0)
+    def vg_total_loss(loss: ArrayLike) -> tuple[Array, Array]:
+        return _vg_total_loss(loss, loss)
+
     return vg_total_loss
 
 
@@ -39,7 +43,7 @@ def fair_lpu_linear_fn(
     rho_fn: Callable,  # vector -> vector
     group_sizes: ArrayLike,
 ) -> Callable:
-    vg_total_loss = total_loss_fn(rho_fn, group_sizes)
+    vg_total_loss = value_and_grad_total_loss(rho_fn, group_sizes)
 
     # callable to project grad
     def _disparity_loss(loss: ArrayLike) -> Array:
@@ -51,10 +55,10 @@ def fair_lpu_linear_fn(
     def _projected_fairness_grad(loss: ArrayLike) -> Array:
         # dH/dl
         grad_disp_loss = vg_disparity_loss(loss)[1]
-        # dl/dtheta
+        # dl/dtheta will give tangent space, as theta is on frontier
         _, tangent = value_and_grad_loss_fn(loss)
         unit_tangent = tangent / jnp.linalg.norm(tangent)
-        # proj_{dl/dtheta} dH/dl
+        # proj_{tangent space} dH/dl
         return jnp.dot(grad_disp_loss, unit_tangent) * unit_tangent
 
     def _fair_lpu_linear(loss: ArrayLike, alpha: float) -> Array:

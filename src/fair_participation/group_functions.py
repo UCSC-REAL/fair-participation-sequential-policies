@@ -50,9 +50,9 @@ def value_and_grad_loss_fn(ts: ArrayLike, losses: ArrayLike) -> Callable:
     return _vg_loss_all
 
 
+# TODO vectorize
 def value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
     """
-    # TODO we use the same functions every time, should really just vectorize
     Returns a vmapped rho fn. using lax.switch.
     :param rho_fns:
     :return:
