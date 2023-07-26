@@ -4,8 +4,6 @@ from typing import Callable, Optional
 
 import jax.numpy as np
 import pandas as pd
-from numpy.lib.npyio import NpzFile
-from numpy.typing import ArrayLike
 from tqdm import trange
 
 from fair_participation.animation import Viz
@@ -29,7 +27,6 @@ def simulate(
     eta: float = 0.1,
     num_steps: int = 100,
     init_theta: float = 0.6 * np.pi / 2,
-    jit: bool = False,  # TODO why not always true?
     plot_kwargs: Optional[dict] = None,
 ):
     """
@@ -41,7 +38,6 @@ def simulate(
     :param eta:
     :param num_steps:
     :param init_theta:
-    :param jit:
     :param plot_kwargs:
     """
 
@@ -61,7 +57,7 @@ def simulate(
         # Use same rho for all groups
         rho_fns = tuple(rho_fns for _ in range(n_groups))
 
-    # Assume even group sizes for now
+    # assume even group sizes for now
     group_sizes = np.ones(n_groups) / n_groups
 
     env = Env(

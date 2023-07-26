@@ -11,7 +11,6 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 from fair_participation.acs import problems
 from fair_participation.utils import rng_old
-from fair_participation.base_logger import logger
 
 
 def achievable_losses(

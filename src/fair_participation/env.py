@@ -3,12 +3,13 @@ from typing import Optional, Callable
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 from jax import jit
-from jaxlib.mlir import jax  # what is this TODO
 
-from fair_participation.base_logger import logger
-from fair_participation.opt import parameterize_convex_hull
+from fair_participation.optimization import parameterize_convex_hull
 from fair_participation.updates import rrm_step, rrm_grad_step
-from fair_participation.functions import value_and_grad_loss, value_and_grad_rho
+from fair_participation.group_functions import (
+    value_and_grad_loss_fn,
+    value_rho_fn,
+)
 
 
 class Env:
@@ -37,13 +38,11 @@ class Env:
         self.init_theta = init_theta
 
         loss_hull, self.ts = parameterize_convex_hull(achievable_loss)
-        self.vg_loss_fn = value_and_grad_loss(
+        self.vg_loss_fn = value_and_grad_loss_fn(
             self.ts, loss_hull
         )  # theta -> vec(loss), vec(grad_loss)
         # jitting here as cvxpy isn't jittable
-        self.vg_rho_fn = jit(
-            value_and_grad_rho(rho_fns)
-        )  # vec(loss) -> vec(rho), vec(grad_rho)
+        self.rho_fn = jit(value_rho_fn(rho_fns))  # vec(loss) -> vec(rho), vec(grad_rho)
 
         self.state = {
             # "lambda": 0.0,
@@ -57,13 +56,13 @@ class Env:
 
         if update_method == "RRM":
             self.state_update_fn = rrm_step(
-                self.vg_rho_fn,
+                self.rho_fn,
                 self.group_sizes,
                 loss_hull,
             )
         elif update_method == "RRM_grad":
             self.state_update_fn = rrm_grad_step(
-                self.vg_rho_fn, self.group_sizes, loss_hull, self.eta
+                self.rho_fn, self.group_sizes, loss_hull, self.eta
             )
 
         else:
@@ -78,7 +77,7 @@ class Env:
         state = dict(**self.state)  # unpacks previous state
         if len(self.history) > 0:
             state["loss"] = self.state_update_fn(state["loss"])
-        state["rho"] = self.vg_rho_fn(state["loss"])[0]
+        state["rho"] = self.rho_fn(state["loss"])
         # TODO maybe export this with state
         state["total_loss"] = jnp.sum(state["loss"] * state["rho"] * self.group_sizes)
         # state["total_disparity"] = disparity_fn(state["rho"])

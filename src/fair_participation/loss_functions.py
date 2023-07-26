@@ -16,7 +16,7 @@ def fairness_disparity(rho: ArrayLike) -> Any:
 
 
 def total_loss_fn(
-    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
+    rho_fn: Callable,  # vector -> vector
     group_sizes: ArrayLike,
 ) -> Callable:
     def _total_loss(loss: ArrayLike, loss_rho: ArrayLike) -> Array:
@@ -26,7 +26,7 @@ def total_loss_fn(
         :param loss_rho:
         :return:
         """
-        rho, _ = value_and_grad_rho_fn(loss_rho)
+        rho = rho_fn(loss_rho)
         return jnp.sum(loss * rho * group_sizes)
 
     # only takes gradient wrt first loss, not rho(loss)
@@ -35,15 +35,15 @@ def total_loss_fn(
 
 
 def fair_lpu_linear_fn(
-    value_and_grad_loss_fn: Callable,  # scalar -> (vector, vector) # TODO this one is actually needed
-    value_and_grad_rho_fn: Callable,  # vector -> (vector, vector)
+    value_and_grad_loss_fn: Callable,  # scalar -> (vector, vector)
+    rho_fn: Callable,  # vector -> vector
     group_sizes: ArrayLike,
 ) -> Callable:
-    vg_total_loss = total_loss_fn(value_and_grad_rho_fn, group_sizes)
+    vg_total_loss = total_loss_fn(rho_fn, group_sizes)
 
     # callable to project grad
     def _disparity_loss(loss: ArrayLike) -> Array:
-        rho, _ = value_and_grad_rho_fn(loss)[0]
+        rho = rho_fn(loss)
         return fairness_disparity(rho)
 
     vg_disparity_loss = value_and_grad(_disparity_loss)
@@ -67,7 +67,7 @@ def fair_lpu_linear_fn(
         _, grad_loss = vg_total_loss(loss)
         proj_fairness_grad = _projected_fairness_grad(loss)
         # TODO needs a zero check
-        rho, _ = value_and_grad_rho_fn(loss)
+        rho = rho_fn(loss)
         current_fairness = fairness_disparity(rho)
         lambda_estimate = jnp.max(
             0.0,

@@ -6,7 +6,6 @@ from folktables import (
     public_coverage_filter,
     adult_filter,
     travel_time_filter,
-    ACSEmployment,
 )
 
 

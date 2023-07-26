@@ -1,7 +1,7 @@
 from typing import Callable
 
 import jax.numpy as jnp
-from jax import Array, vmap, value_and_grad, jacfwd
+from jax import Array, lax, vmap, value_and_grad
 from jax.typing import ArrayLike
 
 
@@ -28,7 +28,7 @@ def localized_rho_fn(
     return localized_rho
 
 
-def value_and_grad_loss(ts: ArrayLike, losses: ArrayLike) -> Callable:
+def value_and_grad_loss_fn(ts: ArrayLike, losses: ArrayLike) -> Callable:
     """
 
     :param ts:
@@ -50,11 +50,22 @@ def value_and_grad_loss(ts: ArrayLike, losses: ArrayLike) -> Callable:
     return _vg_loss_all
 
 
-def value_and_grad_rho(rho_fns: tuple[Callable]) -> Callable:
-    val_grads = [value_and_grad(rho) for rho in rho_fns]
+def value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
+    """
+    # TODO we use the same functions every time, should really just vectorize
+    Returns a vmapped rho fn. using lax.switch.
+    :param rho_fns:
+    :return:
+    """
+    index = jnp.arange(len(rho_fns))
+    vmapped_rho = vmap(lambda i, x: lax.switch(i, rho_fns, x))
 
-    def _vg_rho(losses: ArrayLike) -> tuple[Array, Array]:
-        vg = jnp.array([vg(loss) for vg, loss in zip(val_grads, losses)])
-        return vg[:, 0], vg[:, 1]
+    def _rho_fn(losses: ArrayLike) -> Array:
+        """
+        losses is n x d"
+        :param losses:
+        :return:
+        """
+        return vmapped_rho(index, losses)
 
-    return _vg_rho
+    return _rho_fn

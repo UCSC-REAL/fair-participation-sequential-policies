@@ -6,7 +6,7 @@ from jax.typing import ArrayLike
 
 from scipy.spatial import ConvexHull
 import cvxpy as cvx
-from cvxpy import Problem, Minimize, Variable, multiply
+from cvxpy import Problem, Minimize, Variable, Constant
 
 
 def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
@@ -23,7 +23,8 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
     hull = ConvexHull(points)
     points = jnp.array([points[ix] for ix in hull.vertices])
     points = points[jnp.lexsort(points.T)]
-    # Make ts 0 to 1 ccw. Not smooth with interpolation, but good enough?
+    # Make ts 0 to 1 ccw.
+    # TODO Not smooth with interpolation, but good enough?
     angle: ArrayLike = jnp.arctan2(points[:, 1], points[:, 0])
     ts = -(angle / (jnp.pi / 2) + 1)
     return points, ts
@@ -33,7 +34,7 @@ def solve_qp(
     loss_weights: ArrayLike,
     loss_hull: ArrayLike,
     quadratic: Optional[tuple[float, ArrayLike]] = None,
-) -> Array:
+) -> tuple[Array, Array]:
     """
     Compute loss vector in conv(loss_hull) that solves RRM update equation.
     :param loss_weights:
@@ -46,7 +47,7 @@ def solve_qp(
     loss = Variable(d)
     constraints = [
         cvx.sum(alpha) == 1,
-        alpha >= 0.0,
+        alpha >= Constant(0.0),  # for type hinting
         loss == alpha @ loss_hull,
     ]
     obj = loss @ loss_weights
@@ -59,5 +60,4 @@ def solve_qp(
         constraints,
     )
     prob.solve()
-    # TODO do we need to return theta?
-    return loss.value
+    return loss.value, alpha.value
