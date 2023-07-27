@@ -9,12 +9,11 @@ def _logistic(x: ArrayLike) -> Array:
     return 1 / (1 + jnp.exp(-x))
 
 
-def localized_rho_fn(sensitivity: float, center: float) -> Callable[[ArrayLike], Array]:
+def localized_rho_fn(center: float, sensitivity: float) -> Callable[[ArrayLike], Array]:
     """
     Returns a callable rho function centered at `loss`.
-
-    :param sensitivity: Sensitivity of the rho function.
     :param center: Center of the rho function.
+    :param sensitivity: Sensitivity of the rho function.
     :return: Callable rho function mapping loss (vector) -> participation rate (vector) .
     """
 

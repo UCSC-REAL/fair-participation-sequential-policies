@@ -33,7 +33,7 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
 def solve_qp(
     w: ArrayLike,
     hull: ArrayLike,
-    gamma: float = 0.0,
+    gamma: Optional[float] = None,
     x0: Optional[ArrayLike] = None,
 ) -> tuple[Array, Array]:
     """

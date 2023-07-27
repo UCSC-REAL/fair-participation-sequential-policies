@@ -57,7 +57,7 @@ class Environment:
             total_loss=vgs["total_loss"],
             disparity=vgs["disparity"],
         )
-        self.history = []
+        self.history = [self.state._asdict()]
 
         if update_method == "RRM":
             self.update_state = rrm_step(
