@@ -4,10 +4,12 @@ from jax.typing import ArrayLike
 
 from fair_participation.optimization import parameterize_convex_hull
 from fair_participation.updates import rrm_step, rrm_grad_step, fair_lpu_step
-from fair_participation.group_functions import (
-    value_and_grad_loss_fn,
-    value_rho_fn,
-)
+
+# from fair_participation.group_functions import (
+#     value_and_grad_loss_fn,
+#     value_rho_fn,
+# )
+from fair_participation.loss_functions import values_and_grads_fns
 
 
 class Env:
@@ -35,19 +37,23 @@ class Env:
         self.eta = eta
         self.init_theta = init_theta
 
-        loss_hull, self.ts = parameterize_convex_hull(achievable_loss)
-        self.vg_loss_fn = value_and_grad_loss_fn(
-            self.ts, loss_hull
-        )  # theta -> vector(loss), vector(grad_loss)
-        self.rho_fn = value_rho_fn(rho_fns)  # vector(loss) -> vector(rho)
+        self.loss_hull, self.thetas = parameterize_convex_hull(achievable_loss)
+        self.value_and_grad_loss, self.values_and_grads = values_and_grads_fns(
+            self.thetas,
+            self.loss_hull,
+            rho_fns,
+            self.group_sizes,
+        )  # maps...
 
-        init_loss, _ = self.vg_loss_fn(init_theta)
+        init_loss = self.value_and_grad_loss(init_theta)["loss"]
+        vgs = self.values_and_grads(init_loss)
+
         self.state = {
             # "lambda": 0.0,
             # "theta": init_theta,
             "loss": init_loss,
-            "rho": self.rho_fn(init_loss),
-            "total_loss": None,  # TODO calc these
+            "rho": vgs["rho"],
+            "total_loss": vgs["total_loss"],
             "total_disparity": None,
         }
         self.history = []

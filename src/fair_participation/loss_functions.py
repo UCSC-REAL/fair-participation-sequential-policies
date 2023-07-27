@@ -1,21 +1,11 @@
-from typing import Callable, Any
+from typing import Callable
 
 import jax.numpy as jnp
-from jax import value_and_grad
+from jax import value_and_grad, grad, vmap, jit, lax
 from jax.typing import ArrayLike, Array
 
 
-def fairness_disparity(rho: ArrayLike) -> Any:
-    """
-    Assumed to be symmetric.
-
-    :param: rho: array of participation rates indexed by g
-    :return: violation of fairness constraint
-    """
-    return jnp.var(rho) - 0.01
-
-
-def value_and_grad_total_loss(
+def _value_and_grad_total_loss_fn(
     rho_fn: Callable,  # vector -> vector
     group_sizes: ArrayLike,
 ) -> Callable:
@@ -38,47 +28,95 @@ def value_and_grad_total_loss(
     return vg_total_loss
 
 
-def fair_lpu_linear_fn(
-    value_and_grad_loss_fn: Callable,  # scalar -> (vector, vector)
-    rho_fn: Callable,  # vector -> vector
-    group_sizes: ArrayLike,
-) -> Callable:
-    vg_total_loss = value_and_grad_total_loss(rho_fn, group_sizes)
+def _value_and_grad_loss_fn(thetas: ArrayLike, losses: ArrayLike) -> Callable:
+    """
 
-    # callable to project grad
-    def _disparity_loss(loss: ArrayLike) -> Array:
-        rho = rho_fn(loss)
-        return fairness_disparity(rho)
+    :param thetas:
+    :param losses:
+    :return:
+    """
 
-    vg_disparity_loss = value_and_grad(_disparity_loss)
+    def _loss(theta: float, losses_: ArrayLike) -> Array:
+        # interpolated losses for a single group
+        # Use 'extrapolate' to avoid zero gradient issue
+        return jnp.interp(
+            theta, thetas, losses_, left="extrapolate", right="extrapolate"
+        )
 
-    def _projected_fairness_grad(loss: ArrayLike) -> Array:
-        # dH/dl
-        grad_disp_loss = vg_disparity_loss(loss)[1]
-        # dl/dtheta will give tangent space, as theta is on frontier
-        _, tangent = value_and_grad_loss_fn(loss)
-        unit_tangent = tangent / jnp.linalg.norm(tangent)
-        # proj_{tangent space} dH/dl
-        return jnp.dot(grad_disp_loss, unit_tangent) * unit_tangent
+    # TODO need to check this one as you changed it
+    _value_and_grad_loss = grad(_loss, argnums=0)  # value and grad for a single group
+    value_and_grad_loss = vmap(
+        _value_and_grad_loss, in_axes=(None, 1)
+    )  # grad for all groups
 
-    def _fair_lpu_linear(loss: ArrayLike, alpha: float) -> Array:
+    def _value_and_grad_loss_all(theta: float) -> tuple[Array, Array]:
+        return value_and_grad_loss(theta, losses)
+
+    return _value_and_grad_loss_all
+
+
+# TODO vectorize
+def _value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
+    """
+    Returns a vmapped rho fn. using lax.switch.
+    :param rho_fns:
+    :return:
+    """
+    index = jnp.arange(len(rho_fns))
+    vmapped_rho = vmap(lambda i, x: lax.switch(i, rho_fns, x))
+
+    def _rho_fn(losses: ArrayLike) -> Array:
         """
-        Maps loss [vector] x alpha [float] to estimate of linear term .
-        :param loss:
-        :param alpha:
+        losses is n x d"
+        :param losses:
         :return:
         """
-        _, grad_loss = vg_total_loss(loss)
-        proj_fairness_grad = _projected_fairness_grad(loss)
-        # TODO needs a zero check
-        rho = rho_fn(loss)
-        current_fairness = fairness_disparity(rho)
-        lambda_estimate = jnp.max(
-            0.0,
-            alpha * current_fairness
-            - jnp.dot(grad_loss, proj_fairness_grad)
-            / jnp.dot(proj_fairness_grad, proj_fairness_grad),
-        )
-        return grad_loss + jnp.dot(lambda_estimate * proj_fairness_grad)
+        return vmapped_rho(index, losses)
 
-    return _fair_lpu_linear
+    return _rho_fn
+
+
+def values_and_grads_fns(
+    thetas: ArrayLike,
+    losses: ArrayLike,
+    rho_fns: tuple[Callable],
+    group_sizes: ArrayLike,
+):
+    """
+    Creates a jitted callable that returns commonly used values and gradients.
+
+    :param thetas:
+    :param losses:
+    :param rho_fns:
+    :param group_sizes:
+    :return:
+    """
+
+    value_and_grad_loss_f = _value_and_grad_loss_fn(thetas, losses)
+    rho_f = _value_rho_fn(rho_fns)
+    vg_total_loss_f = _value_and_grad_total_loss_fn(rho_f, group_sizes)
+
+    @jit
+    def _value_and_grad_loss(theta: float) -> dict:
+        loss, grad_loss = value_and_grad_loss_f(theta)
+        return {
+            "loss": loss,
+            "grad_loss": grad_loss,
+        }
+
+    @jit
+    def _values_and_grads(loss: ArrayLike) -> dict:
+        """
+
+        :param loss:
+        :return:
+        """
+        total_loss, grad_total_loss = vg_total_loss_f(loss)
+        # TODO add disparity
+        return {
+            "rho": rho_f(loss),
+            "total_loss": total_loss,
+            "grad_total_loss": grad_total_loss,
+        }
+
+    return _value_and_grad_loss, _values_and_grads
