@@ -5,30 +5,26 @@ from jax import jit
 from jax.typing import ArrayLike, Array
 
 from fair_participation.optimization import solve_qp
-
-StateInfo = tuple[Array, Array, float, float]
-StateInfoD = dict[str, StateInfo]
-
-
-def _to_dict(state: StateInfo) -> dict:
-    return {
-        "loss": state[0],
-        "rho": state[1],
-        "total_loss": state[2],
-        "disparity": state[3],
-    }
+from fair_participation.state import StateInfo
 
 
 def fair_lpu_linear_fn(
     value_and_grad_loss: Callable,
     values_and_grads: Callable,
 ) -> Callable:
+    """
+    Returns callable to compute linear term of FairLPU QP subproblem.
+    :param value_and_grad_loss: Callable that returns loss and gradient.
+    :param values_and_grads: Callable that returns commonly used values and gradients.
+    :return: Callable.
+    """
+
     def _fair_lpu_linear(loss: ArrayLike, alpha: float) -> Array:
         """
-        Maps loss [vector] x alpha [float] to estimate of linear term .
-        :param loss:
-        :param alpha:
-        :return:
+        Maps loss [vector] x alpha [float] to estimate of linear term.
+        :param loss: Current loss vector.
+        :param alpha: Penalty parameter.
+        :return: Estimate of linear term.
         """
         vgs = values_and_grads(loss)
         # dl/dtheta will give tangent space, as theta is on frontier
@@ -38,7 +34,7 @@ def fair_lpu_linear_fn(
             jnp.dot(vgs["grad_disparity_loss"], unit_tangent) * unit_tangent
         )
 
-        # TODO needs a zero check
+        # TODO needs a zero check?
         lambda_estimate = jnp.max(
             0.0,
             alpha * vgs["disparity"]
@@ -55,21 +51,27 @@ def fair_lpu_step(
     values_and_grads: Callable,
     loss_hull: ArrayLike,
     eta: float,
-) -> Callable[[ArrayLike], StateUpdate]:
+) -> Callable[[ArrayLike], StateInfo]:
     """
-    Exactly solves the FairLPU problem QP.
-    :return:
+    Returns update callable that exactly solves the FairLPU subproblem.
+
+    :param value_and_grad_loss: Callable that returns loss and gradient.
+    :param values_and_grads: Callable that returns commonly used values and gradients.
+    :param loss_hull: Array of losses that define the convex hull.
+    :param eta: Learning rate.
+    :return: Callable that performs a single update step.
     """
 
     # TODO jit alpha
     fair_lpu_linear = jit(fair_lpu_linear_fn(value_and_grad_loss, values_and_grads))
 
-    def _step(loss: ArrayLike) -> StateUpdate:
+    def _step(loss: ArrayLike) -> StateInfo:
         linear_weights = fair_lpu_linear(loss)
-        quadratic = (1.0 / (2.0 * eta), loss)
-        opt_loss, _ = solve_qp(linear_weights, loss_hull, quadratic=quadratic)
+        opt_loss, _ = solve_qp(
+            w=linear_weights, hull=loss_hull, gamma=1.0 / (2.0 * eta), x0=loss
+        )
         opt_vgs = values_and_grads(opt_loss)
-        return (
+        return StateInfo(
             opt_loss,
             opt_vgs["rho"],
             opt_vgs["total_loss"],

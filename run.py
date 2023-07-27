@@ -1,5 +1,7 @@
 import os
 import pathlib
+from typing import Optional
+
 import numpy as np
 
 from fair_participation.rate_functions import localized_rho_fn
@@ -7,17 +9,21 @@ from fair_participation.simulation import simulate
 from fair_participation.plotting import compare, compare_2
 
 
-def run_problems(problems: list[dict], clean: bool = False) -> None:
+def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
     """
     Runs the simulation for each problem in the list of problems.
-    :param problems: list of dictionaries containing the problem parameters.
-    :param clean: if True, deletes all files in the data, mp4, npz, and pdf directories.
+    :param problems: List of dictionaries containing the problem parameters.
+    :param clean: If 'data', deletes all files in the data, mp4, npz, and pdf directories.
+      If 'all', also deletes all files in the 'losses' directory.
     """
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npz", "pdf"):
-        if clean:
+        if clean in ("data", "all"):
             for file in os.listdir(folder):
-                if pathlib.Path(file).suffix in (".npz", ".npy", ".mp4", ".pdf"):
+                ext = pathlib.Path(file).suffix
+                if ext in (".npz", ".mp4", ".pdf"):
+                    os.remove(os.path.join(folder, file))
+                if ext == ".npy" and clean == "all":
                     os.remove(os.path.join(folder, file))
         else:
             os.makedirs(folder, exist_ok=True)
@@ -58,9 +64,9 @@ def main():
         },
     ]
     for prob in base_problems:
-        for method in ("RRM_grad", "RRM", "FairLPU", "FairLPU_grad"):
+        for method in ("RRM", "RRM_grad", "FairLPU"):
             problems.append(dict(**prob, method=method, save_init=False))
-    run_problems(problems)
+    run_problems(problems, clean="data")
 
 
 if __name__ == "__main__":
