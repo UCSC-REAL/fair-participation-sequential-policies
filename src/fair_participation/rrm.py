@@ -45,6 +45,7 @@ def rrm_step(
     return _step
 
 
+# TODO check
 def rrm_grad_step(
     values_and_grads: Callable[[ArrayLike], dict],
     loss_hull: ArrayLike,

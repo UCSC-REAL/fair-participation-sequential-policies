@@ -46,6 +46,7 @@ def fair_lpu_linear_fn(
     return _fair_lpu_linear
 
 
+# TODO check
 def fair_lpu_step(
     value_and_grad_loss: Callable,
     values_and_grads: Callable,
@@ -79,3 +80,12 @@ def fair_lpu_step(
         )
 
     return _step
+
+
+def fair_lpu_grad_step(
+    value_and_grad_loss: Callable,
+    values_and_grads: Callable,
+    loss_hull: ArrayLike,
+    eta: float,
+) -> Callable[[ArrayLike], StateInfo]:
+    raise NotImplementedError
