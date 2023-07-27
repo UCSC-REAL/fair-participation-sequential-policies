@@ -73,7 +73,9 @@ def _value_and_grad_loss_fn(thetas: ArrayLike, losses: ArrayLike) -> Callable:
             theta, thetas, losses_, left="extrapolate", right="extrapolate"
         )
 
-    _value_and_grad_loss = grad(_loss, argnums=0)  # value and grad for a single group
+    _value_and_grad_loss = value_and_grad(
+        _loss, argnums=0
+    )  # value and grad for a single group
     value_and_grad_loss = vmap(
         _value_and_grad_loss, in_axes=(None, 1)
     )  # value and grad mapped over all groups
@@ -130,7 +132,7 @@ def values_and_grads_fns(
 
     value_and_grad_loss = _value_and_grad_loss_fn(thetas, losses)
     rho_f = _value_rho_fn(rho_fns)
-    vg_total_loss = _value_and_grad_total_loss_fn(rho_f, group_sizes)
+    value_and_grad_total_loss = _value_and_grad_total_loss_fn(rho_f, group_sizes)
 
     def _disparity_loss(loss: ArrayLike) -> Array:
         """Maps loss vector to value of the disparity function."""
@@ -157,7 +159,7 @@ def values_and_grads_fns(
         :return: Dict of values and gradients.
         """
         rho = rho_f(loss)
-        total_loss, grad_total_loss = vg_total_loss(loss)
+        total_loss, grad_total_loss = value_and_grad_total_loss(loss)
         disparity, grad_disparity_loss = value_and_grad_disparity_loss(loss)
         return {
             "rho": rho,

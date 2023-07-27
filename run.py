@@ -13,20 +13,23 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
     """
     Runs the simulation for each problem in the list of problems.
     :param problems: List of dictionaries containing the problem parameters.
-    :param clean: If 'data', deletes all files in the data, mp4, npz, and pdf directories.
+    :param clean: If 'results', deletes all files in the data, mp4, npz, and pdf directories.
       If 'all', also deletes all files in the 'losses' directory.
     """
+    clean_folders = []
+    if clean in ("results", "all"):
+        clean_folders += ["data", "mp4", "npz", "pdf"]
+    if clean == "all":
+        clean_folders.append("losses")
+
     # Create needed directories if they don't exist
-    for folder in ("losses", "data", "mp4", "npz", "pdf"):
-        if clean in ("data", "all"):
+    for folder in clean_folders:
+        if clean is not None:
             for file in os.listdir(folder):
                 ext = pathlib.Path(file).suffix
-                if ext in (".npz", ".mp4", ".pdf"):
+                if ext in (".npz", ".mp4", ".pdf", ".npy"):
                     os.remove(os.path.join(folder, file))
-                if ext == ".npy" and clean == "all":
-                    os.remove(os.path.join(folder, file))
-        else:
-            os.makedirs(folder, exist_ok=True)
+        os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
         simulate(**problem)
@@ -66,7 +69,7 @@ def main():
     for prob in base_problems:
         for method in ("RRM", "RRM_grad", "FairLPU"):
             problems.append(dict(**prob, method=method, save_init=False))
-    run_problems(problems, clean="data")
+    run_problems(problems, clean="results")
 
 
 if __name__ == "__main__":
