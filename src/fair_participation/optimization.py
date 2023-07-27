@@ -11,9 +11,9 @@ from cvxpy import Problem, Minimize, Variable, Constant
 
 def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
     """
-    TODO
-    :param points:
-    :return: n x 2 array
+    Returns a parameterization of the frontier of convex hull of points.
+    :param points: Array of points.
+    :return: Tuple of (points, thetas) where thetas is the parameterization in [0,1] of the frontier.
     """
     n, d = points.shape
     if d != 2:
@@ -31,33 +31,38 @@ def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
 
 
 def solve_qp(
-    loss_weights: ArrayLike,
-    loss_hull: ArrayLike,
-    quadratic: Optional[tuple[float, ArrayLike]] = None,
+    w: ArrayLike,
+    hull: ArrayLike,
+    gamma: float = 0.0,
+    x0: Optional[ArrayLike] = None,
 ) -> tuple[Array, Array]:
     """
-    Compute loss vector in conv(loss_hull) that solves RRM update equation.
-    :param loss_weights:
-    :param loss_hull: convex hull of achievable loss vectors. Should be n x 2 array.
-    :param quadratic:
-    :return:
+    Solves the QP:
+        min_x <x, w> + gamma * ||x - x0||^2
+        s.t. x in hull
+
+    Used for RRM/FairLPU updates.
+    :param w: Array of linear weights.
+    :param hull: Array of points defining the convex hull.
+    :param gamma: Coefficient of quadratic term.
+    :param x0: Center of quadratic term.
+    :return: Tuple of (x, alpha) where x is the optimal point and alpha is the optimal convex combination.
     """
-    n, d = loss_hull.shape
+    n, d = hull.shape
     alpha = Variable(n)
-    loss = Variable(d)
+    x = Variable(d)
     constraints = [
         cvx.sum(alpha) == 1,
         alpha >= Constant(0.0),  # for type hinting
-        loss == alpha @ loss_hull,
+        x == alpha @ hull,
     ]
-    obj = loss @ loss_weights
-    if quadratic is not None:
-        coeff, current_loss = quadratic
-        obj += coeff * cvx.sum_squares(loss - current_loss) ** 2
+    obj = x @ w
+    if gamma is not None:
+        obj += gamma * cvx.sum_squares(x - x0) ** 2
 
     prob = Problem(
         Minimize(obj),
         constraints,
     )
     prob.solve()
-    return loss.value, alpha.value
+    return x.value, alpha.value

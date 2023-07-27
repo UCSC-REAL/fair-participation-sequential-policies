@@ -6,7 +6,17 @@ from jax.typing import ArrayLike, Array
 
 from fair_participation.optimization import solve_qp
 
-StateUpdate = tuple[Array, Array, float, float]
+StateInfo = tuple[Array, Array, float, float]
+StateInfoD = dict[str, StateInfo]
+
+
+def _to_dict(state: StateInfo) -> dict:
+    return {
+        "loss": state[0],
+        "rho": state[1],
+        "total_loss": state[2],
+        "disparity": state[3],
+    }
 
 
 def fair_lpu_linear_fn(

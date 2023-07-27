@@ -4,26 +4,15 @@ import jax.numpy as jnp
 from jax import jit, Array
 from jax.typing import ArrayLike, Array
 
+from fair_participation.state import StateInfo
 from fair_participation.optimization import solve_qp
-
-StateInfo = tuple[Array, Array, float, float]
-StateInfoD = dict[str, StateInfo]
-
-
-def _to_dict(state: StateInfo) -> dict:
-    return {
-        "loss": state[0],
-        "rho": state[1],
-        "total_loss": state[2],
-        "disparity": state[3],
-    }
 
 
 def rrm_step(
     values_and_grads: Callable[[ArrayLike], dict],
     group_sizes: ArrayLike,
     loss_hull: ArrayLike,
-) -> Callable[[ArrayLike], StateInfoD]:
+) -> Callable[[ArrayLike], StateInfo]:
     """
     Returns update callable that exactly solves the RRM subproblem:
         min_l Sum_g (s_g * l_g * rho_g^t)
@@ -35,7 +24,7 @@ def rrm_step(
     :return: Callable that performs a single update step.
     """
 
-    def _step(loss: ArrayLike) -> StateInfoD:
+    def _step(loss: ArrayLike) -> StateInfo:
         """
         RRM update step.
         :param loss: Current loss vector.
@@ -44,15 +33,13 @@ def rrm_step(
         vgs = values_and_grads(loss)
         rho = vgs["rho"]
         linear_term = rho * group_sizes
-        opt_loss, _ = solve_qp(rho, linear_term, loss_hull)
+        opt_loss, _ = solve_qp(w=linear_term, hull=loss_hull)
         opt_vgs = values_and_grads(opt_loss)
-        return _to_dict(
-            (
-                opt_loss,
-                opt_vgs["rho"],
-                opt_vgs["total_loss"],
-                opt_vgs["disparity"],
-            )
+        return StateInfo(
+            opt_loss,
+            opt_vgs["rho"],
+            opt_vgs["total_loss"],
+            opt_vgs["disparity"],
         )
 
     return _step
@@ -62,7 +49,7 @@ def rrm_grad_step(
     values_and_grads: Callable[[ArrayLike], dict],
     loss_hull: ArrayLike,
     eta: float,
-) -> Callable[[ArrayLike], StateInfoD]:
+) -> Callable[[ArrayLike], StateInfo]:
     """
     Returns update callable that performs a single gradient step on the RRM problem:
         l_{t+1} = l_t - eta * grad_x L(x, rho_t)|_{x=l_t}
@@ -85,22 +72,22 @@ def rrm_grad_step(
         return loss - eta * vgs["grad_total_loss"]
 
     # TODO make jittable
-    def _projected_step(loss: ArrayLike) -> StateInfoD:
+    def _projected_step(loss: ArrayLike) -> StateInfo:
         """
         Gradient step on the RRM problem, projected onto the convex hull.
         :param loss: Current loss vector.
         :return: Dictionary of updated values.
         """
         new_loss = _step(loss)
-        opt_loss, _ = solve_qp(jnp.zeros_like(new_loss), loss_hull, (1.0, new_loss))
+        opt_loss, _ = solve_qp(
+            w=jnp.zeros_like(new_loss), hull=loss_hull, gamma=1.0, x0=new_loss
+        )
         opt_vgs = values_and_grads(opt_loss)
-        return _to_dict(
-            (
-                opt_loss,
-                opt_vgs["rho"],
-                opt_vgs["total_loss"],
-                opt_vgs["disparity"],
-            )
+        return StateInfo(
+            opt_loss,
+            opt_vgs["rho"],
+            opt_vgs["total_loss"],
+            opt_vgs["disparity"],
         )
 
     return _projected_step

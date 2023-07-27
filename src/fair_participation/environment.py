@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import Callable
 
 from jax.typing import ArrayLike, Array
 
@@ -6,6 +6,7 @@ from fair_participation.optimization import parameterize_convex_hull
 from fair_participation.rrm import rrm_step, rrm_grad_step
 from fair_participation.fair_lpu import fair_lpu_step
 from fair_participation.loss_functions import values_and_grads_fns
+from fair_participation.state import StateInfo
 
 
 class Environment:
@@ -50,12 +51,12 @@ class Environment:
         init_loss = self.value_and_grad_loss(init_theta)["loss"]
         vgs = self.values_and_grads(init_loss)
 
-        self.state = {
-            "loss": init_loss,
-            "rho": vgs["rho"],
-            "total_loss": vgs["total_loss"],
-            "disparity": vgs["disparity"],
-        }
+        self.state: StateInfo = StateInfo(
+            loss=init_loss,
+            rho=vgs["rho"],
+            total_loss=vgs["total_loss"],
+            disparity=vgs["disparity"],
+        )
         self.history = []
 
         if update_method == "RRM":
@@ -80,12 +81,12 @@ class Environment:
         else:
             raise ValueError(f"Unknown update method {update_method}.")
 
-    def update(self) -> dict:
+    def update(self) -> StateInfo:
         """
         Updates state using self.update_state and returns a dictionary of the new state.
         :return: Dictionary of the new state.
         """
         # TODO Putting aside theta space for now
-        self.state = self.update_state(self.state["loss"])
-        self.history.append(dict(**self.state))
+        self.state = self.update_state(self.state.loss)
+        self.history.append(self.state._asdict())
         return self.state
