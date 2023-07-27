@@ -5,10 +5,6 @@ from jax.typing import ArrayLike
 from fair_participation.optimization import parameterize_convex_hull
 from fair_participation.updates import rrm_step, rrm_grad_step, fair_lpu_step
 
-# from fair_participation.group_functions import (
-#     value_and_grad_loss_fn,
-#     value_rho_fn,
-# )
 from fair_participation.loss_functions import values_and_grads_fns
 
 
@@ -54,7 +50,7 @@ class Env:
             "loss": init_loss,
             "rho": vgs["rho"],
             "total_loss": vgs["total_loss"],
-            "total_disparity": None,
+            "disparity": vgs["disparity"],
         }
         self.history = []
 
@@ -62,18 +58,18 @@ class Env:
             self.state_update_fn = rrm_step(
                 self.rho_fn,
                 self.group_sizes,
-                loss_hull,
+                self.loss_hull,
             )
         elif update_method == "RRM_grad":
             self.state_update_fn = rrm_grad_step(
-                self.rho_fn, self.group_sizes, loss_hull, self.eta
+                self.rho_fn, self.group_sizes, self.loss_hull, self.eta
             )
         elif update_method == "FairLPU":
             self.state_update_fn = fair_lpu_step(
                 self.vg_loss_fn,
                 self.rho_fn,
                 self.group_sizes,
-                loss_hull,
+                self.loss_hull,
                 self.eta,
             )
         else:
@@ -90,7 +86,7 @@ class Env:
             state["loss"],
             state["rho"],
             state["total_loss"],
-            state["total_disparity"],
+            state["disparity"],
         ) = self.state_update_fn(self.state["loss"])
         self.state = state
         self.history.append(state)

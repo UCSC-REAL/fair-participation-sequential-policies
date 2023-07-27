@@ -60,17 +60,17 @@ def compare(problem, grad=True):
     for method, ax, ax_r in to_compare:
         filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
-        total_disparity = np.load(f"{filename}_total_disparity.npy")
+        disparity = np.load(f"{filename}_disparity.npy")
         lambdas = np.load(f"{filename}_lambdas.npy")
 
         lmin = min(lmin, min(total_loss))
         lmax = max(lmax, max(total_loss))
-        dmin = min(dmin, min(total_disparity))
-        dmax = max(dmax, max(total_disparity))
+        dmin = min(dmin, min(disparity))
+        dmax = max(dmax, max(disparity))
 
         ax.set_title(f"{problem}, {method}")
         ax.plot(total_loss, color="blue", label="Loss")
-        ax_r.plot(total_disparity, color="red", linestyle="--")
+        ax_r.plot(disparity, color="red", linestyle="--")
         ax.set_xlabel("Time Step")
 
     fig.tight_layout()
@@ -127,16 +127,16 @@ def compare_2(problem):
     for method, ax, ax_r in to_compare:
         filename = os.path.join("npy", f"{problem}_{method}")
         total_loss = np.load(f"{filename}_total_loss.npy")
-        total_disparity = np.load(f"{filename}_total_disparity.npy")
+        disparity = np.load(f"{filename}_disparity.npy")
 
         lmin = min(lmin, min(total_loss))
         lmax = max(lmax, max(total_loss))
-        dmin = min(dmin, min(total_disparity))
-        dmax = max(dmax, max(total_disparity))
+        dmin = min(dmin, min(disparity))
+        dmax = max(dmax, max(disparity))
 
         ax.set_title(f"{problem}, {method}")
         ax.plot(total_loss, color="blue", label="Loss")
-        ax_r.plot(total_disparity, color="red", linestyle="--")
+        ax_r.plot(disparity, color="red", linestyle="--")
         ax.set_xlabel("Time Step")
 
     fig.tight_layout()

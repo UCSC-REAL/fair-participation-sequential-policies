@@ -1,8 +1,18 @@
-from typing import Callable
+from typing import Callable, Any
 
 import jax.numpy as jnp
 from jax import value_and_grad, grad, vmap, jit, lax
 from jax.typing import ArrayLike, Array
+
+
+def fairness_disparity(rho: ArrayLike) -> Any:
+    """
+    Assumed to be symmetric.
+
+    :param: rho: array of participation rates indexed by g
+    :return: violation of fairness constraint
+    """
+    return jnp.var(rho) - 0.01
 
 
 def _value_and_grad_total_loss_fn(
@@ -92,13 +102,19 @@ def values_and_grads_fns(
     :return:
     """
 
-    value_and_grad_loss_f = _value_and_grad_loss_fn(thetas, losses)
+    value_and_grad_loss = _value_and_grad_loss_fn(thetas, losses)
     rho_f = _value_rho_fn(rho_fns)
-    vg_total_loss_f = _value_and_grad_total_loss_fn(rho_f, group_sizes)
+    vg_total_loss = _value_and_grad_total_loss_fn(rho_f, group_sizes)
+
+    def _value_grad_disparity_loss_fn(loss: ArrayLike) -> Array:
+        rho = rho_f(loss)
+        return fairness_disparity(rho)
+
+    value_and_grad_disparity_loss_f = value_and_grad(_value_grad_disparity_loss_fn)
 
     @jit
     def _value_and_grad_loss(theta: float) -> dict:
-        loss, grad_loss = value_and_grad_loss_f(theta)
+        loss, grad_loss = value_and_grad_loss(theta)
         return {
             "loss": loss,
             "grad_loss": grad_loss,
@@ -111,12 +127,15 @@ def values_and_grads_fns(
         :param loss:
         :return:
         """
-        total_loss, grad_total_loss = vg_total_loss_f(loss)
-        # TODO add disparity
+        rho = rho_f(loss)
+        total_loss, grad_total_loss = vg_total_loss(loss)
+        disparity, grad_disparity_loss = value_and_grad_disparity_loss_f(loss)
         return {
-            "rho": rho_f(loss),
+            "rho": rho,
             "total_loss": total_loss,
             "grad_total_loss": grad_total_loss,
+            "disparity": disparity,
+            "grad_disparity_loss": grad_disparity_loss,
         }
 
     return _value_and_grad_loss, _values_and_grads

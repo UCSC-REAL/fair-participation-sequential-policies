@@ -217,7 +217,7 @@ class Viz(Video):
             label="Loss",
         )
 
-        disparities = [self.env.get_total_disparity(theta) for theta in theta_range]
+        disparities = [self.env.get_disparity(theta) for theta in theta_range]
         max_disparity = max(disparities)
 
         # plot disparity curve
@@ -243,8 +243,8 @@ class Viz(Video):
                     l = m
             return m
 
-        theta_l = root_find(self.env.get_total_disparity, 0, np.pi / 4)
-        theta_r = root_find(self.env.get_total_disparity, np.pi / 4, np.pi / 2)
+        theta_l = root_find(self.env.get_disparity, 0, np.pi / 4)
+        theta_r = root_find(self.env.get_disparity, np.pi / 4, np.pi / 2)
         ax_r.fill_between(
             [min_theta, theta_l],
             [0, 0],
@@ -379,7 +379,7 @@ class Viz(Video):
 
         # theta_range = np.linspace(0, 1, 100) * np.pi / 2  # [i]
         # tl = np.array([self.env.get_total_loss(theta) for theta in theta_range])
-        # td = np.array([self.env.get_total_disparity(theta) for theta in theta_range])
+        # td = np.array([self.env.get_disparity(theta) for theta in theta_range])
 
         # artifacts += [
         #     ax.plot(theta_range, tl + lamda * td, color="black", linestyle="--")[0]
