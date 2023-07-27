@@ -6,7 +6,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
-from fair_participation.dynamics import (
+from fair_participation.simulation import (
     localized_rho_fn,
     use_two_ticks_x,
     use_two_ticks_y,

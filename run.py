@@ -1,21 +1,26 @@
 import os
+import pathlib
 import numpy as np
 
-from fair_participation.group_functions import localized_rho_fn
-from fair_participation.dynamics import simulate
+from fair_participation.rate_functions import localized_rho_fn
+from fair_participation.simulation import simulate
 from fair_participation.plotting import compare, compare_2
 
 
-def run_problems(problems: list[dict]) -> None:
+def run_problems(problems: list[dict], clean: bool = False) -> None:
     """
-    TODO
-    :param problems:
-    :return:
+    Runs the simulation for each problem in the list of problems.
+    :param problems: list of dictionaries containing the problem parameters.
+    :param clean: if True, deletes all files in the data, mp4, npz, and pdf directories.
     """
-    # TODO add a flag to clear directories
     # Create needed directories if they don't exist
     for folder in ("losses", "data", "mp4", "npz", "pdf"):
-        os.makedirs(folder, exist_ok=True)
+        if clean:
+            for file in os.listdir(folder):
+                if pathlib.Path(file).suffix in (".npz", ".npy", ".mp4", ".pdf"):
+                    os.remove(os.path.join(folder, file))
+        else:
+            os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
         simulate(**problem)
@@ -26,7 +31,6 @@ def run_problems(problems: list[dict]) -> None:
 
 def main():
     problems = []
-    # TODO rename rho to base_rho or something
     base_problems = [
         {
             "name": "Income",
