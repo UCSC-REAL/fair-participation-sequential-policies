@@ -63,7 +63,6 @@ def fair_lpu_step(
     :return: Callable that performs a single update step.
     """
 
-    # TODO jit alpha
     fair_lpu_linear = jit(fair_lpu_linear_fn(value_and_grad_loss, values_and_grads))
 
     def _step(loss: ArrayLike) -> StateInfo:

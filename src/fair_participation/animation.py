@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from numpy.typing import ArrayLike
 
 from fair_participation.plotting import savefig, use_two_ticks_x, use_two_ticks_y
-from fair_participation.base_logger import log
+from fair_participation.base_logger import logger
 
 
 class Video:
@@ -31,7 +31,7 @@ class Video:
     """
 
     def __init__(self, title, fig, render_flag=True, fps=15, dpi=100):
-        self.video_file = title + ".mp4"
+        self.video_file = f"./mp4/{title}.mp4"
 
         # whether to actually do anything
         self.render_flag = render_flag
@@ -62,7 +62,7 @@ class Video:
         if self.render_flag:
             # finalize file
             self.writer.finish()
-            log.info("Writing", self.video_file)
+            logger.info(f"Writing video to {self.video_file}.")
 
 
 class Viz(Video):
