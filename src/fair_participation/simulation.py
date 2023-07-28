@@ -14,19 +14,19 @@ from fair_participation.rate_functions import concave_rho_fn
 
 def simulate(
     name: str = "Income",
-    rho_fns: Optional[Callable | tuple[Callable]] = concave_rho_fn,
+    rho_fns: Callable | tuple[Callable] = concave_rho_fn,
     method: str = "RRM",
     save_init: bool = True,
     eta: float = 0.1,
     num_steps: int = 100,
-    init_theta: float = 0.6 * jnp.pi / 2,
+    init_theta: float = 0.6,
     plot_kwargs: Optional[dict] = None,
 ) -> None:
     """
     Simulates the dynamics for a given problem.
 
     :param name: Name of the problem
-    :param rho_fns: Rho functions for each group, or a single rho function for all groups. If None, uses concave_rho_fn.
+    :param rho_fns: Rho functions for each group, or a single rho function for all groups. Defaults to concave_rho_fn.
     :param method: Method to use for updating theta.
     :param save_init: If True, saves the initial state of the environment to figure.
     :param eta: Learning rate for the update method.
