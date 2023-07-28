@@ -34,6 +34,7 @@ class Environment:
         self.eta = eta
         self.init_theta = init_theta
         self.method = method
+        self.achievable_loss = achievable_loss
 
         self.loss_hull, self.thetas = parameterize_convex_hull(achievable_loss)
         # value_and_grad_loss: theta (scalar) -> loss (vector), grad_loss (vector)

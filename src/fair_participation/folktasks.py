@@ -13,7 +13,7 @@ from fair_participation.acs import problems
 from fair_participation.utils import rng_old
 
 
-def achievable_losses(
+def achievable_loss(
     problem_name: str,
     n_samples: int = 100,
 ) -> NDArray:

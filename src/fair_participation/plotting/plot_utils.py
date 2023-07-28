@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import os
 
+from fair_participation.base_logger import logger
+
 
 mpl.rcParams.update(
     {
@@ -20,7 +22,7 @@ mpl.rc("font", **font)
 
 
 def savefig(fig, filename):
-    log.info(f"Saving {filename}")
+    logger.info(f"Saving {filename}")
     fig.savefig(filename)
 
 

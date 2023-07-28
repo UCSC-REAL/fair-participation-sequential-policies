@@ -5,10 +5,10 @@ import jax.numpy as jnp
 import pandas as pd
 from tqdm import trange
 
-from fair_participation.animation import Animation
+from fair_participation.plotting.animation import Animation
 from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
-from fair_participation.folktasks import achievable_losses
+from fair_participation.folktasks import achievable_loss
 from fair_participation.rate_functions import concave_rho_fn
 from fair_participation.utils import PROJECT_ROOT
 
@@ -43,7 +43,7 @@ def simulate(
         logger.info(f"Loaded cached achievable loss from {filename}.")
     except FileNotFoundError:
         logger.info("Computing achievable loss.")
-        achievable_loss = achievable_losses(name)
+        achievable_loss = achievable_loss(name)
         logger.info(f"Saving achievable loss to {filename}.")
         jnp.save(filename, achievable_loss)
 
@@ -70,19 +70,19 @@ def simulate(
         environment=env,
         save_init=save_init,
         plot_kwargs=plot_kwargs,
-    ) as viz:
+    ) as animation:
         try:
             filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
             with jnp.load(filename) as npz:
                 for k in trange(npz["loss"].shape[0]):
                     state = {f: npz[f][k] for f in npz.files}
-                    # viz.render_frame(
-                    #     render_pars=pars,
-                    # )
+                    animation.render_frame(
+                        render_pars=state,
+                    )
         except FileNotFoundError:
             for _ in trange(num_steps):
                 state = env.update()
-                # viz.render_frame(render_pars=state)
+                # animation.render_frame(render_pars=state)
             df = pd.DataFrame(env.history)
             data = {col: jnp.array(df[col].to_list()) for col in df.columns}
             jnp.savez(filename, **data)
