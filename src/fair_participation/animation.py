@@ -1,77 +1,21 @@
-import os
 from typing import Optional
 
-import matplotlib.animation as animation
-import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import pyplot as plt
-from numpy.typing import ArrayLike
+from matplotlib import patches
 
-from fair_participation.plotting import savefig, use_two_ticks_x, use_two_ticks_y
-from fair_participation.base_logger import logger
-
-
-class Video:
-    """
-    Use a matplotlib figure to make a video.
-    For each frame must:
-      1. draw to figure
-      2. call the video.draw method
-      3. clear the figure/axes/Artists
-
-    Example:
-
-    fig, ax = plt.subplots(figsize=(6, 6))
-
-    with Video('video_name', fig) as video:
-        for _ in range(num_frames):
-            render_to_fig()
-            video.draw()
-            ax.cla()
-    """
-
-    def __init__(self, title, fig, render_flag=True, fps=15, dpi=100):
-        self.video_file = f"./mp4/{title}.mp4"
-
-        # whether to actually do anything
-        self.render_flag = render_flag
-
-        if render_flag:
-            self.writer = animation.FFMpegWriter(
-                fps=fps, metadata={"title": title, "artist": "Matplotlib"}
-            )
-
-        self.fig = fig
-        self.dpi = dpi
-
-    def __enter__(self):
-        if self.render_flag:
-            # make file
-            self.writer.setup(self.fig, self.video_file, dpi=self.dpi)
-
-        return self
-
-    def draw(self):
-        if self.render_flag:
-            # draw figure and clear axes
-            self.writer.grab_frame()
-            for ax in self.fig.axes:
-                ax.cla()
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self.render_flag:
-            # finalize file
-            self.writer.finish()
-            logger.info(f"Writing video to {self.video_file}.")
+from fair_participation.environment import Environment
+from fair_participation.plotting import use_two_ticks_x, use_two_ticks_y
+from fair_participation.video import Video
 
 
-class Viz(Video):
+class Animation(Video):
     def __init__(
         self,
         title: str,
-        env,
-        method: Optional[str] = None,
-        save_init=True,
+        environment: Environment,
+        method: str,
+        save_init: bool = True,
         plot_kwargs: Optional[dict] = None,
     ):
         """
@@ -81,7 +25,8 @@ class Viz(Video):
         """
 
         self.title = title
-        self.env = env
+        self.environment = environment
+        # TODO assert we are in 2D
         self.method = method
         if plot_kwargs is None:
             plot_kwargs = dict()
@@ -90,9 +35,7 @@ class Viz(Video):
             1, 3, figsize=(18, 6)
         )
 
-        if method is not None:
-            super().__init__(f"{title}_{method}", self.fig)
-        # TODO else?
+        super().__init__(f"{title}_{method}", self.fig)
 
         # # TODO why are we calling this twice
         # self.setup("left", "Group Loss", **plot_kwargs)
@@ -107,15 +50,6 @@ class Viz(Video):
         #         self.setup(loc, self.title, **plot_kwargs)
         #         savefig(fig, os.path.join("pdf", f"{self.title}_{loc}.pdf"))
 
-    def __enter__(self):
-        if self.method is not None:
-            return super().__enter__()
-        return self
-
-    def __exit__(self, *args):
-        if self.method is not None:
-            super().__exit__(*args)
-
     def setup(self, loc: str, *args, **kwargs):
         {
             "left": self.setup_left,
@@ -126,11 +60,11 @@ class Viz(Video):
     def setup_left(self, title, **kw):
         ax = self.left
         # Plot achievable loss
-        achievable_loss = self.env.achievable_loss
+        achievable_loss = self.environment.achievable_loss
 
         ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
 
-        ax.plot(*self.env.loss_hull.T, "black", label="Pareto Boundary")
+        ax.plot(*self.environment.loss_hull.T, "black", label="Pareto Boundary")
 
         ax.set_xlim(-1, 0)
         ax.set_ylim(-1, 0)
@@ -156,12 +90,12 @@ class Viz(Video):
 
         lims = [
             [
-                np.min(self.env.achievable_loss[:, 0]),
-                np.max(self.env.achievable_loss[:, 0]),
+                np.min(self.environment.achievable_loss[:, 0]),
+                np.max(self.environment.achievable_loss[:, 0]),
             ],
             [
-                np.min(self.env.achievable_loss[:, 1]),
-                np.max(self.env.achievable_loss[:, 1]),
+                np.min(self.environment.achievable_loss[:, 1]),
+                np.max(self.environment.achievable_loss[:, 1]),
             ],
         ]
         if (lims[0][0] > -1 and lims[0][1] < 0) and (
@@ -171,7 +105,7 @@ class Viz(Video):
             left_inset.set_xlim(lims[0][0] - 0.02, lims[0][1] + 0.02)
             left_inset.set_ylim(lims[1][0] - 0.02, lims[1][1] + 0.02)
             left_inset.scatter(*achievable_loss.T, color="black")
-            left_inset.plot(self.env.xs, self.env.ys, "black")
+            left_inset.plot(self.environment.xs, self.environment.ys, "black")
             left_inset.set_xticks([])
             left_inset.set_yticks([])
             left.indicate_inset_zoom(left_inset)
@@ -181,7 +115,10 @@ class Viz(Video):
         # plot achievable rho
         theta_range = np.linspace(0, np.pi / 2, 1000)
         achievable_rho = np.array(
-            [self.env.get_rho(self.env.get_loss(theta)) for theta in theta_range]
+            [
+                self.environment.get_rho(self.env.get_loss(theta))
+                for theta in theta_range
+            ]
         )
         ax.plot(*achievable_rho.T, color="black", label="Pareto Boundary")
         ax.set_title(title)

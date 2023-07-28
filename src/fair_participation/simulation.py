@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import pandas as pd
 from tqdm import trange
 
-from fair_participation.animation import Viz
+from fair_participation.animation import Animation
 from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
 from fair_participation.folktasks import achievable_losses
@@ -64,7 +64,9 @@ def simulate(
     )
 
     # TODO update this with fast version
-    with Viz(name, env, method, save_init, plot_kwargs) as viz:
+    with Animation(
+        title=name, env=env, method=method, save_init=save_init, plot_kwargs=plot_kwargs
+    ) as viz:
         try:
             filename = os.path.join("npz", f"{name}_{method}.npz")
             with jnp.load(filename) as npz:

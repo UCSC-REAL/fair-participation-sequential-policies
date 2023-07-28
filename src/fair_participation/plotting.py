@@ -24,6 +24,7 @@ def savefig(fig, filename):
     fig.savefig(filename)
 
 
+# TODO not sure about these
 def use_two_ticks_x(ax):
     x = ax.get_xticks()
     ax.set_xticks(x[:: len(x) - 1])
