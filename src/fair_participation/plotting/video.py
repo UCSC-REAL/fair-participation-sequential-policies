@@ -55,8 +55,8 @@ class Video:
         if self.render_flag:
             # draw figure and clear axes
             self.writer.grab_frame()
-            for ax in self.figure.axes:
-                ax.cla()
+            # for ax in self.figure.axes:
+            #     ax.cla()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.render_flag:

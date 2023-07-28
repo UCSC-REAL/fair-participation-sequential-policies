@@ -81,8 +81,8 @@ def simulate(
                     )
         except FileNotFoundError:
             for _ in trange(num_steps):
-                state = env.update()
-                # animation.render_frame(render_pars=state)
+                state = env.update()._asdict()
+                animation.render_frame(render_pars=state)
             df = pd.DataFrame(env.history)
             data = {col: jnp.array(df[col].to_list()) for col in df.columns}
             jnp.savez(filename, **data)

@@ -5,7 +5,8 @@ from typing import Optional
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.simulation import simulate
 from fair_participation.utils import PROJECT_ROOT
-from fair_participation.plotting import compare, compare_2
+
+# from fair_participation.plotting import compare, compare_2
 
 
 def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
@@ -69,7 +70,7 @@ def main():
     for prob in base_problems:
         for method in ("RRM", "RRM_grad"):
             problems.append(dict(**prob, method=method, save_init=False))
-    run_problems(problems[:2], clean="results")
+    run_problems(problems[:4], clean="results")
 
 
 if __name__ == "__main__":

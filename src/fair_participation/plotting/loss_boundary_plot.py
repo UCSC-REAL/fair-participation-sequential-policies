@@ -10,8 +10,10 @@ from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_tick
 class LossBoundaryPlot:
     def __init__(self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: NDArray):
         self.ax = ax
+        plt.sca(ax)
+        ax.autoscale(enable=False)
         ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
-        ax.plot(loss_hull.T, color="black", label="Pareto Boundary")
+        ax.plot(*loss_hull.T, color="black", label="Pareto Boundary")
 
         plt.xlim([-1, 0])
         plt.ylim([-1, 0])
@@ -29,7 +31,7 @@ class LossBoundaryPlot:
                 color="black",
             )
         )
-        ax.annotate("$\\theta$", (-0.85, -0.1))
+        plt.annotate("$\\theta$", (-0.85, -0.1))
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 
@@ -63,7 +65,8 @@ class LossBoundaryPlot:
         - Plot vector in direction opposite rho
         """
         artifacts = [self.ax.scatter(*loss, color="red", marker="^", s=100)]
-
+        plt.xlim([-1, 0])
+        plt.ylim([-1, 0])
         # TODO fix this part
         # if self.method.startswith("RRM"):
         #     t = np.arctan(rho[1] / rho[0])
