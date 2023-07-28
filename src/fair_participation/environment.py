@@ -18,7 +18,7 @@ class Environment:
         group_sizes: ArrayLike,
         eta: float,
         init_theta: float,
-        update_method: str,
+        method: str,
     ) -> None:
         """
         Environment for running the simulation. Has update method that updates the state of the environment.
@@ -28,11 +28,12 @@ class Environment:
         :param group_sizes: Array of group sizes summing to 1.
         :param eta: Learning rate.
         :param init_theta: Initial value of theta.
-        :param update_method: Method to use for updating theta.
+        :param method: Method to use for updating theta.
         """
         self.group_sizes = group_sizes
         self.eta = eta
         self.init_theta = init_theta
+        self.method = method
 
         self.loss_hull, self.thetas = parameterize_convex_hull(achievable_loss)
         # value_and_grad_loss: theta (scalar) -> loss (vector), grad_loss (vector)
@@ -60,19 +61,19 @@ class Environment:
         )
         self.history = [self.state._asdict()]
 
-        if update_method == "RRM":
+        if method == "RRM":
             self.update_state = rrm_step(
                 values_and_grads=self.values_and_grads,
                 group_sizes=self.group_sizes,
                 loss_hull=self.loss_hull,
             )
-        elif update_method == "RRM_grad":
+        elif method == "RRM_grad":
             self.update_state = rrm_grad_step(
                 values_and_grads=self.values_and_grads,
                 loss_hull=self.loss_hull,
                 eta=self.eta,
             )
-        elif update_method == "FairLPU":
+        elif method == "FairLPU":
             self.update_state = fair_lpu_step(
                 value_and_grad_loss=self.value_and_grad_loss,
                 values_and_grads=self.values_and_grads,
@@ -80,7 +81,7 @@ class Environment:
                 eta=self.eta,
             )
         else:
-            raise ValueError(f"Unknown update method {update_method}.")
+            raise ValueError(f"Unknown update method {method}.")
 
     def update(self) -> StateInfo:
         """

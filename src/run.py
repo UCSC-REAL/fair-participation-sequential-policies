@@ -2,14 +2,9 @@ import os
 import pathlib
 from typing import Optional
 
-import numpy as np
-
-import site
-
-site.addsitedir("src")
-
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.simulation import simulate
+from fair_participation.utils import PROJECT_ROOT
 from fair_participation.plotting import compare, compare_2
 
 
@@ -20,20 +15,21 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
     :param clean: If 'results', deletes all files in the data, mp4, npz, and pdf directories.
       If 'all', also deletes all files in the 'losses' directory.
     """
+    all_folders = ["data", "mp4", "npz", "pdf", "losses"]
     clean_folders = []
     if clean in ("results", "all"):
         clean_folders += ["data", "mp4", "npz", "pdf"]
     if clean == "all":
         clean_folders.append("losses")
 
-    # Create needed directories if they don't exist
-    for folder in clean_folders:
-        if clean is not None:
-            for file in os.listdir(folder):
+    for folder in all_folders:
+        full_folder = os.path.join(PROJECT_ROOT, folder)
+        os.makedirs(full_folder, exist_ok=True)
+        if folder in clean_folders:
+            for file in os.listdir(full_folder):
                 ext = pathlib.Path(file).suffix
                 if ext in (".npz", ".mp4", ".pdf", ".npy"):
                     os.remove(os.path.join(folder, file))
-        os.makedirs(folder, exist_ok=True)
 
     for problem in problems:
         simulate(**problem)

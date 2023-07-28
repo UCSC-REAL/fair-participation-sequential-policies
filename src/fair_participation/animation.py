@@ -15,8 +15,7 @@ class Animation(Video):
     def __init__(
         self,
         title: str,
-        env: Environment,
-        method: str,
+        environment: Environment,
         save_init: bool = True,
         plot_kwargs: Optional[dict] = None,
     ):
@@ -27,9 +26,8 @@ class Animation(Video):
         """
 
         self.title = title
-        self.environment = env
+        self.environment = environment
         # TODO assert we are in 2D
-        self.method = method
         if plot_kwargs is None:
             plot_kwargs = dict()
 
@@ -37,7 +35,7 @@ class Animation(Video):
             1, 3, figsize=(18, 6)
         )
 
-        super().__init__(f"{title}_{method}", self.fig)
+        super().__init__(f"{title}_{self.environment.method}", self.fig)
 
         # # TODO why are we calling this twice
         # self.setup("left", "Group Loss", **plot_kwargs)

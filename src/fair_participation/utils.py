@@ -1,3 +1,4 @@
+from pathlib import Path
 from numpy.random import default_rng, RandomState
 
 # https://scikit-learn.org/stable/common_pitfalls.html
@@ -10,3 +11,6 @@ rng_seed = 76771
 rng = default_rng(seed=rng_seed)
 # Can use deprecated RandomState as a backup, if needed
 rng_old = RandomState(rng_seed)
+
+SRC_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = SRC_ROOT.parent

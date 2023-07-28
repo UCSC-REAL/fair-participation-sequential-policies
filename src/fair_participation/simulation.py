@@ -10,6 +10,7 @@ from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
 from fair_participation.folktasks import achievable_losses
 from fair_participation.rate_functions import concave_rho_fn
+from fair_participation.utils import PROJECT_ROOT
 
 
 def simulate(
@@ -36,7 +37,7 @@ def simulate(
     """
 
     logger.info(f"Simulating {name}.")
-    filename = os.path.join("losses", f"{name}.npy")
+    filename = os.path.join(PROJECT_ROOT, "losses", f"{name}.npy")
     try:
         achievable_loss = jnp.load(filename)
         logger.info(f"Loaded cached achievable loss from {filename}.")
@@ -60,15 +61,18 @@ def simulate(
         group_sizes=group_sizes,
         eta=eta,
         init_theta=init_theta,
-        update_method=method,
+        method=method,
     )
 
     # TODO update this with fast version
     with Animation(
-        title=name, env=env, method=method, save_init=save_init, plot_kwargs=plot_kwargs
+        title=name,
+        environment=env,
+        save_init=save_init,
+        plot_kwargs=plot_kwargs,
     ) as viz:
         try:
-            filename = os.path.join("npz", f"{name}_{method}.npz")
+            filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
             with jnp.load(filename) as npz:
                 for k in trange(npz["loss"].shape[0]):
                     state = {f: npz[f][k] for f in npz.files}
