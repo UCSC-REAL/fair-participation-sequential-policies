@@ -1,5 +1,7 @@
 from typing import Optional
 
+from jax.typing import ArrayLike
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import patches
@@ -13,7 +15,7 @@ class Animation(Video):
     def __init__(
         self,
         title: str,
-        environment: Environment,
+        env: Environment,
         method: str,
         save_init: bool = True,
         plot_kwargs: Optional[dict] = None,
@@ -25,7 +27,7 @@ class Animation(Video):
         """
 
         self.title = title
-        self.environment = environment
+        self.environment = env
         # TODO assert we are in 2D
         self.method = method
         if plot_kwargs is None:

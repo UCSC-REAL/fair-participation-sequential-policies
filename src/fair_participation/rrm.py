@@ -2,7 +2,7 @@ from typing import Callable
 
 import jax.numpy as jnp
 from jax import jit, Array
-from jax.typing import ArrayLike, Array
+from jax.typing import ArrayLike
 
 from fair_participation.state import StateInfo
 from fair_participation.optimization import solve_qp

@@ -1,8 +1,8 @@
 from typing import Callable, Any
 
 import jax.numpy as jnp
-from jax import value_and_grad, grad, vmap, jit, lax
-from jax.typing import ArrayLike, Array
+from jax import value_and_grad, grad, vmap, jit, lax, Array
+from jax.typing import ArrayLike
 
 
 def fairness_disparity(rho: ArrayLike) -> Any:

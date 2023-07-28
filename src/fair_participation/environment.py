@@ -1,6 +1,7 @@
 from typing import Callable
 
-from jax.typing import ArrayLike, Array
+from jax import Array
+from jax.typing import ArrayLike
 
 from fair_participation.optimization import parameterize_convex_hull
 from fair_participation.rrm import rrm_step, rrm_grad_step

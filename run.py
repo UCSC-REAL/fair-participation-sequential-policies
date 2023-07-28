@@ -4,6 +4,10 @@ from typing import Optional
 
 import numpy as np
 
+import site
+
+site.addsitedir("src")
+
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.simulation import simulate
 from fair_participation.plotting import compare, compare_2
