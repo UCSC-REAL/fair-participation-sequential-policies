@@ -1,5 +1,8 @@
 import numpy as np
 
+import jax
+import jax.numpy as jnp
+import pandas
 from numpy.typing import NDArray
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
@@ -11,6 +14,26 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 from fair_participation.acs import problems
 from fair_participation.utils import rng_old
+
+
+def get_random_group_weights(num_groups, num_samples, seed=0):
+    """
+    Get num_samaples vectors of dimension num_groups that sum to 1
+    Shape (num_samples, num_groups)
+
+    Sample from the simplex with num_groups degrees of freedom
+    (e.g., for 2 groups, sample from unit square)
+    Then project to simplex with (num_groups - 1) degrees of freedom
+    by normalizing.
+    This will bias samples of the (num_group - 1) simplex away from a
+    uniform sampling towards more equal group representation, but that's
+    likely to be where the optimal policy is anyway.
+    """
+    key = jax.random.PRNGKey(seed)
+    vectors = jax.random.uniform(key, shape=(num_samples, num_groups))
+    vector_norms = jnp.einsum("ij->j", vectors)  # sum across groups
+    # normalize each vectors such that values for each group sum to 1
+    return jnp.einsum("ij,j->ij", vectors, 1 / vector_norms)
 
 
 def achievable_loss(
@@ -32,15 +55,18 @@ def achievable_loss(
     acs_data = data_source.get_data(states=states, download=True)
     # get features, labels and groups
     x, y, g = problem.df_to_pandas(acs_data)
-    g = g.iloc[:, 0]  # boolean vector for class 1 (True) vs class 0 (False)
     y = y.iloc[:, 0]
-    assert set(g) == {False, True}
+
+    # shape [num_individuals, num_groups]
+    g_onehot = pandas.get_dummies(g.astype("str")).to_numpy()
+    num_groups = g_onehot.shape[1]
+    g_series = g[g.columns[0]]
+
+    # shape [n_samples, num_groups]
+    group_weights = get_random_group_weights(num_groups, n_samples)
 
     pipeline = make_pipeline(StandardScaler(), LogisticRegression(random_state=rng_old))
-    sample_weights = [
-        (1 - g) * np.cos(t) + g * np.sin(t)
-        for t in np.linspace(0, np.pi / 2, n_samples)
-    ]
+    sample_weights = jnp.einsum("dg,sg->sd", g_onehot, group_weights)
 
     achievable_loss = []
     with logging_redirect_tqdm():
@@ -49,6 +75,9 @@ def achievable_loss(
             y_pred = pipeline.predict(x)
             # loss = negative accuracies per group
             achievable_loss.append(
-                [-accuracy_score(y[~g], y_pred[~g]), -accuracy_score(y[g], y_pred[g])]
+                [
+                    accuracy_score(y[g_series == gref], y_pred[g_series == gref])
+                    for gref in range(num_groups)
+                ]
             )
     return np.array(achievable_loss)
