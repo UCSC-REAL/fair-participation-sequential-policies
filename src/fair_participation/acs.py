@@ -32,7 +32,8 @@ Income = BasicProblem(
     target="PINCP",
     target_transform=lambda x: x > 50000,
     group="PINCP",
-    group_transform=lambda x: x > 50000,
+    # group_transform=lambda x: x > 50000,
+    group_transform=lambda x: np.minimum(x // 10000, 3).astype(int),
     preprocess=adult_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
