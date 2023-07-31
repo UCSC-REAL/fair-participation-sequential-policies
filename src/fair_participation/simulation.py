@@ -8,7 +8,7 @@ from tqdm import trange
 from fair_participation.plotting.animation import Animation
 from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
-from fair_participation.folktasks import achievable_loss
+from fair_participation.folktasks import achievable_loss as get_achievable_loss
 from fair_participation.rate_functions import concave_rho_fn
 from fair_participation.utils import PROJECT_ROOT
 
@@ -43,7 +43,7 @@ def simulate(
         logger.info(f"Loaded cached achievable loss from {filename}.")
     except FileNotFoundError:
         logger.info("Computing achievable loss.")
-        achievable_loss = achievable_loss(name)
+        achievable_loss = get_achievable_loss(name)
         logger.info(f"Saving achievable loss to {filename}.")
         jnp.save(filename, achievable_loss)
 
