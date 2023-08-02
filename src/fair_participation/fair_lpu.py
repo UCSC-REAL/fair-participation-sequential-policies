@@ -34,11 +34,13 @@ def fair_lpu_linear_fn(
         """
         vgs = values_and_grads(loss)
         # Find active facet
-        facet_ix = jnp.argmin(jnp.abs(jnp.dot(normals, loss) + offsets))
+        facet_dists = jnp.abs(jnp.dot(normals, loss) + offsets)
+        facet_ix = jnp.argmin(facet_dists)
         unit_normal = normals[facet_ix]
-        # Subtract off normal component of gradient
+        # Subtract off normal component of gradient if we are on a facet
         g = vgs["grad_disparity_loss"]
-        proj_fairness_grad = g - jnp.dot(g, unit_normal) * unit_normal
+        is_on_facet = facet_dists[facet_ix] < 1e-6
+        proj_fairness_grad = g - is_on_facet * jnp.dot(g, unit_normal) * unit_normal
         # TODO needs a zero check?
         lambda_estimate = jnp.max(
             0.0,

@@ -70,7 +70,7 @@ def main():
     for prob in base_problems:
         for method in ("RRM", "RRM_grad"):
             problems.append(dict(**prob, method=method, save_init=False))
-    run_problems(problems[:4], clean="results")
+    run_problems(problems[:2], clean="results")
 
 
 if __name__ == "__main__":

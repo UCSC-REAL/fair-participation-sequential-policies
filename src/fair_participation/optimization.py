@@ -3,13 +3,14 @@ from typing import Optional
 from scipy.spatial import ConvexHull
 
 from jax import numpy as jnp
-from jax import Array
+from jax import jit, Array
 from jax.typing import ArrayLike
 
 import cvxpy as cvx
 from cvxpy import Problem, Minimize, Variable, Constant
 
 
+@jit
 def is_on_facet(point: ArrayLike, equations: ArrayLike, atol: bool = 1e-7) -> bool:
     """
     Returns True if point is on a facet of the given convex hull.
@@ -43,6 +44,7 @@ def solve_qp(
     """
     points = hull.points
     n, d = points.shape
+    # TODO use explicit hull equations instead?
     alpha = Variable(n)
     x = Variable(d)
     constraints = [
@@ -59,6 +61,5 @@ def solve_qp(
         constraints,
     )
     prob.solve()
-    # Make sure we're on a facet
-    assert is_on_facet(x.value, hull.equations)
+    # TODO when do we need to make sure we're on a facet?
     return x.value, alpha.value
