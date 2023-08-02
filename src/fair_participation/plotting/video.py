@@ -27,39 +27,27 @@ class Video:
         self,
         filename: str,
         figure: plt.Figure,
-        render_flag: bool = True,
         fps: int = 15,
         dpi: int = 100,
     ):
         self.video_file = f"./mp4/{filename}.mp4"
-
-        # whether to actually do anything
-        self.render_flag = render_flag
-
-        if render_flag:
-            self.writer = animation.FFMpegWriter(
-                fps=fps, metadata={"title": filename, "artist": "Matplotlib"}
-            )
-
+        self.writer = animation.FFMpegWriter(
+            fps=fps, metadata={"title": filename, "artist": "Matplotlib"}
+        )
         self.figure = figure
         self.dpi = dpi
 
     def __enter__(self):
-        if self.render_flag:
-            # make file
-            self.writer.setup(self.figure, self.video_file, dpi=self.dpi)
-
+        self.writer.setup(self.figure, self.video_file, dpi=self.dpi)
         return self
 
     def draw(self):
-        if self.render_flag:
-            # draw figure and clear axes
-            self.writer.grab_frame()
-            # for ax in self.figure.axes:
-            #     ax.cla()
+        # draw figure and clear axes
+        self.writer.grab_frame()
+        # TODO check clear axes
+        # for ax in self.figure.axes:
+        #     ax.cla()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self.render_flag:
-            # finalize file
-            self.writer.finish()
-            logger.info(f"Writing video to {self.video_file}.")
+        self.writer.finish()
+        logger.info(f"Writing video to {self.video_file}.")
