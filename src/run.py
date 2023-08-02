@@ -45,25 +45,25 @@ def main():
         {
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_theta": 0.57,
+            "init_loss_direction": 0.57,
             "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
         },
         {
             "name": "Mobility",
             "rho_fns": localized_rho_fn(-0.7, 10),
-            "init_theta": 0.6,
+            "init_loss_direction": 0.6,
             "eta": 0.3,
         },
         {
             "name": "PublicCoverage",
             "rho_fns": localized_rho_fn(-0.7, 50),
-            "init_theta": 0.6,
+            "init_loss_direction": 0.6,
             "plot_kwargs": {"theta_plot_range": [0.3, 0.7]},
         },
         {
             "name": "TravelTime",
             "rho_fns": localized_rho_fn(-0.58, 100),
-            "init_theta": 0.51,
+            "init_loss_direction": 0.51,
             "plot_kwargs": {"theta_plot_range": [0.4, 0.6]},
         },
     ]

@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import jax.numpy as jnp
-from jax import value_and_grad, grad, vmap, jit, lax, Array
+from jax import value_and_grad, vmap, jit, lax, Array
 from jax.typing import ArrayLike
 
 
@@ -53,44 +53,6 @@ def _value_and_grad_total_loss_fn(
     return vg_total_loss
 
 
-def _value_and_grad_loss_fn(thetas: ArrayLike, losses: ArrayLike) -> Callable:
-    """
-    Returns a callable to compute the loss and its gradient with respect to theta.
-    :param thetas: Array of theta values.
-    :param losses: Array of achievable losses.
-    :return: Callable.
-    """
-
-    def _loss(theta: float, losses_: ArrayLike) -> Array:
-        """
-        Interpolates the losses for a single group.
-        :param theta: Parameter value.
-        :param losses_: Array of achievable losses for a single group.
-        :return:
-        """
-        # uses 'extrapolate' to avoid zero gradient issue
-        return jnp.interp(
-            theta, thetas, losses_, left="extrapolate", right="extrapolate"
-        )
-
-    _value_and_grad_loss = value_and_grad(
-        _loss, argnums=0
-    )  # value and grad for a single group
-    value_and_grad_loss = vmap(
-        _value_and_grad_loss, in_axes=(None, 1)
-    )  # value and grad mapped over all groups
-
-    def _value_and_grad_loss_all(theta: float) -> tuple[Array, Array]:
-        """
-        Returns the loss vector and its Jacobian with respect to theta.
-        :param theta: Parameter value.
-        :return: Tuple of loss vector and its Jacobian.
-        """
-        return value_and_grad_loss(theta, losses)
-
-    return _value_and_grad_loss_all
-
-
 # TODO vectorize
 def _value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
     """
@@ -113,15 +75,12 @@ def _value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
 
 
 def values_and_grads_fns(
-    thetas: ArrayLike,
-    losses: ArrayLike,
     rho_fns: tuple[Callable],
     group_sizes: ArrayLike,
-) -> tuple[Callable, Callable]:
+) -> Callable:
     """
     Creates a jitted callable that returns commonly used values and gradients.
-    :param thetas: Array of theta values.
-    :param losses: Array of achievable losses corresponding to thetas.
+
     :param rho_fns: Tuple of rho functions for each group.
     :param group_sizes: Array of group sizes summing to 1.
     :return: Tuple of callables:
@@ -130,7 +89,6 @@ def values_and_grads_fns(
             rho, total_loss, grad_total_loss, disparity, grad_disparity_loss
     """
 
-    value_and_grad_loss = _value_and_grad_loss_fn(thetas, losses)
     rho_f = _value_rho_fn(rho_fns)
     value_and_grad_total_loss = _value_and_grad_total_loss_fn(rho_f, group_sizes)
 
@@ -140,15 +98,6 @@ def values_and_grads_fns(
         return fairness_disparity(rho)
 
     value_and_grad_disparity_loss = value_and_grad(_disparity_loss)
-
-    @jit
-    def _value_and_grad_loss(theta: float) -> dict:
-        """Maps theta to dict of loss vector and its Jacobian with respect to theta."""
-        loss, grad_loss = value_and_grad_loss(theta)
-        return {
-            "loss": loss,
-            "grad_loss": grad_loss,
-        }
 
     @jit
     def _values_and_grads(loss: ArrayLike) -> dict:
@@ -169,4 +118,4 @@ def values_and_grads_fns(
             "grad_disparity_loss": grad_disparity_loss,
         }
 
-    return _value_and_grad_loss, _values_and_grads
+    return _values_and_grads

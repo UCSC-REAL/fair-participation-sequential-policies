@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+from scipy.spatial import ConvexHull
 
 from matplotlib import patches
 from matplotlib import pyplot as plt
@@ -8,12 +9,12 @@ from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_tick
 
 
 class LossBoundaryPlot:
-    def __init__(self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: NDArray):
+    def __init__(self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull):
         self.ax = ax
         plt.sca(ax)
         ax.autoscale(enable=False)
         ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
-        ax.plot(*loss_hull.T, color="black", label="Pareto Boundary")
+        ax.plot(*loss_hull.points.T, color="black", label="Pareto Boundary")
 
         plt.xlim([-1, 0])
         plt.ylim([-1, 0])

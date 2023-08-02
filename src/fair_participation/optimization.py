@@ -1,38 +1,31 @@
 from typing import Optional
 
-import jax.numpy as jnp
+from scipy.spatial import ConvexHull
+
+from jax import numpy as jnp
 from jax import Array
 from jax.typing import ArrayLike
 
-from scipy.spatial import ConvexHull
 import cvxpy as cvx
 from cvxpy import Problem, Minimize, Variable, Constant
 
 
-def parameterize_convex_hull(points: ArrayLike) -> tuple[Array, Array]:
+def is_on_facet(point: ArrayLike, equations: ArrayLike, atol: bool = 1e-7) -> bool:
     """
-    Returns a parameterization of the frontier of convex hull of points.
-    :param points: Array of points.
-    :return: Tuple of (points, thetas) where thetas is the parameterization in [0,1] of the frontier.
+    Returns True if point is on a facet of the given convex hull.
+    :param point:
+    :param equations:
+    :param atol:
+    :return:
     """
-    n, d = points.shape
-    if d != 2:
-        raise NotImplementedError("Only d=2 supported.")
-    # convex hull vertices dominate suboptimal points
-    # TODO why would we need to check points? shouldn't the hull just be the vertices?
-    hull = ConvexHull(points)
-    points = jnp.array([points[ix] for ix in hull.vertices])
-    points = points[jnp.lexsort(points.T)]
-    # Make ts 0 to 1 ccw.
-    # TODO Not smooth with interpolation, but good enough?
-    angle: ArrayLike = jnp.arctan2(points[:, 1], points[:, 0])
-    ts = -(angle / (jnp.pi / 2) + 1)
-    return points, ts
+    normals = equations[:, :-1]
+    offsets = equations[:, -1]
+    return any(jnp.abs(normals @ point + offsets) < atol)
 
 
 def solve_qp(
     w: ArrayLike,
-    hull: ArrayLike,
+    hull: ConvexHull,
     gamma: Optional[float] = None,
     x0: Optional[ArrayLike] = None,
 ) -> tuple[Array, Array]:
@@ -43,18 +36,19 @@ def solve_qp(
 
     Used for RRM/FairLPU updates.
     :param w: Array of linear weights.
-    :param hull: Array of points defining the convex hull.
+    :param hull: ConvexHull object.
     :param gamma: Coefficient of quadratic term.
     :param x0: Center of quadratic term.
     :return: Tuple of (x, alpha) where x is the optimal point and alpha is the optimal convex combination.
     """
-    n, d = hull.shape
+    points = hull.points
+    n, d = points.shape
     alpha = Variable(n)
     x = Variable(d)
     constraints = [
         cvx.sum(alpha) == 1,
         alpha >= Constant(0.0),  # for type hinting
-        x == alpha @ hull,
+        x == alpha @ points,
     ]
     obj = x @ w
     if gamma is not None:
@@ -65,4 +59,6 @@ def solve_qp(
         constraints,
     )
     prob.solve()
+    # Make sure we're on a facet
+    assert is_on_facet(x.value, hull.equations)
     return x.value, alpha.value

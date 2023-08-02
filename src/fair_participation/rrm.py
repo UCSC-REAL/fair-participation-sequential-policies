@@ -3,6 +3,7 @@ from typing import Callable
 import jax.numpy as jnp
 from jax import jit, Array
 from jax.typing import ArrayLike
+from scipy.spatial import ConvexHull
 
 from fair_participation.state import StateInfo
 from fair_participation.optimization import solve_qp
@@ -11,7 +12,7 @@ from fair_participation.optimization import solve_qp
 def rrm_step(
     values_and_grads: Callable[[ArrayLike], dict],
     group_sizes: ArrayLike,
-    loss_hull: ArrayLike,
+    loss_hull: ConvexHull,
 ) -> Callable[[ArrayLike], StateInfo]:
     """
     Returns update callable that exactly solves the RRM subproblem:
@@ -20,7 +21,7 @@ def rrm_step(
 
     :param values_and_grads: Callable that returns commonly used values and gradients.
     :param group_sizes: Array of group sizes summing to 1.
-    :param loss_hull: Array of losses that define the convex hull.
+    :param loss_hull: ConvexHull object of loss vectors.
     :return: Callable that performs a single update step.
     """
 
@@ -48,7 +49,7 @@ def rrm_step(
 # TODO check
 def rrm_grad_step(
     values_and_grads: Callable[[ArrayLike], dict],
-    loss_hull: ArrayLike,
+    loss_hull: ConvexHull,
     eta: float,
 ) -> Callable[[ArrayLike], StateInfo]:
     """
@@ -56,7 +57,7 @@ def rrm_grad_step(
         l_{t+1} = l_t - eta * grad_x L(x, rho_t)|_{x=l_t}
 
     :param values_and_grads: Callable that returns commonly used values and gradients.
-    :param loss_hull: Array of losses that define the convex hull.
+    :param loss_hull: ConvexHull object of loss vectors.
     :param eta: Learning rate.
     :return: Callable that performs a single update step.
     """

@@ -2,6 +2,7 @@ import os
 from typing import Callable, Optional
 
 import jax.numpy as jnp
+from jax.typing import ArrayLike
 import pandas as pd
 from tqdm import trange
 
@@ -20,7 +21,7 @@ def simulate(
     save_init: bool = True,
     eta: float = 0.1,
     num_steps: int = 100,
-    init_theta: float = 0.6,
+    init_loss_direction: float | ArrayLike = 0.6,
     plot_kwargs: Optional[dict] = None,
 ) -> None:
     """
@@ -32,7 +33,8 @@ def simulate(
     :param save_init: If True, saves the initial state of the environment to figure.
     :param eta: Learning rate for the update method.
     :param num_steps: Number of steps to simulate.
-    :param init_theta: Initial value of theta.
+    :param init_loss_direction: Initial direction of loss. Will choose achievable loss closest to this direction.
+     Can be set to float to match legacy init_theta.
     :param plot_kwargs: Keyword arguments for plotting.
     """
 
@@ -55,12 +57,28 @@ def simulate(
     # assume even group sizes
     group_sizes = jnp.ones(n_groups) / n_groups
 
+    # for legacy purposes, if init_theta is a float in [0,1], use that to create the initial angle
+    if isinstance(init_loss_direction, float):
+        assert (
+            0 <= init_loss_direction <= 1
+        ), "If init_theta is a float, it must be in [0,1]"
+        assert (
+            achievable_loss.ndim == 2
+        ), "If init_theta is a float, achievable_loss must be 2D."
+        # 0 at pi to 1 at 3pi/2
+        init_loss_direction = jnp.array(
+            [
+                -jnp.cos(init_loss_direction * jnp.pi / 2),
+                -jnp.sin(init_loss_direction * jnp.pi / 2),
+            ]
+        )
+
     env = Environment(
         achievable_loss=achievable_loss,
         rho_fns=rho_fns,
         group_sizes=group_sizes,
         eta=eta,
-        init_theta=init_theta,
+        init_loss_direction=init_loss_direction,
         method=method,
     )
 
