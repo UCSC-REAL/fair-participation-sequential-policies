@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from fair_participation.environment import Environment
 from fair_participation.plotting.video import Video
 from fair_participation.plotting.loss_boundary_plot import LossBoundaryPlot
+from fair_participation.plotting.participation_rate_plot import ParticipationRatePlot
 
 
 class Animation(Video):
@@ -34,7 +35,11 @@ class Animation(Video):
             achievable_loss=environment.achievable_loss,
             loss_hull=environment.loss_hull,
         )
-        self.center_plot = ...
+        self.center_plot = ParticipationRatePlot(
+            ax=cax,
+            achievable_loss=environment.achievable_loss,
+            values_and_grads=environment.values_and_grads,
+        )
         self.right_plot = ...
 
         # # TODO why are we calling this twice
@@ -47,12 +52,7 @@ class Animation(Video):
         #         savefig(fig, os.path.join("pdf", f"{self.title}_{loc}.pdf"))
 
     def render_frame(self, render_pars: dict, **_):
-        to_remove = self.left_plot.update(**render_pars)
-        # to_remove += ...
-        # to_remove += ...
+        self.left_plot.update(**render_pars)
+        self.center_plot.update(**render_pars)
 
         self.draw()
-
-        # remove artifacts
-        for obj in to_remove:
-            obj.remove()

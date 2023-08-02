@@ -1,17 +1,36 @@
+from typing import Callable
+
 import numpy as np
+from numpy.typing import NDArray
 from matplotlib import pyplot as plt
 
 from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
 
 
 class LossDisparityPlot:
-    def __init__(self, ax: plt.Axes, **kw):
+    def __init__(
+        self,
+        ax: plt.Axes,
+        achievable_loss: NDArray,
+        values_and_grads: Callable,
+        **kwargs
+    ):
+        """
+
+        :param ax:
+        :param achievable_loss:
+        :param values_and_grads:
+        """
         self.ax = ax
+        assert (
+            achievable_loss.shape[1] == 2
+        ), "Only 2 groups supported for this type of plot"
         # plot performative loss and fairness surface
-        if "theta_plot_range" in kw:
-            min_theta, max_theta = kw["theta_plot_range"]
+        if "theta_plot_range" in kwargs:
+            min_theta, max_theta = kwargs["theta_plot_range"]
         else:
-            min_theta, max_theta = (0, np.pi / 2)
+            min_theta, max_theta = (0, 1)
+        # TODO this is a little gross
         theta_range = np.linspace(min_theta, max_theta, 1000)
 
         ax_r = ax.twinx()

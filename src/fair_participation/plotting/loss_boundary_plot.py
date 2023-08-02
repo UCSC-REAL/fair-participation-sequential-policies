@@ -10,6 +10,12 @@ from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_tick
 
 class LossBoundaryPlot:
     def __init__(self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull):
+        """
+
+        :param ax:
+        :param achievable_loss:
+        :param loss_hull:
+        """
         self.ax = ax
         plt.sca(ax)
         ax.autoscale(enable=False)
@@ -36,43 +42,25 @@ class LossBoundaryPlot:
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 
-        # TODO fix this part
-        # lims = [
-        #     [
-        #         np.min(achievable_loss[:, 0]),
-        #         np.max(achievable_loss[:, 0]),
-        #     ],
-        #     [
-        #         np.min(achievable_loss[:, 1]),
-        #         np.max(achievable_loss[:, 1]),
-        #     ],
-        # ]
-
-        # if (lims[0][0] > -1 and lims[0][1] < 0) and (
-        #     lims[1][0] > -1 and lims[1][1] < 0
-        # ):
-        #     left_inset = ax.inset_axes([0.5, 0.5, 0.3, 0.3])
-        #     left_inset.set_xlim(lims[0][0] - 0.02, lims[0][1] + 0.02)
-        #     left_inset.set_ylim(lims[1][0] - 0.02, lims[1][1] + 0.02)
-        #     left_inset.scatter(*achievable_loss.T, color="black")
-        #     left_inset.plot(self.environment.xs, self.environment.ys, "black")
-        #     left_inset.set_xticks([])
-        #     left_inset.set_yticks([])
-        #     left.indicate_inset_zoom(left_inset)
+        (self.loss_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+        self.rho_arrow = plt.quiver(
+            -0.5,
+            -0.5,
+            0,
+            0,
+            color="blue",
+            scale=1,
+            scale_units="xy",
+            width=0.01,
+            alpha=0.5,
+        )
 
     def update(self, loss: NDArray, rho: NDArray, **_):
         """
+        TODO
         - Plot current location on achievable loss curve (point)
         - Plot vector in direction opposite rho
         """
-        artifacts = [self.ax.scatter(*loss, color="red", marker="^", s=100)]
-        plt.xlim([-1, 0])
-        plt.ylim([-1, 0])
-        # TODO fix this part
-        # if self.method.startswith("RRM"):
-        #     t = np.arctan(rho[1] / rho[0])
-        #     l = self.env.get_loss(t)
-        #     d = np.einsum("g,g->", rho, l) / np.einsum("g,g->", rho, rho)
-        #     artifacts += [self.ax.plot([d * rho[0], 0], [d * rho[1], 0], "red")[0]]
-
-        return artifacts
+        self.loss_pt.set_data(*loss)
+        rho /= np.linalg.norm(rho) * 4
+        self.rho_arrow.set_UVC(*(-rho))
