@@ -2,6 +2,8 @@ import os
 import pathlib
 from typing import Optional
 
+from jax import numpy as jnp
+
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.simulation import simulate
 from fair_participation.utils import PROJECT_ROOT
@@ -42,6 +44,12 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
 def main():
     problems = []
     base_problems = [
+        {
+            "name": "Income_three_groups",
+            "rho_fns": localized_rho_fn(-0.75, 20),
+            "init_loss_direction": jnp.array([0.5, 0.5, 0.5]),
+            "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
+        },
         {
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),

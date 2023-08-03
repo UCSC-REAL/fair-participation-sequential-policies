@@ -15,6 +15,29 @@ We explicitly define the modified ACS problems here and note group changes from 
 All class labels are 0/1 or False/True 
 """
 
+# group: RAC1P -> PINCP (0: <30k, 1: >=30k, >60k, 2: >= 60k)
+Income_three_groups = BasicProblem(
+    features=[
+        "AGEP",
+        "COW",
+        "SCHL",
+        "MAR",
+        "OCCP",
+        "POBP",
+        "RELP",
+        "WKHP",
+        "SEX",
+        "RAC1P",
+    ],
+    target="PINCP",
+    target_transform=lambda x: x > 50000,
+    group="PINCP",
+    group_transform=lambda x: np.minimum(x // 30000, 2).astype(int),
+    preprocess=adult_filter,
+    postprocess=lambda x: np.nan_to_num(x, -1),
+)
+
+
 # group: RAC1P -> PINCP (0: <=50k, 1: >50k)
 Income = BasicProblem(
     features=[
@@ -32,8 +55,7 @@ Income = BasicProblem(
     target="PINCP",
     target_transform=lambda x: x > 50000,
     group="PINCP",
-    # group_transform=lambda x: x > 50000,
-    group_transform=lambda x: np.minimum(x // 10000, 3).astype(int),
+    group_transform=lambda x: x > 50000,
     preprocess=adult_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
@@ -159,9 +181,23 @@ Mobility = BasicProblem(
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
 
-_names = ("Income", "Employment", "PublicCoverage", "TravelTime", "Mobility")
+_names = (
+    "Income_three_groups",
+    "Income",
+    "Employment",
+    "PublicCoverage",
+    "TravelTime",
+    "Mobility",
+)
 _states = ("AL", "TX", "AK", "CA", "FL")
-_basic_problems = (Income, Employment, PublicCoverage, TravelTime, Mobility)
+_basic_problems = (
+    Income_three_groups,
+    Income,
+    Employment,
+    PublicCoverage,
+    TravelTime,
+    Mobility,
+)
 problems = dict()
 for name, state, basic_problem in zip(_names, _states, _basic_problems):
     problems[name] = (basic_problem, [state])
