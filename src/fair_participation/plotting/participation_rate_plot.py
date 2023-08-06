@@ -67,8 +67,8 @@ class ParticipationRatePlot2Group:
     def render(self, npz):
         pass
 
-    def update(self, rho: NDArray, **_):
+    def update(self, state, **_):
         """
         plot achieved rho
         """
-        self.rate_pt.set_data(*rho.T)
+        self.rate_pt.set_data(*state["rho"].T)

@@ -76,12 +76,13 @@ class LossBoundaryPlot2Group:
     def render(self, npz):
         pass
 
-    def update(self, loss: NDArray, rho: NDArray, **_):
+    def update(self, state, **_):
         """
         TODO
         - Plot current location on achievable loss curve (point)
         - Plot vector in direction opposite rho
         """
-        self.loss_pt.set_data(*loss)
-        rho /= np.linalg.norm(rho) * 4
-        self.rho_arrow.set_UVC(*(-rho))
+        self.loss_pt.set_data(*state["loss"])
+        rho = state["rho"]
+        rho_arrow = rho / (np.linalg.norm(rho) * 4)
+        self.rho_arrow.set_UVC(*(-rho_arrow))

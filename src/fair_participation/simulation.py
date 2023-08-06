@@ -101,7 +101,7 @@ def simulate(
 
             for _ in trange(num_steps):
                 state = env.update()._asdict()
-                animation.render_frame(render_pars=state)
+                animation.render_frame(state)
             df = pd.DataFrame(env.history)
             data = {col: jnp.array(df[col].to_list()) for col in df.columns}
             jnp.savez(filename, **data)
@@ -114,6 +114,4 @@ def simulate(
 
             for k in trange(npz["loss"].shape[0]):
                 state = {f: npz[f][k] for f in npz.files}
-                animation.render_frame(
-                    render_pars=state,
-                )
+                animation.render_frame(state)

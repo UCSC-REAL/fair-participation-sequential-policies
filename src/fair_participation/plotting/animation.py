@@ -62,9 +62,9 @@ class Animation(Video):
 
         self.savefig(f"{self.title}_init.pdf")
 
-    def render_frame(self, render_pars: dict, **_):
-        self.left_plot.update(**render_pars)
-        self.center_plot.update(**render_pars)
-        # self.right_plot.update(**render_pars)
+    def render_frame(self, state: dict, **_):
+        self.left_plot.update(state)
+        self.center_plot.update(state)
+        # self.right_plot.update()
 
         self.draw()
