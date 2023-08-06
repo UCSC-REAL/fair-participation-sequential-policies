@@ -8,19 +8,37 @@ from matplotlib import pyplot as plt
 from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
 
 
-class LossBoundaryPlot:
-    def __init__(self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull):
+def make_loss_boundary_plot(
+    ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+):
+    num_groups = achievable_loss.shape[1]
+    if num_groups == 2:
+        return LossBoundaryPlot2Group(ax, achievable_loss, loss_hull, **kwargs)
+    else:
+        raise NotImplementedError
+
+
+class LossBoundaryPlot2Group:
+    def __init__(
+        self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+    ):
         """
 
         :param ax:
         :param achievable_loss:
         :param loss_hull:
         """
+
         self.ax = ax
         plt.sca(ax)
         ax.autoscale(enable=False)
         ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
-        ax.plot(*loss_hull.points.T, color="black", label="Pareto Boundary")
+        ax.plot(
+            loss_hull.points[1:, 0],
+            loss_hull.points[1:, 1],
+            color="black",
+            label="Pareto Boundary",
+        )
 
         plt.xlim([-1, 0])
         plt.ylim([-1, 0])
@@ -54,6 +72,9 @@ class LossBoundaryPlot:
             width=0.01,
             alpha=0.5,
         )
+
+    def render(self, npz):
+        pass
 
     def update(self, loss: NDArray, rho: NDArray, **_):
         """

@@ -7,7 +7,17 @@ from matplotlib import pyplot as plt
 from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
 
 
-class LossDisparityPlot:
+def make_loss_disparity_plot(
+    ax: plt.Axes, achievable_loss: NDArray, values_and_grads: Callable, **kwargs
+):
+    num_groups = achievable_loss.shape[1]
+    if num_groups == 2:
+        return LossDisparityPlot2Group(ax, achievable_loss, values_and_grads, **kwargs)
+    else:
+        raise NotImplementedError
+
+
+class LossDisparityPlot2Group:
     def __init__(
         self,
         ax: plt.Axes,

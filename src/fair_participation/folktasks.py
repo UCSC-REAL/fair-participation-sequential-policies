@@ -76,7 +76,7 @@ def achievable_loss(
             # loss = negative accuracies per group
             achievable_loss.append(
                 [
-                    accuracy_score(y[g_series == gref], y_pred[g_series == gref])
+                    -accuracy_score(y[g_series == gref], y_pred[g_series == gref])
                     for gref in range(num_groups)
                 ]
             )

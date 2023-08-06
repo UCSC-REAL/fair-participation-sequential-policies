@@ -89,18 +89,31 @@ def simulate(
         save_init=save_init,
         plot_kwargs=plot_kwargs,
     ) as animation:
-        try:
-            filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
-            with jnp.load(filename) as npz:
-                for k in trange(npz["loss"].shape[0]):
-                    state = {f: npz[f][k] for f in npz.files}
-                    animation.render_frame(
-                        render_pars=state,
-                    )
-        except FileNotFoundError:
+
+        filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
+
+        if os.path.exists(filename):
+            logger.info(f"Found {filename}.")
+            logger.info("Loading simulation data.")
+        else:
+            logger.info(f"Could not locate {filename}.")
+            logger.info(f"Simulating.")
+
             for _ in trange(num_steps):
                 state = env.update()._asdict()
                 animation.render_frame(render_pars=state)
             df = pd.DataFrame(env.history)
             data = {col: jnp.array(df[col].to_list()) for col in df.columns}
             jnp.savez(filename, **data)
+
+        with jnp.load(filename) as npz:
+
+            logger.info(f"Rendering.")
+
+            animation.init_render(npz)
+
+            for k in trange(npz["loss"].shape[0]):
+                state = {f: npz[f][k] for f in npz.files}
+                animation.render_frame(
+                    render_pars=state,
+                )

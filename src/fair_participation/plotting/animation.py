@@ -1,11 +1,15 @@
 from typing import Optional
 
+import os
 import matplotlib.pyplot as plt
 
 from fair_participation.environment import Environment
 from fair_participation.plotting.video import Video
-from fair_participation.plotting.loss_boundary_plot import LossBoundaryPlot
-from fair_participation.plotting.participation_rate_plot import ParticipationRatePlot
+from fair_participation.plotting.loss_boundary_plot import make_loss_boundary_plot
+from fair_participation.plotting.participation_rate_plot import (
+    make_participation_rate_plot,
+)
+from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
 
 
 class Animation(Video):
@@ -30,29 +34,37 @@ class Animation(Video):
         self.fig, (lax, cax, rax) = plt.subplots(1, 3, figsize=(18, 6))
         super().__init__(f"{title}_{self.environment.method}", self.fig)
 
-        self.left_plot = LossBoundaryPlot(
+        self.left_plot = make_loss_boundary_plot(
             ax=lax,
             achievable_loss=environment.achievable_loss,
             loss_hull=environment.loss_hull,
         )
-        self.center_plot = ParticipationRatePlot(
+        self.center_plot = make_participation_rate_plot(
             ax=cax,
             achievable_loss=environment.achievable_loss,
             values_and_grads=environment.values_and_grads,
         )
-        self.right_plot = ...
+        # self.right_plot = make_loss_disparity_plot(
+        #     ax=rax,
+        #     achievable_loss=environment.achievable_loss,
+        #     values_and_grads=environment.values_and_grads,
+        # )
 
-        # # TODO why are we calling this twice
-        # if save_init:
-        #     self.fig.tight_layout()
-        #     savefig(self.fig, os.path.join("pdf", f"{self.title}_init.pdf"))
-        #     for loc in ("left", "center", "right"):
-        #         fig, _ = plt.subplots(1, 1, figsize=(6, 6))
-        #         self.setup(loc, self.title, **plot_kwargs)
-        #         savefig(fig, os.path.join("pdf", f"{self.title}_{loc}.pdf"))
+    def savefig(self, filename):
+        self.fig.savefig(os.path.join("pdf", filename))
+
+    def init_render(self, npz):
+        self.left_plot.render(npz)
+        self.center_plot.render(npz)
+        # self.right_plot.render(npz)
+
+        self.fig.tight_layout()
+
+        self.savefig(f"{self.title}_init.pdf")
 
     def render_frame(self, render_pars: dict, **_):
         self.left_plot.update(**render_pars)
         self.center_plot.update(**render_pars)
+        # self.right_plot.update(**render_pars)
 
         self.draw()

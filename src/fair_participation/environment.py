@@ -36,6 +36,12 @@ class Environment:
         self._init_loss_direction = init_loss_direction
         self.method = method
         self.achievable_loss = achievable_loss
+
+        # reorder points
+        self.achievable_loss = self.achievable_loss[
+            ConvexHull(self.achievable_loss).vertices
+        ]
+
         self.loss_hull = ConvexHull(self.achievable_loss)
 
         # values_and_grads:

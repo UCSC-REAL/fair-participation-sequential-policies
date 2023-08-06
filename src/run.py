@@ -20,6 +20,8 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
     """
     all_folders = ["data", "mp4", "npz", "pdf", "losses"]
     clean_folders = []
+    if clean == "graphics":
+        clean_folders == ["mp4", "pdf"]
     if clean in ("results", "all"):
         clean_folders += ["data", "mp4", "npz", "pdf"]
     if clean == "all":
@@ -79,7 +81,7 @@ def main():
         for method in ("RRM", "RRM_grad"):
             problems.append(dict(**prob, method=method, save_init=False))
 
-    run_problems(problems[2:3], clean="all")  # Income_RRM
+    run_problems(problems[2:3], clean="graphics")  # Income_RRM
 
 
 if __name__ == "__main__":

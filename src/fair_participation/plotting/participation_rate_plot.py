@@ -9,15 +9,31 @@ from matplotlib import pyplot as plt
 from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
 
 
+def make_participation_rate_plot(
+    ax: plt.Axes, achievable_loss: NDArray, values_and_grads: Callable, **kwargs
+):
+    num_groups = achievable_loss.shape[1]
+    if num_groups == 2:
+        return ParticipationRatePlot2Group(
+            ax, achievable_loss, values_and_grads, **kwargs
+        )
+    else:
+        raise NotImplementedError
+
+
 def _inverse_disparity_curve():
     rho_1 = np.linspace(0, 1, 100)
     rho_2 = np.sqrt(4 * 0.01) + rho_1
     return rho_1, rho_2
 
 
-class ParticipationRatePlot:
+class ParticipationRatePlot2Group:
     def __init__(
-        self, ax: plt.Axes, achievable_loss: NDArray, values_and_grads: Callable
+        self,
+        ax: plt.Axes,
+        achievable_loss: NDArray,
+        values_and_grads: Callable,
+        **kwargs
     ):
         """
 
@@ -31,7 +47,7 @@ class ParticipationRatePlot:
         achievable_rho = jnp.array(
             [values_and_grads(loss)["rho"] for loss in achievable_loss]
         )
-        ax.plot(*achievable_rho.T, color="black", label="Pareto Boundary")
+        ax.plot(*achievable_rho.T[:, 1:], color="black", label="Pareto Boundary")
         plt.title("Group Participation Rates")
 
         cx, cy = _inverse_disparity_curve()
@@ -47,6 +63,9 @@ class ParticipationRatePlot:
         use_two_ticks_y(ax)
 
         (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+
+    def render(self, npz):
+        pass
 
     def update(self, rho: NDArray, **_):
         """
