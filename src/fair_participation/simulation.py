@@ -6,7 +6,8 @@ from jax.typing import ArrayLike
 import pandas as pd
 from tqdm import trange
 
-from fair_participation.plotting.animation import Animation
+from fair_participation.plotting.video import video_filename
+from fair_participation.plotting.animation import Animation, animation_filename
 from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
 from fair_participation.folktasks import achievable_loss as get_achievable_loss
@@ -83,35 +84,39 @@ def simulate(
     )
 
     # TODO update this with fast version
-    with Animation(
-        title=name,
-        environment=env,
-        save_init=save_init,
-        plot_kwargs=plot_kwargs,
-    ) as animation:
 
-        filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
+    filename = video_filename(animation_filename(name, env))
+    if not os.path.exists(filename):
+        with Animation(
+            title=name,
+            environment=env,
+            save_init=save_init,
+            plot_kwargs=plot_kwargs,
+        ) as animation:
 
-        if os.path.exists(filename):
-            logger.info(f"Found {filename}.")
-            logger.info("Loading simulation data.")
-        else:
-            logger.info(f"Could not locate {filename}.")
-            logger.info(f"Simulating.")
+            filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
 
-            for _ in trange(num_steps):
-                state = env.update()._asdict()
-                animation.render_frame(state)
-            df = pd.DataFrame(env.history)
-            data = {col: jnp.array(df[col].to_list()) for col in df.columns}
-            jnp.savez(filename, **data)
+            if os.path.exists(filename):
+                logger.info(f"Found {filename}.")
+                logger.info("Loading simulation data.")
+            else:
+                logger.info(f"Could not locate {filename}.")
+                logger.info(f"Simulating.")
 
-        with jnp.load(filename) as npz:
+                for _ in trange(num_steps):
+                    state = env.update()._asdict()
+                    animation.render_frame(state)
+                df = pd.DataFrame(env.history)
+                data = {col: jnp.array(df[col].to_list()) for col in df.columns}
+                jnp.savez(filename, **data)
 
-            logger.info(f"Rendering.")
+            with jnp.load(filename) as npz:
 
-            animation.init_render(npz)
+                logger.info(f"Rendering.")
 
-            for k in trange(npz["loss"].shape[0]):
-                state = {f: npz[f][k] for f in npz.files}
-                animation.render_frame(state)
+                filename = f"{animation.title}_init.pdf"
+                animation.init_render(npz, filename)
+
+                for k in trange(npz["loss"].shape[0]):
+                    state = {f: npz[f][k] for f in npz.files}
+                    animation.render_frame(state)

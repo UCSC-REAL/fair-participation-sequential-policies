@@ -78,10 +78,10 @@ def main():
         },
     ]
     for prob in base_problems:
-        for method in ("RRM", "RRM_grad"):
+        for method in ("RRM", "FairLPU"):  # see environment.py
             problems.append(dict(**prob, method=method, save_init=False))
 
-    run_problems(problems[2:3], clean="graphics")  # Income_RRM
+    run_problems(problems[2:4], clean="")
 
 
 if __name__ == "__main__":

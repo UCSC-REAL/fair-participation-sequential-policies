@@ -12,6 +12,7 @@ from fair_participation.state import StateInfo
 def fair_lpu_linear_fn(
     loss_hull: ConvexHull,
     values_and_grads: Callable,
+    alpha: float,
 ) -> Callable:
     """
     Returns callable to compute linear term of FairLPU QP subproblem.
@@ -25,7 +26,7 @@ def fair_lpu_linear_fn(
     normals = loss_hull.equations[:, :-1]
     offsets = loss_hull.equations[:, -1]
 
-    def _fair_lpu_linear(loss: ArrayLike, alpha: float) -> Array:
+    def _fair_lpu_linear(loss: ArrayLike) -> Array:
         """
         Maps loss [vector] x alpha [float] to estimate of linear term.
         :param loss: Current loss vector.
@@ -58,6 +59,7 @@ def fair_lpu_step(
     values_and_grads: Callable,
     loss_hull: ConvexHull,
     eta: float,
+    alpha: float,
 ) -> Callable[[ArrayLike], StateInfo]:
     """
     Returns update callable that exactly solves the FairLPU subproblem.
@@ -68,7 +70,7 @@ def fair_lpu_step(
     :return: Callable that performs a single update step.
     """
 
-    fair_lpu_linear = jit(fair_lpu_linear_fn(loss_hull, values_and_grads))
+    fair_lpu_linear = jit(fair_lpu_linear_fn(loss_hull, values_and_grads, alpha))
 
     def _step(loss: ArrayLike) -> StateInfo:
         linear_weights = fair_lpu_linear(loss)

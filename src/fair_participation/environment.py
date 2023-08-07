@@ -92,6 +92,7 @@ class Environment:
                 values_and_grads=self.values_and_grads,
                 loss_hull=self.loss_hull,
                 eta=self.eta,
+                alpha=self.eta,  # TODO separate alpha parameter
             )
         else:
             raise ValueError(f"Unknown update method {method}.")

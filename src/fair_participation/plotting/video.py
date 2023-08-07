@@ -1,7 +1,13 @@
+import os
 import matplotlib.animation as animation
 from matplotlib import pyplot as plt
 
 from fair_participation.base_logger import logger
+from fair_participation.utils import PROJECT_ROOT
+
+
+def video_filename(filename):
+    return os.path.join(PROJECT_ROOT, "mp4", f"{filename}.mp4")
 
 
 class Video:
@@ -30,7 +36,7 @@ class Video:
         fps: int = 15,
         dpi: int = 100,
     ):
-        self.video_file = f"./mp4/{filename}.mp4"
+        self.video_file = video_filename(filename)
         self.writer = animation.FFMpegWriter(
             fps=fps, metadata={"title": filename, "artist": "Matplotlib"}
         )
@@ -50,4 +56,8 @@ class Video:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.writer.finish()
-        logger.info(f"Writing video to {self.video_file}.")
+        if exc_type is None:
+            logger.info(f"Writing video to {self.video_file}.")
+        else:
+            logger.info(f"Removing file at {self.video_file}.")
+            os.remove(self.video_file)
