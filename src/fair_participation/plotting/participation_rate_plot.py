@@ -64,9 +64,6 @@ class ParticipationRatePlot2Group:
 
         (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 
-    def render(self, npz):
-        pass
-
     def update(self, state, **_):
         """
         plot achieved rho

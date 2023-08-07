@@ -63,3 +63,25 @@ def solve_qp(
     prob.solve()
     # TODO when do we need to make sure we're on a facet?
     return x.value, alpha.value
+
+
+def proj_qp(w: ArrayLike, hull: ConvexHull):
+    points = hull.points
+    n, d = points.shape
+    alpha = Variable(n)
+    x = Variable(d)
+    constraints = [
+        cvx.sum(alpha) == 1,
+        alpha >= Constant(0.0),  # for type hinting
+        x == alpha @ points,
+        x - (x @ w) * w == 0,
+    ]
+    obj = -(x @ w)
+
+    prob = Problem(
+        Minimize(obj),
+        constraints,
+    )
+    prob.solve()
+    # TODO when do we need to make sure we're on a facet?
+    return x.value, alpha.value

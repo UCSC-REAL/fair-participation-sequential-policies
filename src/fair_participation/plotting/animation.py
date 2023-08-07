@@ -44,20 +44,17 @@ class Animation(Video):
             achievable_loss=environment.achievable_loss,
             values_and_grads=environment.values_and_grads,
         )
-        # self.right_plot = make_loss_disparity_plot(
-        #     ax=rax,
-        #     achievable_loss=environment.achievable_loss,
-        #     values_and_grads=environment.values_and_grads,
-        # )
+        self.right_plot = make_loss_disparity_plot(
+            ax=rax,
+            achievable_loss=environment.achievable_loss,
+            loss_hull=environment.loss_hull,
+            values_and_grads=environment.values_and_grads,
+        )
 
     def savefig(self, filename):
         self.fig.savefig(os.path.join("pdf", filename))
 
     def init_render(self, npz):
-        self.left_plot.render(npz)
-        self.center_plot.render(npz)
-        # self.right_plot.render(npz)
-
         self.fig.tight_layout()
 
         self.savefig(f"{self.title}_init.pdf")
@@ -65,6 +62,6 @@ class Animation(Video):
     def render_frame(self, state: dict, **_):
         self.left_plot.update(state)
         self.center_plot.update(state)
-        # self.right_plot.update()
+        self.right_plot.update(state)
 
         self.draw()

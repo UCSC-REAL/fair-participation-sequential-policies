@@ -61,6 +61,7 @@ class LossBoundaryPlot2Group:
         use_two_ticks_y(ax)
 
         (self.loss_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+
         self.rho_arrow = plt.quiver(
             -0.5,
             -0.5,
@@ -70,11 +71,8 @@ class LossBoundaryPlot2Group:
             scale=1,
             scale_units="xy",
             width=0.01,
-            alpha=0.5,
+            alpha=0.0,
         )
-
-    def render(self, npz):
-        pass
 
     def update(self, state, **_):
         """
@@ -86,3 +84,4 @@ class LossBoundaryPlot2Group:
         rho = state["rho"]
         rho_arrow = rho / (np.linalg.norm(rho) * 4)
         self.rho_arrow.set_UVC(*(-rho_arrow))
+        self.rho_arrow.set_alpha(0.5)
