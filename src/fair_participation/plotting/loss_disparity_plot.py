@@ -72,6 +72,12 @@ class LossDisparityPlot2Group:
             "red",
             linestyle="--",
         )
+        ax_r.plot(
+            [min_theta, max_theta],
+            [0, 0],
+            "red",
+            linestyle="dotted",
+        )
         ax.plot([], [], "red", linestyle="--", label="Disparity")
 
         # def root_find(f, l, r):

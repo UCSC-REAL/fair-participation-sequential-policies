@@ -21,11 +21,11 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
     all_folders = ["data", "mp4", "npz", "pdf", "losses"]
     clean_folders = []
     if clean == "graphics":
-        clean_folders == ["mp4", "pdf"]
-    if clean in ("results", "all"):
-        clean_folders += ["data", "mp4", "npz", "pdf"]
+        clean_folders = ["mp4", "pdf"]
+    if clean == "results":
+        clean_folders = ["npz", "mp4", "pdf"]
     if clean == "all":
-        clean_folders.append("losses")
+        clean_folders = ["losses", "npz", "mp4", "pdf"]
 
     for folder in all_folders:
         full_folder = os.path.join(PROJECT_ROOT, folder)
@@ -46,42 +46,46 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
 def main():
     problems = []
     base_problems = [
-        {
-            "name": "Income_three_groups",
-            "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": jnp.array([0.5, 0.5, 0.5]),
-            "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
-        },
+        # {
+        #     "name": "Income_three_groups",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": jnp.array([0.5, 0.5, 0.5]),
+        #     "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
+        # },
         {
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_loss_direction": 0.57,
             "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
+            "eta": 0.0001,
         },
-        {
-            "name": "Mobility",
-            "rho_fns": localized_rho_fn(-0.7, 10),
-            "init_loss_direction": 0.6,
-            "eta": 0.3,
-        },
-        {
-            "name": "PublicCoverage",
-            "rho_fns": localized_rho_fn(-0.7, 50),
-            "init_loss_direction": 0.6,
-            "plot_kwargs": {"theta_plot_range": [0.3, 0.7]},
-        },
-        {
-            "name": "TravelTime",
-            "rho_fns": localized_rho_fn(-0.58, 100),
-            "init_loss_direction": 0.51,
-            "plot_kwargs": {"theta_plot_range": [0.4, 0.6]},
-        },
+        # {
+        #     "name": "Mobility",
+        #     "rho_fns": localized_rho_fn(-0.7, 10),
+        #     "init_loss_direction": 0.6,
+        #     "eta": 0.3,
+        # },
+        # {
+        #     "name": "PublicCoverage",
+        #     "rho_fns": localized_rho_fn(-0.7, 50),
+        #     "init_loss_direction": 0.6,
+        #     "plot_kwargs": {"theta_plot_range": [0.3, 0.7]},
+        # },
+        # {
+        #     "name": "TravelTime",
+        #     "rho_fns": localized_rho_fn(-0.58, 100),
+        #     "init_loss_direction": 0.51,
+        #     "plot_kwargs": {"theta_plot_range": [0.4, 0.6]},
+        # },
     ]
     for prob in base_problems:
-        for method in ("RRM", "FairLPU"):  # see environment.py
+        for method in (  # listed in environment.py
+            # "RRM",
+            "FairLPU",
+        ):
             problems.append(dict(**prob, method=method, save_init=False))
 
-    run_problems(problems[2:4], clean="")
+    run_problems(problems, clean="results")
 
 
 if __name__ == "__main__":

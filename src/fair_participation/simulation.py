@@ -106,6 +106,7 @@ def simulate(
                 for _ in trange(num_steps):
                     state = env.update()._asdict()
                     animation.render_frame(state)
+
                 df = pd.DataFrame(env.history)
                 data = {col: jnp.array(df[col].to_list()) for col in df.columns}
                 jnp.savez(filename, **data)

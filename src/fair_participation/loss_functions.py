@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import jax.numpy as jnp
-from jax import value_and_grad, vmap, jit, lax, Array
+from jax import value_and_grad, grad, vmap, jit, lax, Array
 from jax.typing import ArrayLike
 
 
@@ -74,6 +74,31 @@ def _value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
     return _rho_fn
 
 
+def _full_deriv_total_loss_fn(
+    rho_fn: Callable,
+    group_sizes: ArrayLike,
+) -> Callable:
+    """
+    Returns a callable to compute the total loss and its total derivative with respect to the loss vector.
+    :param rho_fn: Callable that maps loss vector to the participation rate vector.
+    :param group_sizes: Array of group sizes summing to 1.
+    :return: Callable.
+    """
+
+    def _total_loss(loss: ArrayLike) -> Array:
+        """
+        'One-parameter' version of the total loss function:
+            L(loss) = Sum_g (s_g * loss_g * rho_g(loss_g))
+        :param loss: Loss vector.
+        :return: Total loss.
+        """
+        rho = rho_fn(loss)
+        return jnp.sum(loss * rho * group_sizes)
+
+    # takes total derivative wrt loss
+    return grad(_total_loss, argnums=0)
+
+
 def values_and_grads_fns(
     rho_fns: tuple[Callable],
     group_sizes: ArrayLike,
@@ -91,6 +116,7 @@ def values_and_grads_fns(
 
     rho_f = _value_rho_fn(rho_fns)
     value_and_grad_total_loss = _value_and_grad_total_loss_fn(rho_f, group_sizes)
+    full_deriv_total_loss = _full_deriv_total_loss_fn(rho_f, group_sizes)
 
     def _disparity_loss(loss: ArrayLike) -> Array:
         """Maps loss vector to value of the disparity function."""
@@ -114,6 +140,7 @@ def values_and_grads_fns(
             "rho": rho,
             "total_loss": total_loss,
             "grad_total_loss": grad_total_loss,
+            "full_deriv_total_loss": full_deriv_total_loss(loss),
             "disparity": disparity,
             "grad_disparity_loss": grad_disparity_loss,
         }

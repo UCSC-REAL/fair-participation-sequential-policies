@@ -67,5 +67,6 @@ class Animation(Video):
         self.left_plot.update(state)
         self.center_plot.update(state)
         self.right_plot.update(state)
+        self.fig.tight_layout()
 
         self.draw()

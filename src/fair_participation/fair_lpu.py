@@ -39,17 +39,22 @@ def fair_lpu_linear_fn(
         facet_ix = jnp.argmin(facet_dists)
         unit_normal = normals[facet_ix]
         # Subtract off normal component of gradient if we are on a facet
+        loss_grad = vgs["full_deriv_total_loss"]
         g = vgs["grad_disparity_loss"]
         is_on_facet = facet_dists[facet_ix] < 1e-6
         proj_fairness_grad = g - is_on_facet * jnp.dot(g, unit_normal) * unit_normal
         # TODO needs a zero check?
         lambda_estimate = jnp.max(
-            0.0,
-            alpha * vgs["disparity"]
-            - jnp.dot(vgs["grad_total_loss"], proj_fairness_grad)
-            / jnp.dot(proj_fairness_grad, proj_fairness_grad),
+            jnp.array(
+                [
+                    0.0,
+                    alpha * vgs["disparity"]
+                    - jnp.dot(loss_grad, proj_fairness_grad)
+                    / jnp.dot(proj_fairness_grad, proj_fairness_grad),
+                ]
+            )
         )
-        return vgs["grad_total_loss"] + jnp.dot(lambda_estimate * proj_fairness_grad)
+        return loss_grad + lambda_estimate * proj_fairness_grad
 
     return _fair_lpu_linear
 
@@ -70,7 +75,7 @@ def fair_lpu_step(
     :return: Callable that performs a single update step.
     """
 
-    fair_lpu_linear = jit(fair_lpu_linear_fn(loss_hull, values_and_grads, alpha))
+    fair_lpu_linear = fair_lpu_linear_fn(loss_hull, values_and_grads, alpha)
 
     def _step(loss: ArrayLike) -> StateInfo:
         linear_weights = fair_lpu_linear(loss)
