@@ -12,10 +12,6 @@ from fair_participation.plotting.participation_rate_plot import (
 from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
 
 
-def animation_filename(title, environment):
-    return f"{title}_{environment.method}"
-
-
 class Animation(Video):
     def __init__(
         self,
@@ -36,7 +32,7 @@ class Animation(Video):
             plot_kwargs = dict()
 
         self.fig, (lax, cax, rax) = plt.subplots(1, 3, figsize=(18, 6))
-        super().__init__(animation_filename(self.title, self.environment), self.fig)
+        super().__init__(self.title, self.fig)
 
         self.left_plot = make_loss_boundary_plot(
             ax=lax,

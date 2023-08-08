@@ -41,6 +41,7 @@ def rrm_step(
             opt_vgs["rho"],
             opt_vgs["total_loss"],
             opt_vgs["disparity"],
+            0,  # lambda_estimate
         )
 
     return _step
@@ -90,6 +91,7 @@ def rrm_grad_step(
             opt_vgs["rho"],
             opt_vgs["total_loss"],
             opt_vgs["disparity"],
+            0,
         )
 
     return _projected_step

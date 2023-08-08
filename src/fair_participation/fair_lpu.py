@@ -26,7 +26,7 @@ def fair_lpu_linear_fn(
     normals = loss_hull.equations[:, :-1]
     offsets = loss_hull.equations[:, -1]
 
-    def _fair_lpu_linear(loss: ArrayLike) -> Array:
+    def _fair_lpu_linear(loss: ArrayLike) -> tuple[Array, float]:
         """
         Maps loss [vector] x alpha [float] to estimate of linear term.
         :param loss: Current loss vector.
@@ -54,7 +54,7 @@ def fair_lpu_linear_fn(
                 ]
             )
         )
-        return loss_grad + lambda_estimate * proj_fairness_grad
+        return loss_grad + lambda_estimate * proj_fairness_grad, lambda_estimate
 
     return _fair_lpu_linear
 
@@ -78,7 +78,7 @@ def fair_lpu_step(
     fair_lpu_linear = fair_lpu_linear_fn(loss_hull, values_and_grads, alpha)
 
     def _step(loss: ArrayLike) -> StateInfo:
-        linear_weights = fair_lpu_linear(loss)
+        linear_weights, lambda_estimate = fair_lpu_linear(loss)
         opt_loss, _ = solve_qp(
             w=linear_weights, hull=loss_hull, gamma=1.0 / (2.0 * eta), x0=loss
         )
@@ -88,6 +88,7 @@ def fair_lpu_step(
             opt_vgs["rho"],
             opt_vgs["total_loss"],
             opt_vgs["disparity"],
+            lambda_estimate,
         )
 
     return _step

@@ -8,7 +8,7 @@ from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.simulation import simulate
 from fair_participation.utils import PROJECT_ROOT
 
-# from fair_participation.plotting import compare, compare_2
+from fair_participation.plotting.compare import compare
 
 
 def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
@@ -38,9 +38,6 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
 
     for problem in problems:
         simulate(**problem)
-        # TODO finish updating compare
-        # compare(problem, grad=False)
-        # compare(problem, grad=True)
 
 
 def main():
@@ -79,13 +76,25 @@ def main():
         # },
     ]
     for prob in base_problems:
+        subproblems = []
         for method in (  # listed in environment.py
-            # "RRM",
+            "RRM",
             "FairLPU",
         ):
-            problems.append(dict(**prob, method=method, save_init=False))
 
-    run_problems(problems, clean="results")
+            subproblems.append(dict(**prob, method=method))
+        problems.append(subproblems)
+
+    # run all methods for all environments
+    allprobs = [prob for subprobs in problems for prob in subprobs]
+    run_problems(allprobs, clean="graphics")
+
+    # compare different methods in same environment
+    for subproblems in problems:
+        filename = os.path.join(
+            PROJECT_ROOT, "pdf", f"{subproblems[0]['name']}_compare.pdf"
+        )
+        compare(subproblems, filename)
 
 
 if __name__ == "__main__":

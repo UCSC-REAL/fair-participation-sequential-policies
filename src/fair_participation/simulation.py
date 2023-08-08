@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import trange
 
 from fair_participation.plotting.video import video_filename
-from fair_participation.plotting.animation import Animation, animation_filename
+from fair_participation.plotting.animation import Animation
 from fair_participation.base_logger import logger
 from fair_participation.environment import Environment
 from fair_participation.folktasks import achievable_loss as get_achievable_loss
@@ -21,7 +21,7 @@ def simulate(
     method: str = "RRM",
     save_init: bool = True,
     eta: float = 0.1,
-    num_steps: int = 100,
+    num_steps: int = 8,
     init_loss_direction: float | ArrayLike = 0.6,
     plot_kwargs: Optional[dict] = None,
 ) -> None:
@@ -85,16 +85,17 @@ def simulate(
 
     # TODO update this with fast version
 
-    filename = video_filename(animation_filename(name, env))
+    title = f"{name}_{method}"
+    filename = video_filename(title)
     if not os.path.exists(filename):
         with Animation(
-            title=name,
+            title=title,
             environment=env,
             save_init=save_init,
             plot_kwargs=plot_kwargs,
         ) as animation:
 
-            filename = os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
+            filename = os.path.join(PROJECT_ROOT, "npz", f"{title}.npz")
 
             if os.path.exists(filename):
                 logger.info(f"Found {filename}.")
@@ -115,7 +116,7 @@ def simulate(
 
                 logger.info(f"Rendering.")
 
-                filename = f"{animation.title}_init.pdf"
+                filename = f"{title}_init.pdf"
                 animation.init_render(npz, filename)
 
                 for k in trange(npz["loss"].shape[0]):

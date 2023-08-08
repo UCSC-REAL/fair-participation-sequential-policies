@@ -72,6 +72,7 @@ class Environment:
             rho=vgs["rho"],
             total_loss=vgs["total_loss"],
             disparity=vgs["disparity"],
+            lambda_estimate=0,
         )
         self.history = [self.state._asdict()]
 

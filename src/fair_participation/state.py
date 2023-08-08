@@ -7,3 +7,4 @@ class StateInfo(NamedTuple):
     rho: ArrayLike
     total_loss: float
     disparity: float
+    lambda_estimate: float
