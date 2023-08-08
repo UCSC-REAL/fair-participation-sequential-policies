@@ -46,14 +46,13 @@ def main():
         # {
         #     "name": "Income_three_groups",
         #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": jnp.array([0.5, 0.5, 0.5]),
-        #     "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
+        #     "init_loss_direction": jnp.array([0.1, 0.5, 0.2]),
+        #     "eta": 0.00001,
         # },
         {
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_loss_direction": 0.57,
-            "plot_kwargs": {"theta_plot_range": [0.3, 1.0]},
             "eta": 0.0001,
         },
         # {
@@ -66,13 +65,11 @@ def main():
         #     "name": "PublicCoverage",
         #     "rho_fns": localized_rho_fn(-0.7, 50),
         #     "init_loss_direction": 0.6,
-        #     "plot_kwargs": {"theta_plot_range": [0.3, 0.7]},
         # },
         # {
         #     "name": "TravelTime",
         #     "rho_fns": localized_rho_fn(-0.58, 100),
         #     "init_loss_direction": 0.51,
-        #     "plot_kwargs": {"theta_plot_range": [0.4, 0.6]},
         # },
     ]
     for prob in base_problems:
@@ -87,7 +84,7 @@ def main():
 
     # run all methods for all environments
     allprobs = [prob for subprobs in problems for prob in subprobs]
-    run_problems(allprobs, clean="graphics")
+    run_problems(allprobs, clean="results")
 
     # compare different methods in same environment
     for subproblems in problems:

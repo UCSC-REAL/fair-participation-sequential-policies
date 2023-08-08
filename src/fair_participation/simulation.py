@@ -21,7 +21,7 @@ def simulate(
     method: str = "RRM",
     save_init: bool = True,
     eta: float = 0.1,
-    num_steps: int = 8,
+    num_steps: int = 50,
     init_loss_direction: float | ArrayLike = 0.6,
     plot_kwargs: Optional[dict] = None,
 ) -> None:
@@ -85,40 +85,46 @@ def simulate(
 
     # TODO update this with fast version
 
+    # simulate
     title = f"{name}_{method}"
-    filename = video_filename(title)
-    if not os.path.exists(filename):
-        with Animation(
-            title=title,
-            environment=env,
-            save_init=save_init,
-            plot_kwargs=plot_kwargs,
-        ) as animation:
+    npz_filename = os.path.join(PROJECT_ROOT, "npz", f"{title}.npz")
 
-            filename = os.path.join(PROJECT_ROOT, "npz", f"{title}.npz")
+    if os.path.exists(npz_filename):
+        logger.info(f"Found {npz_filename}.")
+    else:
+        logger.info(f"Could not locate {npz_filename}.")
+        logger.info(f"Simulating.")
 
-            if os.path.exists(filename):
-                logger.info(f"Found {filename}.")
-                logger.info("Loading simulation data.")
-            else:
-                logger.info(f"Could not locate {filename}.")
-                logger.info(f"Simulating.")
+        for _ in trange(num_steps):
+            state = env.update()._asdict()
 
-                for _ in trange(num_steps):
-                    state = env.update()._asdict()
-                    animation.render_frame(state)
+        df = pd.DataFrame(env.history)
+        data = {col: jnp.array(df[col].to_list()) for col in df.columns}
+        jnp.savez(npz_filename, **data)
 
-                df = pd.DataFrame(env.history)
-                data = {col: jnp.array(df[col].to_list()) for col in df.columns}
-                jnp.savez(filename, **data)
+    logger.info("Loading simulation data.")
+    with jnp.load(npz_filename) as npz:
 
-            with jnp.load(filename) as npz:
+        vid_filename = video_filename(title)
+        if not os.path.exists(vid_filename):
+            try:
+                with Animation(
+                    title=title,
+                    environment=env,
+                    save_init=save_init,
+                    plot_kwargs=plot_kwargs,
+                ) as animation:
 
-                logger.info(f"Rendering.")
+                    logger.info(f"Rendering.")
 
-                filename = f"{title}_init.pdf"
-                animation.init_render(npz, filename)
+                    pdf_filename = f"{title}_init.pdf"
+                    animation.init_render(npz, pdf_filename)
 
-                for k in trange(npz["loss"].shape[0]):
-                    state = {f: npz[f][k] for f in npz.files}
-                    animation.render_frame(state)
+                    for k in trange(num_steps):
+                        state = {f: npz[f][k] for f in npz.files}
+                        animation.render_frame(state)
+
+            except NotImplementedError:
+                logger.info(
+                    "Animation and Init Render Not Implemented for This Problem."
+                )
