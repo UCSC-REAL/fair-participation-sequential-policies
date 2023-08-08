@@ -43,18 +43,18 @@ def run_problems(problems: list[dict], clean: Optional[str] = None) -> None:
 def main():
     problems = []
     base_problems = [
-        # {
-        #     "name": "Income_three_groups",
-        #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": jnp.array([0.1, 0.5, 0.2]),
-        #     "eta": 0.00001,
-        # },
         {
-            "name": "Income",
+            "name": "Income_three_groups",
             "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": 0.57,
-            "eta": 0.0001,
+            "init_loss_direction": jnp.array([0.1, 0.5, 0.2]),
+            "eta": 0.00001,
         },
+        # {
+        #     "name": "Income",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": 0.57,
+        #     "eta": 0.0001,
+        # },
         # {
         #     "name": "Mobility",
         #     "rho_fns": localized_rho_fn(-0.7, 10),
