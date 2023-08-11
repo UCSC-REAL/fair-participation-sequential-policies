@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score
 from folktables import ACSDataSource
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
+from scipy.spatial import ConvexHull
 
 from fair_participation.acs import problems
 from fair_participation.utils import rng_old
@@ -30,15 +31,12 @@ def get_random_group_weights(num_groups, num_samples, seed=0):
     likely to be where the optimal policy is anyway.
     """
     key = jax.random.PRNGKey(seed)
-    vectors = jax.random.uniform(key, shape=(num_samples, num_groups))
-    vector_norms = jnp.einsum("ij->j", vectors)  # sum across groups
-    # normalize each vectors such that values for each group sum to 1
-    return jnp.einsum("ij,j->ij", vectors, 1 / vector_norms)
+    return jax.random.dirichlet(key, np.ones((num_samples, num_groups)))
 
 
 def achievable_loss(
     problem_name: str,
-    n_samples: int = 100,
+    n_samples: int = 300,
 ) -> NDArray:
     """
     Compute achievable loss vector for a given problem.

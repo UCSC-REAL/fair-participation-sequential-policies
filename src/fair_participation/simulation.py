@@ -120,9 +120,9 @@ def simulate(
                     pdf_filename = f"{title}_init.pdf"
                     animation.init_render(npz, pdf_filename)
 
-                    for k in trange(num_steps):
-                        state = {f: npz[f][k] for f in npz.files}
-                        animation.render_frame(state)
+                    # for k in trange(num_steps):
+                    #     state = {f: npz[f][k] for f in npz.files}
+                    #     animation.render_frame(state)
 
             except NotImplementedError:
                 logger.info(

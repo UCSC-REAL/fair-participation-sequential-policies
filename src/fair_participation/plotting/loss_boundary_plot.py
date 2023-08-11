@@ -4,8 +4,14 @@ from scipy.spatial import ConvexHull
 
 from matplotlib import patches
 from matplotlib import pyplot as plt
+import mpl_toolkits.mplot3d as a3
 
-from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
+from fair_participation.plotting.plot_utils import (
+    use_two_ticks_x,
+    use_two_ticks_y,
+    use_two_ticks_z,
+    UpdatingPlot,
+)
 
 
 def make_loss_boundary_plot(
@@ -14,11 +20,13 @@ def make_loss_boundary_plot(
     num_groups = achievable_loss.shape[1]
     if num_groups == 2:
         return LossBoundaryPlot2Group(ax, achievable_loss, loss_hull, **kwargs)
+    elif num_groups == 3:
+        return LossBoundaryPlot3Group(ax, achievable_loss, loss_hull, **kwargs)
     else:
         raise NotImplementedError
 
 
-class LossBoundaryPlot2Group:
+class LossBoundaryPlot3Group(UpdatingPlot):
     def __init__(
         self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
     ):
@@ -31,32 +39,92 @@ class LossBoundaryPlot2Group:
 
         self.ax = ax
         plt.sca(ax)
-        ax.autoscale(enable=False)
-        ax.scatter(*achievable_loss.T, color="black", label="Fixed Policies")
-        ax.plot(
-            loss_hull.points[1:, 0],
-            loss_hull.points[1:, 1],
+        ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
+
+        tri = a3.art3d.Poly3DCollection(
+            [loss_hull.points[s] for s in loss_hull.simplices], alpha=0.3
+        )
+        tri.set_color("blue")
+        ax.add_collection3d(tri)
+
+        min_lim = 0
+        max_lim = -1
+
+        for (a, b) in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
+            min_lim = min(min_lim, max(a, -1))
+            max_lim = max(max_lim, min(b, 0))
+
+        ax.set_xlim([min_lim, max_lim])
+        ax.set_ylim([min_lim, max_lim])
+        ax.set_zlim([min_lim, max_lim])
+        ax.invert_xaxis()
+        ax.invert_yaxis()
+        ax.invert_zaxis()
+
+        ax.view_init(elev=30, azim=45)
+
+        ax.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
+        ax.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
+        ax.set_zlabel("Group 3 loss $\\ell_3$", labelpad=-10)
+        plt.title("Group Loss")
+
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
+        use_two_ticks_z(ax)
+
+
+class LossBoundaryPlot2Group(UpdatingPlot):
+    def __init__(
+        self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+    ):
+        """
+
+        :param ax:
+        :param achievable_loss:
+        :param loss_hull:
+        """
+
+        self.ax = ax
+        plt.sca(ax)
+        ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
+        ax.fill(
+            list(loss_hull.points[:, 0]) + [loss_hull.points[0, 0]],
+            list(loss_hull.points[:, 1]) + [loss_hull.points[0, 1]],
             color="black",
-            label="Pareto Boundary",
+            alpha=0.3,
         )
 
-        plt.xlim([-1, 0])
-        plt.ylim([-1, 0])
+        min_lim = 0
+        max_lim = -1
+
+        for (a, b) in [ax.get_xlim(), ax.get_ylim()]:
+            min_lim = min(min_lim, max(a, -1))
+            max_lim = max(max_lim, min(b, 0))
+        ax.set_xlim([min_lim, max_lim])
+        ax.set_ylim([min_lim, max_lim])
+
         plt.xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
         plt.ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
         plt.title("Group Loss")
 
+        def rescale(x, y):
+            "(-1, 0) -> (min_lim, max_lim)"
+            return (
+                (x + 1) * (max_lim - min_lim) + min_lim,
+                (y + 1) * (max_lim - min_lim) + min_lim,
+            )
+
         ax.legend(loc="upper right")
         ax.add_patch(
             patches.FancyArrowPatch(
-                (-0.9, 0.0),
-                (-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
+                rescale(-0.9, 0.0),
+                rescale(-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
                 connectionstyle="arc3,rad=0.08",
                 arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
                 color="black",
             )
         )
-        plt.annotate("$\\theta$", (-0.85, -0.1))
+        plt.annotate("$\\theta$", rescale(-0.85, -0.1))
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 

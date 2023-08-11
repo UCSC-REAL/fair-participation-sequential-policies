@@ -44,6 +44,7 @@ def fair_lpu_linear_fn(
         is_on_facet = facet_dists[facet_ix] < 1e-6
         proj_fairness_grad = g - is_on_facet * jnp.dot(g, unit_normal) * unit_normal
         # TODO needs a zero check?
+        # > We assume that proj_fairness_grad is never 0 outside the feasible set
         lambda_estimate = jnp.max(
             jnp.array(
                 [

@@ -6,7 +6,12 @@ import numpy as np
 from numpy.typing import NDArray
 from matplotlib import pyplot as plt
 
-from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
+from fair_participation.plotting.plot_utils import (
+    use_two_ticks_x,
+    use_two_ticks_y,
+    use_two_ticks_z,
+    UpdatingPlot,
+)
 
 
 def make_loss_disparity_plot(
@@ -21,11 +26,71 @@ def make_loss_disparity_plot(
         return LossDisparityPlot2Group(
             ax, achievable_loss, loss_hull, values_and_grads, **kwargs
         )
+    elif num_groups == 3:
+        return LossDisparityPlot3Group(
+            ax, achievable_loss, loss_hull, values_and_grads, **kwargs
+        )
     else:
         raise NotImplementedError
 
 
-class LossDisparityPlot2Group:
+class LossDisparityPlot3Group:
+    def __init__(
+        self,
+        ax: plt.Axes,
+        achievable_loss: NDArray,
+        loss_hull: ConvexHull,
+        values_and_grads: Callable,
+    ):
+        """
+
+        :param ax:
+        :param achievable_loss:
+        :param values_and_grads:
+        """
+        self.ax = ax
+        self.loss_hull = loss_hull
+
+        az, el = zip(*[self.get_theta(loss) for loss in achievable_loss])
+        results = [values_and_grads(loss) for loss in achievable_loss]
+
+        ax.plot_trisurf(
+            az,
+            el,
+            [r["disparity"] for r in results],
+            color="red",
+            label="Disparity",
+            alpha=0.5,
+        )
+        ax.plot_trisurf(
+            az,
+            el,
+            [r["total_loss"] for r in results],
+            color="blue",
+            label="Loss",
+            alpha=0.5,
+        )
+
+    def get_theta(self, loss):
+        x, y, z = -loss[0], -loss[1], -loss[2]
+        return [np.arctan2(y, x), np.arctan2(z, np.sqrt(x**2 + y**2))]
+
+    def get_loss(self, theta):
+
+        az, el = theta
+
+        z = np.sin(el)
+        xy = np.cos(el)
+        x = xy * np.cos(az)
+        y = xy * np.cos(az)
+
+        w = np.array([-x, -y, -z])
+        print(w)
+
+        return proj_qp(w, self.loss_hull)[0]
+
+
+class LossDisparityPlot2Group(UpdatingPlot):
     def __init__(
         self,
         ax: plt.Axes,
@@ -80,37 +145,6 @@ class LossDisparityPlot2Group:
         )
         ax.plot([], [], "red", linestyle="--", label="Disparity")
 
-        # def root_find(f, l, r):
-        #     if f(l) < 0:
-        #         assert f(r) > 0
-        #     else:
-        #         assert f(r) < 0
-        #         l, r = r, l
-        #     while abs(l - r) > 0.0001:
-        #         m = (l + r) / 2
-        #         if f(m) > 0:
-        #             r = m
-        #         else:
-        #             l = m
-        #     return m
-
-        # theta_l = root_find(self.env.get_disparity, 0, np.pi / 4)
-        # theta_r = root_find(self.env.get_disparity, np.pi / 4, np.pi / 2)
-        # ax_r.fill_between(
-        #     [min_theta, theta_l],
-        #     [0, 0],
-        #     [max_disparity, max_disparity],
-        #     alpha=0.1,
-        #     color="red",
-        # )
-        # ax_r.fill_between(
-        #     [theta_r, max_theta],
-        #     [0, 0],
-        #     [max_disparity, max_disparity],
-        #     alpha=0.1,
-        #     color="red",
-        # )
-
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\theta$")
         ax.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g s_g$", labelpad=-20)
@@ -119,63 +153,6 @@ class LossDisparityPlot2Group:
         ax_r.yaxis.label.set_color("red")
 
         ax.legend(loc="lower left")
-
-        # if "t_init" in kw:
-        #     ax.scatter(
-        #         [kw["t_init"]],
-        #         [self.env.get_total_loss(kw["t_init"])],
-        #         marker="o",
-        #         color="black",
-        #     )
-        #     ax.scatter(
-        #         [kw["t_init"]],
-        #         [self.env.get_total_loss(kw["t_init"]) + 0.005],
-        #         marker="$0$",
-        #         color="black",
-        #         s=64,
-        #     )
-        # if "t_rrm" in kw:
-        #     ax.scatter(
-        #         [kw["t_rrm"]],
-        #         [self.env.get_total_loss(kw["t_rrm"])],
-        #         marker="o",
-        #         color="black",
-        #     )
-        #     ax.scatter(
-        #         [kw["t_rrm"]],
-        #         [self.env.get_total_loss(kw["t_rrm"]) + 0.005],
-        #         marker="$R$",
-        #         color="black",
-        #         s=64,
-        #     )
-        # if "t_lpu" in kw:
-        #     ax.scatter(
-        #         [kw["t_lpu"]],
-        #         [self.env.get_total_loss(kw["t_lpu"])],
-        #         marker="o",
-        #         color="black",
-        #     )
-        #     ax.scatter(
-        #         [kw["t_lpu"]],
-        #         [self.env.get_total_loss(kw["t_lpu"]) + 0.005],
-        #         marker="$L$",
-        #         color="black",
-        #         s=64,
-        #     )
-        # if "t_fair" in kw:
-        #     ax.scatter(
-        #         [kw["t_fair"]],
-        #         [self.env.get_total_loss(kw["t_fair"])],
-        #         marker="o",
-        #         color="black",
-        #     )
-        #     ax.scatter(
-        #         [kw["t_fair"]],
-        #         [self.env.get_total_loss(kw["t_fair"]) + 0.005],
-        #         marker="$F$",
-        #         color="black",
-        #         s=64,
-        #     )
 
         (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
         (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)

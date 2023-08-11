@@ -37,7 +37,7 @@ class Environment:
         self.method = method
         self.achievable_loss = achievable_loss
 
-        # reorder points
+        # filter and reorder points
         self.achievable_loss = self.achievable_loss[
             ConvexHull(self.achievable_loss).vertices
         ]

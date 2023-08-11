@@ -44,7 +44,7 @@ def main():
     problems = []
     base_problems = [
         {
-            "name": "Income_three_groups",
+            "name": "Income_Three",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_loss_direction": jnp.array([0.1, 0.5, 0.2]),
             "eta": 0.00001,
@@ -84,7 +84,7 @@ def main():
 
     # run all methods for all environments
     allprobs = [prob for subprobs in problems for prob in subprobs]
-    run_problems(allprobs, clean="results")
+    run_problems(allprobs, clean="")
 
     # compare different methods in same environment
     for subproblems in problems:

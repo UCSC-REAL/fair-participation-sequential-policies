@@ -16,7 +16,7 @@ All class labels are 0/1 or False/True
 """
 
 # group: RAC1P -> PINCP (0: <30k, 1: >=30k, >60k, 2: >= 60k)
-Income_three_groups = BasicProblem(
+Income_Three = BasicProblem(
     features=[
         "AGEP",
         "COW",
@@ -32,11 +32,11 @@ Income_three_groups = BasicProblem(
     target="PINCP",
     target_transform=lambda x: x > 50000,
     group="PINCP",
-    group_transform=lambda x: np.minimum(x // 30000, 2).astype(int),
+    group_transform=lambda x: np.minimum(x // 60000, 2).astype(int),
     preprocess=adult_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
-
+Income_Three.census_state = "AL"
 
 # group: RAC1P -> PINCP (0: <=50k, 1: >50k)
 Income = BasicProblem(
@@ -59,6 +59,7 @@ Income = BasicProblem(
     preprocess=adult_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
+Income.census_state = "AL"
 
 # filter to race classes 1/2 {0: 1(white), 1: 2(black)}
 Employment = BasicProblem(
@@ -87,6 +88,7 @@ Employment = BasicProblem(
     preprocess=lambda x: x[x["RAC1P"].isin([1, 2])],
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
+Employment.census_state = "TX"
 
 # group: RAC1P -> SEX {0: 1(Male), 1: 2(Female)}
 PublicCoverage = BasicProblem(
@@ -118,6 +120,7 @@ PublicCoverage = BasicProblem(
     preprocess=public_coverage_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
+PublicCoverage.census_state = "AK"
 
 
 # group: RAC1P -> AGEP {0: <=35, 1: >35}
@@ -147,6 +150,7 @@ TravelTime = BasicProblem(
     preprocess=travel_time_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
+TravelTime.census_state = "CA"
 
 # group: RAC1P -> MIG {0: >1, 1: 1}
 Mobility = BasicProblem(
@@ -180,24 +184,13 @@ Mobility = BasicProblem(
     preprocess=lambda x: x.drop(x.loc[(x["AGEP"] <= 18) | (x["AGEP"] >= 35)].index),
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
+Mobility.census_state = "FL"
 
-_names = (
-    "Income_three_groups",
-    "Income",
-    "Employment",
-    "PublicCoverage",
-    "TravelTime",
-    "Mobility",
+
+_names, _basic_problems = zip(
+    *((name, cls) for (name, cls) in locals().items() if isinstance(cls, BasicProblem))
 )
-_states = ("AL", "TX", "AK", "CA", "FL")
-_basic_problems = (
-    Income_three_groups,
-    Income,
-    Employment,
-    PublicCoverage,
-    TravelTime,
-    Mobility,
-)
+
 problems = dict()
-for name, state, basic_problem in zip(_names, _states, _basic_problems):
-    problems[name] = (basic_problem, [state])
+for name, basic_problem in zip(_names, _basic_problems):
+    problems[name] = (basic_problem, [basic_problem.census_state])
