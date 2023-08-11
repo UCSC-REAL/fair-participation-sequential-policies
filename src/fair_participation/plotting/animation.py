@@ -65,7 +65,7 @@ class Animation(Video):
     def init_render(self, npz, filename):
         self.fig.tight_layout()
 
-        # plt.show()
+        plt.show()
         self.savefig(filename)
 
     def render_frame(self, state: dict, **_):

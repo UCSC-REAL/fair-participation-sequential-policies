@@ -84,7 +84,7 @@ def main():
 
     # run all methods for all environments
     allprobs = [prob for subprobs in problems for prob in subprobs]
-    run_problems(allprobs, clean="")
+    run_problems(allprobs, clean="graphics")
 
     # compare different methods in same environment
     for subproblems in problems:

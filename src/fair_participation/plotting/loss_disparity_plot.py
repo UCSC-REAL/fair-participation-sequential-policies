@@ -52,7 +52,8 @@ class LossDisparityPlot3Group:
         self.loss_hull = loss_hull
 
         az, el = zip(*[self.get_theta(loss) for loss in achievable_loss])
-        results = [values_and_grads(loss) for loss in achievable_loss]
+        results = [values_and_grads(self.get_loss([a, e])) for (a, e) in zip(az, el)]
+        # results = [values_and_grads(loss) for loss in achievable_loss]
 
         ax.plot_trisurf(
             az,
@@ -73,7 +74,7 @@ class LossDisparityPlot3Group:
 
     def get_theta(self, loss):
         x, y, z = -loss[0], -loss[1], -loss[2]
-        return [np.arctan2(y, x), np.arctan2(z, np.sqrt(x**2 + y**2))]
+        return [np.arctan(y / x), np.arctan(z / np.sqrt(x**2 + y**2))]
 
     def get_loss(self, theta):
 
@@ -82,10 +83,9 @@ class LossDisparityPlot3Group:
         z = np.sin(el)
         xy = np.cos(el)
         x = xy * np.cos(az)
-        y = xy * np.cos(az)
+        y = xy * np.sin(az)
 
         w = np.array([-x, -y, -z])
-        print(w)
 
         return proj_qp(w, self.loss_hull)[0]
 

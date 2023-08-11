@@ -4,13 +4,14 @@ from scipy.spatial import ConvexHull
 
 from matplotlib import patches
 from matplotlib import pyplot as plt
-import mpl_toolkits.mplot3d as a3
 
 from fair_participation.plotting.plot_utils import (
     use_two_ticks_x,
     use_two_ticks_y,
     use_two_ticks_z,
     UpdatingPlot,
+    project_hull,
+    plot_triangles,
 )
 
 
@@ -41,11 +42,17 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         plt.sca(ax)
         ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
 
-        tri = a3.art3d.Poly3DCollection(
-            [loss_hull.points[s] for s in loss_hull.simplices], alpha=0.3
-        )
-        tri.set_color("blue")
-        ax.add_collection3d(tri)
+        triangles = [loss_hull.points[s] for s in loss_hull.simplices]
+        normals = loss_hull.equations[:, :-1]
+
+        plot_triangles(ax, triangles, -normals)
+
+        for (val, dim) in zip([0, 0, 0], [0, 1, 2]):
+            ax.plot(
+                *(project_hull(loss_hull.points[loss_hull.vertices], val, dim)).T,
+                color="black",
+                alpha=0.5
+            )
 
         min_lim = 0
         max_lim = -1
@@ -61,7 +68,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         ax.invert_yaxis()
         ax.invert_zaxis()
 
-        ax.view_init(elev=30, azim=45)
+        ax.view_init(elev=38, azim=45)
 
         ax.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
         ax.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)

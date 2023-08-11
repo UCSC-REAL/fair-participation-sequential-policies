@@ -34,9 +34,10 @@ def get_random_group_weights(num_groups, num_samples, seed=0):
     return jax.random.dirichlet(key, np.ones((num_samples, num_groups)))
 
 
+# TODO Poisson disc sampling
 def achievable_loss(
     problem_name: str,
-    n_samples: int = 300,
+    n_samples: int = 100,
 ) -> NDArray:
     """
     Compute achievable loss vector for a given problem.

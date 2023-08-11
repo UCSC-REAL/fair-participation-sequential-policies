@@ -74,11 +74,11 @@ def proj_qp(w: ArrayLike, hull: ConvexHull):
         cvx.sum(alpha) == 1,
         alpha >= Constant(0.0),  # for type hinting
         x == alpha @ points,
-        x - (x @ w) * w == 0,
+        x - (x @ w) * w <= 1e-6,  # no component of x orthogonal to w
     ]
     obj = -(x @ w)
 
-    prob = Problem(
+    prob = Problem(  # maximize dot product between x and w
         Minimize(obj),
         constraints,
     )
