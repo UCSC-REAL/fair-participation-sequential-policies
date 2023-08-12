@@ -3,10 +3,11 @@ import sys
 
 log = logging
 log.basicConfig(
-    format=f"%(asctime)s[%(filename)s.%(levelname)s]: %(message)s",
+    format="%(asctime)s[%(filename)s.%(levelname)s]: %(message)s",
     stream=sys.stdout,
-    level=logging.INFO,
+    level=logging.CRITICAL,
     datefmt="%H:%M:%S",
 )
 
 logger = log.getLogger(__name__)
+logger.setLevel(logging.INFO)

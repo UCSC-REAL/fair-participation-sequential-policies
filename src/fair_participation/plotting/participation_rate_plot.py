@@ -2,7 +2,6 @@ from typing import Callable
 
 import numpy as np
 from numpy.typing import NDArray
-from numpy.linalg import norm
 from scipy.spatial import ConvexHull
 
 from matplotlib import pyplot as plt
@@ -64,16 +63,6 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         # achievable_loss = np.array(
         #     [[-0.7, -0.7, -0.7], [-1, -0.7, -0.7], [-0.7, -1, -0.7], [-0.7, -0.7, -1]]
         # )
-
-        # whether to upsample hull at this point,
-        # based on distance in rho space
-        def test_fn(test_losses):
-            test_rhos = np.array(
-                [values_and_grads(loss)["rho"] for loss in test_losses]
-            )
-            barycenter = np.einsum("ij->i", test_rhos) / len(test_losses)
-            max_dist = max([np.norm(r - barycenter) for r in test_rhos])
-            return max_dist > 0.2
 
         upsample_deg = 3
         loss_samples, loss_tri, loss_normals = upsample_hull_3d(

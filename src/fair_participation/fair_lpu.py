@@ -49,8 +49,7 @@ def fair_lpu_linear_fn(
             jnp.array(
                 [
                     0.0,
-                    alpha * vgs["disparity"]
-                    - jnp.dot(loss_grad, proj_fairness_grad)
+                    (alpha * vgs["disparity"] - jnp.dot(loss_grad, proj_fairness_grad))
                     / jnp.dot(proj_fairness_grad, proj_fairness_grad),
                 ]
             )

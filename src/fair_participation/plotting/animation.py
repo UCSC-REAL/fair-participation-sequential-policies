@@ -1,24 +1,72 @@
-from typing import Optional
-
 import os
-import matplotlib.pyplot as plt
+from typing import Optional, Callable
 
-from fair_participation.environment import Environment
-from fair_participation.plotting.video import Video
-from fair_participation.plotting.loss_boundary_plot import make_loss_boundary_plot
-from fair_participation.plotting.participation_rate_plot import (
-    make_participation_rate_plot,
-)
-from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
+import matplotlib.pyplot as plt
+from tqdm import trange
+
+import jax.numpy as jnp
+
+from fair_participation.simulation import get_trial_filename
+
+from fair_participation.base_logger import logger
+
+from fair_participation.plotting.video import Video, video_filename
+from fair_participation.plotting.compare import make_canvas
+
+
+def get_animation_title(name, method):
+    return f"{name}_{method}"
+
+
+def get_animation_filename(name, method):
+    return video_filename(get_animation_title(name, method))
+
+
+def animate(env, method):
+
+    animation_filename = get_animation_filename(env.name, method)
+    if os.path.exists(animation_filename):
+        logger.info(f"Animation exists; skipping:")
+        logger.info(f"  {animation_filename}")
+        return
+    logger.info(f"Rendering animation:")
+
+    num_groups = (env.group_sizes.shape)[0]
+
+    if num_groups == 2:
+        fig, plots = make_canvas(env)
+
+        def update_callback(state):
+            for plot in plots:
+                plot.update(state)
+
+    else:
+        logger.info("Animation not implemented for this environment.")
+        return
+
+    trial_filename = get_trial_filename(env.name, method)
+    with jnp.load(trial_filename) as npz:
+
+        with Animation(
+            fig,
+            name=env.name,
+            method=method,
+            update_callback=update_callback,
+        ) as animation:
+
+            num_steps = len(npz["loss"])
+            for k in trange(num_steps):
+                state = {f: npz[f][k] for f in npz.files}
+                animation.render_frame(state)
 
 
 class Animation(Video):
     def __init__(
         self,
-        title: str,
-        environment: Environment,
-        save_init: bool = True,
-        plot_kwargs: Optional[dict] = None,
+        fig: plt.Figure,
+        name: str,
+        method: str,
+        update_callback: Optional[Callable],
     ):
         """
         problem:
@@ -26,52 +74,17 @@ class Animation(Video):
             if method is not None, save `problem_method.mp4` as video of simulation
         """
 
-        self.title = title
-        self.environment = environment
-        if plot_kwargs is None:
-            plot_kwargs = dict()
+        self.fig = fig
+        self.name = name
+        self.method = method
 
-        num_groups = (environment.group_sizes.shape)[0]
-        if num_groups == 2:
-            self.fig, (lax, cax, rax) = plt.subplots(1, 3, figsize=(18, 6))
-        elif num_groups == 3:
-            self.fig, (lax, cax, rax) = plt.subplots(
-                1, 3, figsize=(18, 6), subplot_kw={"projection": "3d"}
-            )
+        super().__init__(get_animation_title(name, method), self.fig)
 
-        super().__init__(self.title, self.fig)
-
-        self.left_plot = make_loss_boundary_plot(
-            ax=lax,
-            achievable_loss=environment.achievable_loss,
-            loss_hull=environment.loss_hull,
-        )
-        self.center_plot = make_participation_rate_plot(
-            ax=cax,
-            achievable_loss=environment.achievable_loss,
-            loss_hull=environment.loss_hull,
-            values_and_grads=environment.values_and_grads,
-        )
-        self.right_plot = make_loss_disparity_plot(
-            ax=rax,
-            achievable_loss=environment.achievable_loss,
-            loss_hull=environment.loss_hull,
-            values_and_grads=environment.values_and_grads,
-        )
-
-    def savefig(self, filename):
-        self.fig.savefig(os.path.join("pdf", filename))
-
-    def init_render(self, npz, filename):
-        self.fig.tight_layout()
-
-        plt.show()
-        self.savefig(filename)
+        self.update_callback = update_callback
 
     def render_frame(self, state: dict, **_):
-        self.left_plot.update(state)
-        self.center_plot.update(state)
-        self.right_plot.update(state)
-        self.fig.tight_layout()
+
+        if self.update_callback:
+            self.update_callback(state)
 
         self.draw()

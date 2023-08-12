@@ -1,5 +1,5 @@
 from typing import Callable
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, Delaunay
 from fair_participation.optimization import solve_qp, proj_qp
 
 import numpy as np
@@ -11,6 +11,7 @@ from fair_participation.plotting.plot_utils import (
     use_two_ticks_y,
     use_two_ticks_z,
     UpdatingPlot,
+    upsample_triangles,
 )
 
 
@@ -49,17 +50,41 @@ class LossDisparityPlot3Group:
         :param values_and_grads:
         """
         self.ax = ax
+        plt.sca(ax)
         self.loss_hull = loss_hull
 
-        az, el = zip(*[self.get_theta(loss) for loss in achievable_loss])
-        results = [values_and_grads(self.get_loss([a, e])) for (a, e) in zip(az, el)]
-        # results = [values_and_grads(loss) for loss in achievable_loss]
+        pure_thetas = np.array([self.get_theta(loss) for loss in achievable_loss])
+        pure_results = [values_and_grads(l) for l in achievable_loss]
+
+        tri = Delaunay(pure_thetas)
+
+        # upsample in theta space
+        points, faces, normals = tri.points, tri.simplices, tri.equations[:, :-1]
+        for _ in range(0):
+            points, faces, normals = upsample_triangles(points, faces, normals)
+
+        upsampled_losses = [self.get_loss([a, e]) for (a, e) in points]
+        results = [values_and_grads(l) for l in upsampled_losses if l is not None]
+        az, el = zip(
+            *[p for (i, p) in enumerate(points) if upsampled_losses[i] is not None]
+        )
+
+        ax.scatter(
+            *pure_thetas.T,
+            [r["disparity"] for r in pure_results],
+            color="red",
+        )
+        ax.scatter(
+            *pure_thetas.T,
+            [r["total_loss"] for r in pure_results],
+            color="blue",
+        )
 
         ax.plot_trisurf(
             az,
             el,
             [r["disparity"] for r in results],
-            color="red",
+            cmap="Reds_r",
             label="Disparity",
             alpha=0.5,
         )
@@ -67,10 +92,18 @@ class LossDisparityPlot3Group:
             az,
             el,
             [r["total_loss"] for r in results],
-            color="blue",
+            cmap="Blues_r",
             label="Loss",
             alpha=0.5,
         )
+
+        ax.set_xlabel("Azimuth", labelpad=-10)
+        ax.set_ylabel("Elevation", labelpad=-10)
+        ax.set_zlabel("Loss; Disparity", labelpad=-10)
+
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
+        use_two_ticks_z(ax)
 
     def get_theta(self, loss):
         x, y, z = -loss[0], -loss[1], -loss[2]
@@ -147,9 +180,9 @@ class LossDisparityPlot2Group(UpdatingPlot):
 
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\theta$")
-        ax.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g s_g$", labelpad=-20)
+        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-20)
         ax.yaxis.label.set_color("blue")
-        ax_r.set_ylabel("Disparity $\\mathcal{F}(\\rho)$", labelpad=-10)
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-10)
         ax_r.yaxis.label.set_color("red")
 
         ax.legend(loc="lower left")

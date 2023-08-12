@@ -5,13 +5,13 @@ from jax import value_and_grad, grad, vmap, jit, lax, Array
 from jax.typing import ArrayLike
 
 
-def fairness_disparity(rho: ArrayLike) -> Any:
+def fairness_disparity(rho: ArrayLike, fair_epsilon: float = 0.01) -> Any:
     """
     Symmetric fairness disparity function.
     :param: rho: Array of participation rates.
     :return: Violation of fairness constraint.
     """
-    return jnp.var(rho) - 0.01
+    return jnp.var(rho) - fair_epsilon
 
 
 def _value_and_grad_total_loss_fn(
@@ -102,6 +102,7 @@ def _full_deriv_total_loss_fn(
 def values_and_grads_fns(
     rho_fns: tuple[Callable],
     group_sizes: ArrayLike,
+    fair_epsilon: float = 0.01,
 ) -> Callable:
     """
     Creates a jitted callable that returns commonly used values and gradients.
@@ -121,7 +122,7 @@ def values_and_grads_fns(
     def _disparity_loss(loss: ArrayLike) -> Array:
         """Maps loss vector to value of the disparity function."""
         rho = rho_f(loss)
-        return fairness_disparity(rho)
+        return fairness_disparity(rho, fair_epsilon)
 
     value_and_grad_disparity_loss = value_and_grad(_disparity_loss)
 

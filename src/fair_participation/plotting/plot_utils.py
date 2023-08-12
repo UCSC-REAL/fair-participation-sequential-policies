@@ -52,7 +52,7 @@ def sample_hull_uniform(hull, n, seed=0):
     return np.einsum("ijk, ij -> ik", faces[which_face], convex_comb)
 
 
-def upsample_faces_3d(points, faces, normals, test_fn=None):
+def upsample_triangles(points, faces, normals):
     """
     accept faces as array of indices of points
 
@@ -78,11 +78,6 @@ def upsample_faces_3d(points, faces, normals, test_fn=None):
         d = (a + b) / 2
         e = (b + c) / 2
         f = (a + c) / 2
-
-        if test_fn is not None and not test_fn([a, b, c, d, e, f]):
-            new_faces.extend(tuple(face))
-            new_normals.append(normals[i])
-            continue
 
         new_points.extend([d, e, f])
         d_idx, e_idx, f_idx = idx, idx + 1, idx + 2
@@ -114,7 +109,7 @@ def upsample_hull_3d(points, deg=1):
     normals = hull.equations[:, :-1]
 
     for _ in range(deg):
-        points, faces, normals = upsample_faces_3d(points, faces, normals)
+        points, faces, normals = upsample_triangles(points, faces, normals)
 
     return points, faces, normals
 

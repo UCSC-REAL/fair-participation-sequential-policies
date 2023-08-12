@@ -1,7 +1,5 @@
 from typing import Callable
 
-import jax.numpy as jnp
-from jax import jit, Array
 from jax.typing import ArrayLike
 from scipy.spatial import ConvexHull
 
@@ -45,53 +43,3 @@ def rrm_step(
         )
 
     return _step
-
-
-# TODO check
-def rrm_grad_step(
-    values_and_grads: Callable[[ArrayLike], dict],
-    loss_hull: ConvexHull,
-    eta: float,
-) -> Callable[[ArrayLike], StateInfo]:
-    """
-    Returns update callable that performs a single gradient step on the RRM problem:
-        l_{t+1} = l_t - eta * grad_x L(x, rho_t)|_{x=l_t}
-
-    :param values_and_grads: Callable that returns commonly used values and gradients.
-    :param loss_hull: ConvexHull object of loss vectors.
-    :param eta: Learning rate.
-    :return: Callable that performs a single update step.
-    """
-
-    @jit
-    def _step(loss: ArrayLike) -> Array:
-        """
-        Gradient step on the RRM problem.
-        :param loss: Current loss vector.
-        :return: New loss vector.
-        """
-        # vgs["grad_total_loss"] =  grad_x L(x, rho(l_t))|_{x=l_t}
-        vgs = values_and_grads(loss)
-        return loss - eta * vgs["grad_total_loss"]
-
-    # TODO make jittable
-    def _projected_step(loss: ArrayLike) -> StateInfo:
-        """
-        Gradient step on the RRM problem, projected onto the convex hull.
-        :param loss: Current loss vector.
-        :return: Dictionary of updated values.
-        """
-        new_loss = _step(loss)
-        opt_loss, _ = solve_qp(
-            w=jnp.zeros_like(new_loss), hull=loss_hull, gamma=1.0, x0=new_loss
-        )
-        opt_vgs = values_and_grads(opt_loss)
-        return StateInfo(
-            opt_loss,
-            opt_vgs["rho"],
-            opt_vgs["total_loss"],
-            opt_vgs["disparity"],
-            0,
-        )
-
-    return _projected_step

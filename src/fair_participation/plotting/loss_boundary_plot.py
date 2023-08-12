@@ -51,7 +51,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
             ax.plot(
                 *(project_hull(loss_hull.points[loss_hull.vertices], val, dim)).T,
                 color="black",
-                alpha=0.5
+                alpha=0.5,
             )
 
         min_lim = 0
@@ -110,36 +110,31 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         ax.set_xlim([min_lim, max_lim])
         ax.set_ylim([min_lim, max_lim])
 
+        self.min_lim = min_lim
+        self.max_lim = max_lim
+
         plt.xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
         plt.ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
         plt.title("Group Loss")
 
-        def rescale(x, y):
-            "(-1, 0) -> (min_lim, max_lim)"
-            return (
-                (x + 1) * (max_lim - min_lim) + min_lim,
-                (y + 1) * (max_lim - min_lim) + min_lim,
-            )
-
         ax.legend(loc="upper right")
         ax.add_patch(
             patches.FancyArrowPatch(
-                rescale(-0.9, 0.0),
-                rescale(-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
+                self.rescale(-0.9, 0.0),
+                self.rescale(-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
                 connectionstyle="arc3,rad=0.08",
                 arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
                 color="black",
             )
         )
-        plt.annotate("$\\theta$", rescale(-0.85, -0.1))
+        plt.annotate("$\\theta$", self.rescale(-0.85, -0.1))
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 
         (self.loss_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 
         self.rho_arrow = plt.quiver(
-            -0.5,
-            -0.5,
+            *self.rescale(-0.5, -0.5),
             0,
             0,
             color="blue",
@@ -147,6 +142,18 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             scale_units="xy",
             width=0.01,
             alpha=0.0,
+        )
+
+    def rescale(self, x, y, vel=True):
+        "(-1, 0) -> (min_lim, max_lim)"
+        if vel:
+            return (
+                (x + 1) * (self.max_lim - self.min_lim) + self.min_lim,
+                (y + 1) * (self.max_lim - self.min_lim) + self.min_lim,
+            )
+        return (  # for, e.g, velocity
+            x * (self.max_lim - self.min_lim),
+            y * (self.max_lim - self.min_lim),
         )
 
     def update(self, state, **_):
@@ -158,5 +165,5 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         self.loss_pt.set_data(*state["loss"])
         rho = state["rho"]
         rho_arrow = rho / (np.linalg.norm(rho) * 4)
-        self.rho_arrow.set_UVC(*(-rho_arrow))
+        self.rho_arrow.set_UVC(*self.rescale(*(-rho_arrow), vel=False))
         self.rho_arrow.set_alpha(0.5)
