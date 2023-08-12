@@ -65,7 +65,14 @@ def solve_qp(
     return x.value, alpha.value
 
 
-def proj_qp(w: ArrayLike, hull: ConvexHull):
+def proj_qp(w: ArrayLike, hull: ConvexHull, slack: float = 1e-6):
+    """
+    Get frontier loss in direction w from origin
+
+    :param w: Array of linear weights.
+    :param hull: ConvexHull object.
+    :param slack: max distance from ray formed by w
+    """
     points = hull.points
     n, d = points.shape
     alpha = Variable(n)
@@ -74,7 +81,7 @@ def proj_qp(w: ArrayLike, hull: ConvexHull):
         cvx.sum(alpha) == 1,
         alpha >= Constant(0.0),  # for type hinting
         x == alpha @ points,
-        x - (x @ w) * w <= 1e-6,  # no component of x orthogonal to w
+        x - (x @ w) * w <= slack,  # no component of x orthogonal to w
     ]
     obj = -(x @ w)
 
@@ -85,3 +92,36 @@ def proj_qp(w: ArrayLike, hull: ConvexHull):
     prob.solve()
     # TODO when do we need to make sure we're on a facet?
     return x.value, alpha.value
+
+
+def proj_tangent_qp(
+    loss: ArrayLike, g: ArrayLike, hull: ConvexHull, slack: float = 1e-6
+):
+    """
+    project gradient from loss onto convex hull by minimizing distance
+    """
+
+    points = hull.points
+    n, d = points.shape
+    x = Variable(d)
+
+    # unit normals
+    normals = hull.equations[:, :-1]
+    offsets = hull.equations[:, -1]
+
+    # Find active facet
+    facet_dists = jnp.abs(jnp.einsum("ij,j->i", normals, loss) + offsets)
+    facet_ix = facet_dists <= slack
+
+    active_normals = normals[facet_ix]
+    active_offsets = offsets[facet_ix]
+    # Subtract off normal component of gradient if we are on a facet
+
+    constraints = [-(active_normals @ x) >= active_offsets]
+    obj = cvx.norm(x - (loss + g))
+    prob = Problem(
+        Minimize(obj),
+        constraints,
+    )
+    prob.solve()
+    return x.value - loss

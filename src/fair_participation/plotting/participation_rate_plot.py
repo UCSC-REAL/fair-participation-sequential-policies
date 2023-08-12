@@ -127,7 +127,7 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         ax.set_xlim([min_lim, max_lim])
         ax.set_ylim([min_lim, max_lim])
         ax.set_zlim([min_lim, max_lim])
-        ax.view_init(elev=38, azim=45)
+        ax.view_init(elev=30, azim=45)
 
         ax.set_xlabel("Group 1 rate $\\rho_1$", labelpad=-10)
         ax.set_ylabel("Group 2 rate $\\rho_2$", labelpad=-10)

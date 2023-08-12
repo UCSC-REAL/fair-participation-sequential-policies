@@ -103,11 +103,11 @@ def main():
         {
             "name": "Income_Three",
             "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": jnp.array([-1, -1, -1]),
-            "num_steps": 10,
+            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
+            "num_steps": 15,
             "eta": 0.002,
             "alpha": 0.002,
-            "fair_epsilon": 0.07,
+            "fair_epsilon": 0.05,
         },
         # {
         #     "name": "Income",

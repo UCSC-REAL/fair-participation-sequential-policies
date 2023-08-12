@@ -5,7 +5,7 @@ from jax import jit, Array
 from jax.typing import ArrayLike
 from scipy.spatial import ConvexHull
 
-from fair_participation.optimization import solve_qp
+from fair_participation.optimization import solve_qp, proj_tangent_qp
 from fair_participation.state import StateInfo
 
 
@@ -22,10 +22,6 @@ def fair_lpu_linear_fn(
     :return: Callable.
     """
 
-    # unit normals
-    normals = loss_hull.equations[:, :-1]
-    offsets = loss_hull.equations[:, -1]
-
     def _fair_lpu_linear(loss: ArrayLike) -> tuple[Array, float]:
         """
         Maps loss [vector] x alpha [float] to estimate of linear term.
@@ -34,17 +30,15 @@ def fair_lpu_linear_fn(
         :return: Estimate of linear term.
         """
         vgs = values_and_grads(loss)
-        # Find active facet
-        facet_dists = jnp.abs(jnp.dot(normals, loss) + offsets)
-        facet_ix = jnp.argmin(facet_dists)
-        unit_normal = normals[facet_ix]
-        # Subtract off normal component of gradient if we are on a facet
+
         loss_grad = vgs["full_deriv_total_loss"]
         g = vgs["grad_disparity_loss"]
-        is_on_facet = facet_dists[facet_ix] < 1e-6
-        proj_fairness_grad = g - is_on_facet * jnp.dot(g, unit_normal) * unit_normal
-        # TODO needs a zero check?
-        # > We assume that proj_fairness_grad is never 0 outside the feasible set
+
+        proj_fairness_grad = -proj_tangent_qp(loss, -g, loss_hull)
+
+        # We assume that proj_fairness_grad is never 0 outside the feasible set
+        # Therefore, jnp.dot(proj_fairness_grad, proj_fairness_grad) > 0 outside
+        # feasible set
         lambda_estimate = jnp.max(
             jnp.array(
                 [
@@ -92,11 +86,3 @@ def fair_lpu_step(
         )
 
     return _step
-
-
-def fair_lpu_grad_step(
-    values_and_grads: Callable,
-    loss_hull: ConvexHull,
-    eta: float,
-) -> Callable[[ArrayLike], StateInfo]:
-    raise NotImplementedError

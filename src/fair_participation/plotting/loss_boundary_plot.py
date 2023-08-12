@@ -68,7 +68,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         ax.invert_yaxis()
         ax.invert_zaxis()
 
-        ax.view_init(elev=38, azim=45)
+        ax.view_init(elev=30, azim=45)
 
         ax.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
         ax.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
