@@ -253,16 +253,16 @@ def plot_triangles(ax, triangles, normals, **kwargs):
 
 
 # TODO not sure about these
-def use_two_ticks_x(ax):
+def use_two_ticks_x(ax, others=[]):
     x = ax.get_xticks()
-    ax.set_xticks(x[:: len(x) - 1])
+    ax.set_xticks([min(x), max(x)] + others)
 
 
-def use_two_ticks_y(ax):
+def use_two_ticks_y(ax, others=[]):
     y = ax.get_yticks()
-    ax.set_yticks(y[:: len(y) - 1])
+    ax.set_yticks([min(y), max(y)] + others)
 
 
-def use_two_ticks_z(ax):
+def use_two_ticks_z(ax, others=[]):
     z = ax.get_zticks()
-    ax.set_zticks(z[:: len(z) - 1])
+    ax.set_zticks([min(z), max(z)] + others)

@@ -2,6 +2,7 @@
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+import matplotlib.path as mpath
 import numpy as np
 from jax import numpy as jnp
 import os
@@ -13,7 +14,11 @@ from fair_participation.plotting.participation_rate_plot import (
     make_participation_rate_plot,
 )
 from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
-from fair_participation.plotting.plot_utils import savefig
+from fair_participation.plotting.plot_utils import (
+    savefig,
+    use_two_ticks_x,
+    use_two_ticks_y,
+)
 
 from fair_participation.base_logger import logger
 from fair_participation.utils import PROJECT_ROOT
@@ -29,6 +34,18 @@ mpl.rcParams.update(
 )
 font = {"size": 13}
 mpl.rc("font", **font)
+
+star = mpath.Path.unit_regular_star(6)
+circle = mpath.Path.unit_circle()
+cut_star = mpath.Path(
+    vertices=np.concatenate([circle.vertices, star.vertices[::-1, ...]]),
+    codes=np.concatenate([circle.codes, star.codes]),
+)
+
+markers = {
+    "RRM": {"marker": "o", "color": "coral", "s": 240},
+    "FairLPU": {"marker": cut_star, "color": "darkviolet", "s": 240},
+}
 
 
 def make_canvas(env):
@@ -50,6 +67,7 @@ def make_canvas(env):
             achievable_loss=env.achievable_loss,
             loss_hull=env.loss_hull,
             values_and_grads=env.values_and_grads,
+            fair_epsilon=env.fair_epsilon,
         )
         right_plot = make_loss_disparity_plot(
             ax=rax,
@@ -75,6 +93,7 @@ def make_canvas(env):
             achievable_loss=env.achievable_loss,
             loss_hull=env.loss_hull,
             values_and_grads=env.values_and_grads,
+            fair_epsilon=env.fair_epsilon,
         )
 
         plots = (left_plot, center_plot)
@@ -100,20 +119,35 @@ def compare_solutions(env, methods):
 
     fig, plots = make_canvas(env)
 
-    left, center = plots[0], plots[1]
+    left, center = plots[0].ax, plots[1].ax
+    if len(plots) > 2:
+        right_p = plots[2]
+    else:
+        right_p = None
 
-    markers = ["o", "+"]
-
-    for (method, marker) in zip(methods, markers):
+    for method in methods:
 
         trial_filename = get_trial_filename(env.name, method)
         with jnp.load(trial_filename) as npz:
             loss = npz["loss"][-1]
             rho = npz["rho"][-1]
+            total_loss = npz["total_loss"][-1]
+            disparity = npz["disparity"][-1]
 
-            left.scatter(*loss, marker)
-            center.scatter(*rho, marker)
+            left.scatter(*loss, **markers[method], label=method)
+            center.scatter(*rho, **markers[method], label=method)
+            center.legend(loc="upper right")
+            left.legend(loc="upper right")
 
+            if right_p is not None:
+                right_p.ax.scatter(
+                    right_p.get_theta(loss), total_loss, **markers[method], label=method
+                )
+                right_p.ax_r.scatter(
+                    right_p.get_theta(loss), disparity, **markers[method], label=method
+                )
+
+    # plt.show()
     savefig(fig, save_filename)
 
 
@@ -138,7 +172,6 @@ def compare_timeseries(name, methods):
     axs_r = [ax.twinx() for ax in axs]
 
     # load and compare data
-    num_steps = None
     loss_min = np.inf
     loss_max = -np.inf
     disparity_min = np.inf
@@ -150,6 +183,8 @@ def compare_timeseries(name, methods):
         if os.path.exists(trial_filename):
 
             with jnp.load(trial_filename) as npz:
+                num_steps = len(npz["total_loss"])
+
                 loss_min = min(loss_min, min(npz["total_loss"]))
                 loss_max = max(loss_max, max(npz["total_loss"]))
                 disparity_min = min(disparity_min, min(npz["disparity"]))
@@ -163,6 +198,9 @@ def compare_timeseries(name, methods):
                 )
                 axs_r[i].tick_params("y", colors="red")
                 axs[i].set_xlabel("Time Step")
+
+                axs_r[i].scatter(num_steps - 1, npz["disparity"][-1], **markers[method])
+                axs[i].scatter(num_steps - 1, npz["total_loss"][-1], **markers[method])
 
                 lambdas = npz["lambda_estimate"]
                 if sum(lambdas) > 0:
@@ -182,10 +220,8 @@ def compare_timeseries(name, methods):
                         [], [], color="red", linestyle="dashed", label="$\\mathcal{H}$"
                     )
                     # legend
-                    ax_rr.legend(loc="right")
+                    ax_rr.legend()
 
-                if num_steps is None:
-                    num_steps = len(npz["total_loss"])
         else:
             raise FileNotFoundError(trial_filename)
 

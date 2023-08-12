@@ -152,8 +152,10 @@ class LossDisparityPlot2Group(UpdatingPlot):
         total_losses = [vgs["total_loss"] for vgs in _values_and_grads]
         disparities = [vgs["disparity"] for vgs in _values_and_grads]
         max_disparity = max(disparities)
-
+        max_loss = max(total_losses)
+        min_loss = min(total_losses)
         ax_r = ax.twinx()
+        self.ax_r = ax_r
 
         # plot loss curve
         ax.plot(
@@ -190,9 +192,9 @@ class LossDisparityPlot2Group(UpdatingPlot):
         (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
         (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)
 
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax_r)
-        use_two_ticks_y(ax)
+        ax.set_xticks([round(min_theta, 1), round(max_theta, 1)])
+        ax_r.set_yticks([0, round(max_disparity, 1)])
+        ax.set_yticks([round(min_loss, 1), round(max_loss, 1)])
 
     def get_theta(self, loss):
         return np.arctan2(-loss[1], -loss[0])

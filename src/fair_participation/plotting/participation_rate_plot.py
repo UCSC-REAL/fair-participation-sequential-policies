@@ -3,7 +3,8 @@ from typing import Callable
 import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial import ConvexHull
-
+from scipy.spatial.transform import Rotation
+import matplotlib.tri as mtri
 from matplotlib import pyplot as plt
 
 from fair_participation.plotting.plot_utils import (
@@ -19,21 +20,47 @@ from fair_participation.plotting.plot_utils import (
 )
 
 
+def plot_fair_bndry_3d(ax, fair_epsilon: float, n: int = 30):
+    u = np.linspace(0, np.pi * 2, n)
+    v = np.linspace(0, 0.7, 2)
+
+    u, v = np.meshgrid(u, v)
+    u, v = u.flatten(), v.flatten()
+
+    r, ang = Rotation.align_vectors([[1, 1, 1]], [[0, 0, 1]])
+
+    x, y, z = (
+        r.apply(
+            np.array(
+                [
+                    np.sqrt(fair_epsilon * 3) * np.cos(u),
+                    np.sqrt(fair_epsilon * 3) * np.sin(u),
+                    np.zeros(len(u)),
+                ]
+            ).T
+        )
+        + np.einsum("i,j->ij", v, np.ones(3))
+    ).T
+
+    tri = mtri.Triangulation(u, v)
+    ax.plot_trisurf(x, y, z, triangles=tri.triangles, color="red", alpha=0.2)
+
+
 def make_participation_rate_plot(
     ax: plt.Axes,
     achievable_loss: NDArray,
     loss_hull: ConvexHull,
     values_and_grads: Callable,
-    **kwargs
+    fair_epsilon: float,
 ):
     num_groups = achievable_loss.shape[1]
     if num_groups == 2:
         return ParticipationRatePlot2Group(
-            ax, achievable_loss, loss_hull, values_and_grads, **kwargs
+            ax, achievable_loss, loss_hull, values_and_grads, fair_epsilon
         )
     elif num_groups == 3:
         return ParticipationRatePlot3Group(
-            ax, achievable_loss, loss_hull, values_and_grads, **kwargs
+            ax, achievable_loss, loss_hull, values_and_grads, fair_epsilon
         )
     else:
         raise NotImplementedError
@@ -46,7 +73,7 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         achievable_loss: NDArray,
         loss_hull: ConvexHull,
         values_and_grads: Callable,
-        **kwargs
+        fair_epsilon: float,
     ):
         """
 
@@ -89,9 +116,7 @@ class ParticipationRatePlot3Group(UpdatingPlot):
 
         plt.title("Group Participation Rates")
 
-        # cx, cy = _inverse_disparity_curve()
-        # plt.plot(cx, cy, color="red", linestyle="--", label="Fair Boundary")
-        # plt.plot(cy, cx, color="red", linestyle="--")
+        plot_fair_bndry_3d(ax, fair_epsilon)
 
         min_lim = 1
         max_lim = 0
@@ -122,7 +147,7 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         achievable_loss: NDArray,
         loss_hull: ConvexHull,
         values_and_grads: Callable,
-        **kwargs
+        fair_epsilon: float,
     ):
         """
 
@@ -154,11 +179,6 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         )
         plt.title("Group Participation Rates")
 
-        # TODO replace with zero level set
-        # cx, cy = _inverse_disparity_curve()
-        # plt.plot(cx, cy, color="red", linestyle="--", label="Fair Boundary")
-        # plt.plot(cy, cx, color="red", linestyle="--")
-
         min_lim = 1
         max_lim = 0
 
@@ -168,9 +188,23 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         ax.set_xlim([min_lim, max_lim])
         ax.set_ylim([min_lim, max_lim])
 
-        plt.xlabel("Group 1 participation rate $\\rho_1$", labelpad=-10)
-        plt.ylabel("Group 2 participation rate $\\rho_2$", labelpad=-10)
-        ax.legend(loc="upper right")
+        dist = 2 * np.sqrt(fair_epsilon)
+        ax.plot(
+            [min_lim, max_lim - dist],
+            [min_lim + dist, max_lim],
+            color="red",
+            linestyle="--",
+            label="Fair Boundary",
+        )
+        ax.plot(
+            [min_lim + dist, max_lim],
+            [min_lim, max_lim - dist],
+            color="red",
+            linestyle="--",
+        )
+
+        ax.set_xlabel("Group 1 participation rate $\\rho_1$", labelpad=-10)
+        ax.set_ylabel("Group 2 participation rate $\\rho_2$", labelpad=-10)
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 

@@ -107,16 +107,16 @@ def main():
             "num_steps": 10,
             "eta": 0.002,
             "alpha": 0.002,
-            "fair_epsilon": 0.15,
+            "fair_epsilon": 0.07,
         },
-        {
-            "name": "Income",
-            "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": 0.57,
-            "num_steps": 10,
-            "eta": 0.002,
-            "alpha": 0.002,
-        },
+        # {
+        #     "name": "Income",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": 0.57,
+        #     "num_steps": 10,
+        #     "eta": 0.002,
+        #     "alpha": 0.002,
+        # },
         # {
         #     "name": "Mobility",
         #     "rho_fns": localized_rho_fn(-0.7, 10),
@@ -147,7 +147,9 @@ def main():
         "FairLPU",
     )
 
-    run_problems(base_problems, methods, clean_lvl="pdfs")
+    # run_problems(base_problems, methods, clean_lvl="timeseries")
+    # run_problems(base_problems, methods, clean_lvl="solutions")
+    run_problems(base_problems, methods, clean_lvl="trials")
 
 
 if __name__ == "__main__":
