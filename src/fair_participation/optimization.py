@@ -108,7 +108,7 @@ def proj_qp(w: ArrayLike, hull: ConvexHull, slack: float = EPS):
     return x.value, xi.value
 
 
-def proj_tangent_qp(
+def proj_active_surfaces_qp(
     x0: ArrayLike, update: ArrayLike, hull: ConvexHull, slack: float = EPS
 ):
     """
@@ -130,6 +130,8 @@ def proj_tangent_qp(
     facet_dists = jnp.abs(jnp.einsum("ij,j->i", normals, x0) + offsets)
     facet_ix = facet_dists <= slack
 
+    closest = jnp.argmin(jnp.abs(facet_dists))
+
     active_normals = normals[facet_ix]
     active_offsets = offsets[facet_ix]
 
@@ -137,22 +139,23 @@ def proj_tangent_qp(
         soln = update
     else:
 
-        # if jnp.max(jnp.einsum("ij,j->i", active_normals, update)) <= 0:
-        #     # all(normal . update <= 0) implies update is pushing us INSIDE the
-        #     # convex body.
-        #     # any(normal . vector + offset >= 0) is OUTSIDE
-        #     # constrain (x + update) to be outside.
-        #     constraints = [(active_normals @ x) + active_offsets >= 0]
-        # else:
-        #     # update is pushing us OUTSIDE the convex body
-        #     # constrain (x + update) to be inside
-        #     # all(normal . vector + offset <= 0) is INSIDE
-        #     constraints = [(active_normals @ x) + active_offsets <= 0]
+        if jnp.max(jnp.einsum("ij,j->i", active_normals, update)) <= 0:
+            # all(normal . update <= 0) implies update is pushing us INSIDE the
+            # convex body.
+            # any(normal . vector + offset >= 0) is OUTSIDE
+            # constrain (x + update) to be outside.
 
-        # this works for income_three, income, and travel_time
-        constraints = [(active_normals @ x) + active_offsets >= 0]
-        # this works for mobility and public_coverage
-        # constraints = [(active_normals @ x) + active_offsets <= 0]
+            constraints = [normals[closest] @ x - offsets[closest] >= 0]
+        else:
+            # update is pushing us OUTSIDE the convex body
+            # constrain (x + update) to be inside
+            # all(normal . vector + offset <= 0) is INSIDE
+            constraints = [(active_normals @ x) + active_offsets <= 0]
+
+        # # this works for income_three, income, and travel_time
+        # constraints = [(active_normals @ x) + active_offsets >= 0]
+        # # this works for mobility and public_coverage
+        # # constraints = [(active_normals @ x) + active_offsets <= 0]
 
         obj = cvx.norm(x - (x0 + update))
         prob = Problem(
@@ -171,3 +174,42 @@ def proj_tangent_qp(
             print("NORM * X", jnp.dot(normal, x0 + soln))
 
     return soln
+
+
+def test_proj_active_surfaces_qp():
+    points = jnp.array([[0, 0], [1, 0], [0, 1]])
+    hull = ConvexHull(points)
+
+    print(
+        "should be approximately 0",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([0, -1]), hull),
+    )
+
+    print(
+        "should be approximately 0",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([-1, 0]), hull),
+    )
+
+    print(
+        "should be in +x direction",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([1, -1]), hull),
+    )
+
+    print(
+        "should be in +y direction",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([-1, 1]), hull),
+    )
+
+    print(
+        "should be in +x direction",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([2, 1]), hull),
+    )
+
+    print(
+        "should be in +y direction",
+        proj_active_surfaces_qp(jnp.array([0, 0]), jnp.array([1, 2]), hull),
+    )
+
+
+def main():
+    test_proj_active_surfaces_qp()
