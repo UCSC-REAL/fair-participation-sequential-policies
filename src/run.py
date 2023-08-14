@@ -60,7 +60,10 @@ def do_clean(name, methods, clean):
 
 
 def run_problems(
-    problems: list[dict], methods: list[str], clean_lvl: Optional[str] = None
+    problems: list[dict],
+    methods: list[str],
+    clean_lvl: Optional[str] = None,
+    output_graphics: Optional[list[str]] = None,
 ) -> None:
     """
     Runs the simulation for each problem in the list of problems.
@@ -88,68 +91,73 @@ def run_problems(
             simulate(env, method=method, **problem)
 
             # animate problem
-            animate(env, method)
+            if output_graphics is not None and "animations" in output_graphics:
+                animate(env, method)
 
         # compare (as time-series) different methods in same environment
-        compare_timeseries(name, methods)
+        if output_graphics is not None and "timeseries" in output_graphics:
+            compare_timeseries(name, methods)
 
         # compare (on loss/rho surfaces) different methods in same environment
-        env = make_environment(**problem)
-        compare_solutions(env, methods)
+        if output_graphics is not None and "solutions" in output_graphics:
+            env = make_environment(**problem)
+            compare_solutions(env, methods)
 
 
 def main():
     base_problems = [
-        {
-            "name": "Income_Three",
-            "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-            "num_steps": 15,
-            "eta": 0.002,
-            "alpha": 0.002,
-            "fair_epsilon": 0.05,
-        },
+        # {
+        #     "name": "Income_Three",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
+        #     "num_steps": 15,
+        #     "fair_epsilon": 0.05,
+        # },
         # {
         #     "name": "Income",
         #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": 0.57,
+        #     "init_loss_direction": 0.58,
         #     "num_steps": 10,
-        #     "eta": 0.002,
-        #     "alpha": 0.002,
         # },
         # {
         #     "name": "Mobility",
         #     "rho_fns": localized_rho_fn(-0.7, 10),
         #     "init_loss_direction": 0.6,
         #     "num_steps": 20,
-        #     "eta": 0.002,
-        #     "alpha": 0.002,
         # },
-        # {
-        #     "name": "PublicCoverage",
-        #     "rho_fns": localized_rho_fn(-0.7, 50),
-        #     "init_loss_direction": 0.5,
-        #     "num_steps": 20,
-        #     "eta": 0.002,
-        #     "alpha": 0.002,
-        # },
+        {
+            "name": "PublicCoverage",
+            "rho_fns": localized_rho_fn(-0.7, 50),
+            "init_loss_direction": 0.5,
+            "init_eta": 0.0001,
+            "num_steps": 20,
+        },
         # {
         #     "name": "TravelTime",
         #     "rho_fns": localized_rho_fn(-0.58, 100),
         #     "init_loss_direction": 0.52,
         #     "num_steps": 20,
-        #     "eta": 0.002,
-        #     "alpha": 0.002,
         # },
     ]
     methods = (  # listed in environment.py
         "RRM",
-        "FairLPU",
+        "MGD",
+        "FSEP",
     )
+    output_graphics = [
+        "timeseries",
+        "solutions",
+        # "animations",
+    ]
+    # CLEAN_LVL = "timeseries"
+    # CLEAN_LVL = "solutions"
+    # CLEAN_LVL = "pdfs"
+    # CLEAN_LVL = "graphics"
+    CLEAN_LVL = "trials"
 
-    # run_problems(base_problems, methods, clean_lvl="timeseries")
-    # run_problems(base_problems, methods, clean_lvl="solutions")
-    run_problems(base_problems, methods, clean_lvl="trials")
+    run_problems(
+        base_problems, methods, clean_lvl=CLEAN_LVL, output_graphics=output_graphics
+    )
 
 
 if __name__ == "__main__":

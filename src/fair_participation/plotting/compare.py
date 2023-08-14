@@ -43,8 +43,17 @@ cut_star = mpath.Path(
 )
 
 markers = {
-    "RRM": {"marker": "o", "color": "coral", "s": 240},
-    "FairLPU": {"marker": cut_star, "color": "darkviolet", "s": 240},
+    "Init": {
+        "marker": "o",
+        "color": "white",
+        "edgecolor": "black",
+        "linewidth": 2,
+        "s": 150,
+        "alpha": 0.5,
+    },
+    "RRM": {"marker": "D", "color": "coral", "s": 240, "alpha": 0.7},
+    "MGD": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
+    "FSEP": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
 }
 
 
@@ -136,8 +145,6 @@ def compare_solutions(env, methods):
 
             left.scatter(*loss, **markers[method], label=method)
             center.scatter(*rho, **markers[method], label=method)
-            center.legend(loc="upper right")
-            left.legend(loc="upper right")
 
             if right_p is not None:
                 right_p.ax.scatter(
@@ -146,6 +153,26 @@ def compare_solutions(env, methods):
                 right_p.ax_r.scatter(
                     right_p.get_theta(loss), disparity, **markers[method], label=method
                 )
+
+    # show init
+    method = "Init"
+    loss = env.init_loss
+    results = env.values_and_grads(loss)
+    rho = results["rho"]
+    total_loss = results["total_loss"]
+    disparity = results["disparity"]
+    left.scatter(*loss, **markers[method], label=method)
+    center.scatter(*rho, **markers[method], label=method)
+    center.legend(loc="upper right")
+    left.legend(loc="upper right")
+
+    if right_p is not None:
+        right_p.ax.scatter(
+            right_p.get_theta(loss), total_loss, **markers[method], label=method
+        )
+        right_p.ax_r.scatter(
+            right_p.get_theta(loss), disparity, **markers[method], label=method
+        )
 
     # plt.show()
     savefig(fig, save_filename)

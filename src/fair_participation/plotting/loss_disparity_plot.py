@@ -170,15 +170,16 @@ class LossDisparityPlot2Group(UpdatingPlot):
             theta_range,
             disparities,
             "red",
-            linestyle="--",
+            linestyle="dotted",
         )
         ax_r.plot(
             [min_theta, max_theta],
             [0, 0],
             "red",
-            linestyle="dotted",
+            linestyle="--",
         )
-        ax.plot([], [], "red", linestyle="--", label="Disparity")
+        ax.plot([], [], "red", linestyle="dotted", label="Disparity")
+        ax.plot([], [], "red", linestyle="--", label="$\\mathcal{H} = 0$")
 
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\theta$")
@@ -192,9 +193,9 @@ class LossDisparityPlot2Group(UpdatingPlot):
         (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
         (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)
 
-        ax.set_xticks([round(min_theta, 1), round(max_theta, 1)])
         ax_r.set_yticks([0, round(max_disparity, 1)])
-        ax.set_yticks([round(min_loss, 1), round(max_loss, 1)])
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
 
     def get_theta(self, loss):
         return np.arctan2(-loss[1], -loss[0])

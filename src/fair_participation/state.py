@@ -7,4 +7,5 @@ class StateInfo(NamedTuple):
     rho: ArrayLike
     total_loss: float
     disparity: float
+    linear_weights: ArrayLike
     lambda_estimate: float

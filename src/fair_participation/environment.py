@@ -140,10 +140,14 @@ class Environment:
         self.init_loss = self.achievable_loss[closest_idx]
         vgs = self.values_and_grads(self.init_loss)
 
+        # Conceptually dirty, since there's state information
+        # that updates "out-of-phase" and belongs to
+        # optmization method
         self.state: StateInfo = StateInfo(
             loss=self.init_loss,
             rho=vgs["rho"],
             total_loss=vgs["total_loss"],
             disparity=vgs["disparity"],
+            linear_weights=vgs["rho"],
             lambda_estimate=0,
         )

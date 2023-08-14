@@ -1,11 +1,12 @@
 import os
-
+from typing import Optional
 import jax.numpy as jnp
 import pandas as pd
 from tqdm import trange
 
 from fair_participation.rrm import rrm_step
-from fair_participation.fair_lpu import fair_lpu_step
+from fair_participation.mgd import mgd_step
+from fair_participation.fsep import fsep_step
 
 
 from fair_participation.base_logger import logger
@@ -16,30 +17,52 @@ def get_trial_filename(name, method):
     return os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
 
 
-def update_env_fn(env, method, eta=0.01, alpha=0.01):
+def update_env_fn(env, method, init_eta, init_alpha, eta_decay, alpha_decay):
     if method == "RRM":
         _update_state = rrm_step(
             values_and_grads=env.values_and_grads,
             group_sizes=env.group_sizes,
             loss_hull=env.loss_hull,
         )
-    elif method == "FairLPU":
-        _update_state = fair_lpu_step(
+    elif method == "MGD":
+        _update_state = mgd_step(
             values_and_grads=env.values_and_grads,
             loss_hull=env.loss_hull,
-            eta=eta,
-            alpha=alpha,  # TODO separate alpha parameter
+        )
+    elif method == "FSEP":
+        _update_state = fsep_step(
+            values_and_grads=env.values_and_grads,
+            loss_hull=env.loss_hull,
         )
     else:
         raise ValueError(f"Unknown update method {method}.")
 
-    def update_env() -> dict:
+    def update_env(step_num: int) -> dict:
         """
         Updates state using _update_state and
         returns new state as dictionary
         :return: Dictionary of the new state.
         """
-        env.state = _update_state(env.state.loss)
+
+        # exponential decay
+        # eta = init_eta * (eta_decay**step_num)
+        # alpha = init_alpha * (alpha_decay**step_num)
+
+        # harmonic decay
+        eta_scale = 1 / eta_decay - 1
+        alpha_scale = 1 / alpha_decay - 1
+        eta = init_eta / (step_num * eta_scale + 1)
+        alpha = init_alpha / (step_num * alpha_scale + 1)
+
+        if method == "FSEP":
+            rates = (eta, alpha)
+        else:
+            rates = (eta,)
+
+        # Conceptually dirty, since there's state information
+        # that updates "out-of-phase" and belongs to
+        # optmization method
+        env.state = _update_state(env.state.loss, rates)
         return env.state._asdict()
 
     return update_env
@@ -47,9 +70,11 @@ def update_env_fn(env, method, eta=0.01, alpha=0.01):
 
 def simulate(
     env,
-    eta: float = 0.1,
-    alpha: float = 0.1,
-    num_steps: int = 50,
+    init_eta: float = 0.002,
+    init_alpha: float = 1.0,
+    eta_decay: float = 0.7,
+    alpha_decay: float = 1.0,
+    num_steps: int = 100,
     method: str = "RRM",
     **_,
 ) -> None:
@@ -59,7 +84,10 @@ def simulate(
 
     :param name: Name of the problem
     :param rho_fns: Rho functions for each group, or a single rho function for all groups. Defaults to concave_rho_fn.
-    :param eta: Learning rate for the update method.
+    :param init_eta: Learning rate for primal variable.
+    :param init_alpha: Learning rate for dual variable.
+    :param eta_decay: Learning rate decay for primal variable.
+    :param alpha_decay: Learning rate decay for dual variable.
     :param num_steps: Number of steps to simulate.
     :param init_loss_direction: Initial direction of loss. Will choose achievable loss closest to this direction.
            Can be set to float to match legacy init_theta.
@@ -68,7 +96,13 @@ def simulate(
 
     history = [env.state._asdict()]
 
-    update_env = update_env_fn(env, method, eta, alpha)
+    vectors = env.loss_hull.points
+    distances = jnp.linalg.norm(vectors[:, jnp.newaxis] - vectors, axis=2)
+    scale_init_eta = init_eta * jnp.max(distances) / 2
+
+    update_env = update_env_fn(
+        env, method, scale_init_eta, init_alpha, eta_decay, alpha_decay
+    )
 
     trial_filename = get_trial_filename(name=env.name, method=method)
 
@@ -80,8 +114,9 @@ def simulate(
     logger.info("Caching simulation.")
     logger.info(f"  {trial_filename}")
 
-    for _ in trange(num_steps):
-        history.append(update_env())
+    for step_num in range(num_steps):
+        state = update_env(step_num)
+        history.append(state)
 
     df = pd.DataFrame(history)
     data = {col: jnp.array(df[col].to_list()) for col in df.columns}

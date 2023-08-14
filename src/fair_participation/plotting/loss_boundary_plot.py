@@ -163,7 +163,7 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         - Plot vector in direction opposite rho
         """
         self.loss_pt.set_data(*state["loss"])
-        rho = state["rho"]
+        rho = state["linear_weights"]
         rho_arrow = rho / (np.linalg.norm(rho) * 4)
         self.rho_arrow.set_UVC(*self.rescale(*(-rho_arrow), vel=False))
         self.rho_arrow.set_alpha(0.5)

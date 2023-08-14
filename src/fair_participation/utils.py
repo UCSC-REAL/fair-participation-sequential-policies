@@ -1,6 +1,10 @@
 from pathlib import Path
 from numpy.random import default_rng, RandomState
 
+# used for slack in equality constraints in cvxpy (see optimization.py)
+# also used for numerical stability issues in FSEP when (nabla disparity) is near zero (see fsep.py)
+EPS = 1e-6
+
 # https://scikit-learn.org/stable/common_pitfalls.html
 # Used for CV splitters. Consistent results at the call level, e.g. keeping consistent CV splits.
 rng_seed = 76771

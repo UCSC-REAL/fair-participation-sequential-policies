@@ -194,7 +194,7 @@ class ParticipationRatePlot2Group(UpdatingPlot):
             [min_lim + dist, max_lim],
             color="red",
             linestyle="--",
-            label="Fair Boundary",
+            label="$\\mathcal{H} = 0$",
         )
         ax.plot(
             [min_lim + dist, max_lim],
