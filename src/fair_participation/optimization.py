@@ -130,8 +130,6 @@ def proj_tangent_qp(
     facet_dists = jnp.abs(jnp.einsum("ij,j->i", normals, x0) + offsets)
     facet_ix = facet_dists <= slack
 
-    closest = jnp.argmin(facet_dists)
-
     active_normals = normals[facet_ix]
     active_offsets = offsets[facet_ix]
 
@@ -139,14 +137,22 @@ def proj_tangent_qp(
         soln = update
     else:
 
-        if jnp.sum(active_normals @ update) <= 0:
-            # all(normal . vector + offset <= 0) is INSIDE
-            # constrain (x + update) to be outside
-            constraints = [normals[closest] @ x + offsets[closest] >= 0]
-        else:
-            # any(normal . vector - offset >= 0) is OUTSIDE
-            # constrain (x + update) to be inside
-            constraints = [(active_normals @ x) + active_offsets <= 0]
+        # if jnp.max(jnp.einsum("ij,j->i", active_normals, update)) <= 0:
+        #     # all(normal . update <= 0) implies update is pushing us INSIDE the
+        #     # convex body.
+        #     # any(normal . vector + offset >= 0) is OUTSIDE
+        #     # constrain (x + update) to be outside.
+        #     constraints = [(active_normals @ x) + active_offsets >= 0]
+        # else:
+        #     # update is pushing us OUTSIDE the convex body
+        #     # constrain (x + update) to be inside
+        #     # all(normal . vector + offset <= 0) is INSIDE
+        #     constraints = [(active_normals @ x) + active_offsets <= 0]
+
+        # this works for income_three, income, and travel_time
+        constraints = [(active_normals @ x) + active_offsets >= 0]
+        # this works for mobility and public_coverage
+        # constraints = [(active_normals @ x) + active_offsets <= 0]
 
         obj = cvx.norm(x - (x0 + update))
         prob = Problem(
