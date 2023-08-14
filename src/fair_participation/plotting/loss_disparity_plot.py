@@ -142,8 +142,8 @@ class LossDisparityPlot2Group(UpdatingPlot):
         self.achievable_loss = achievable_loss
         self.loss_hull = loss_hull
 
-        min_theta = self.get_theta(solve_qp(np.array([1, 0]), loss_hull)[0])
-        max_theta = self.get_theta(solve_qp(np.array([0, 1]), loss_hull)[0])
+        min_theta = self.get_theta(solve_qp(np.array([1, 0]), loss_hull))
+        max_theta = self.get_theta(solve_qp(np.array([0, 1]), loss_hull))
         theta_range = np.linspace(min_theta, max_theta, 300)
 
         losses = np.array([self.get_loss(theta) for theta in theta_range])
@@ -182,10 +182,10 @@ class LossDisparityPlot2Group(UpdatingPlot):
         ax.plot([], [], "red", linestyle="--", label="$\\mathcal{H} = 0$")
 
         plt.title("Loss and Disparity Surfaces")
-        ax.set_xlabel("Parameter $\\theta$")
-        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-20)
+        ax.set_xlabel("Parameter $\\theta$", labelpad=-10)
+        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-30)
         ax.yaxis.label.set_color("blue")
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-10)
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
         ax_r.yaxis.label.set_color("red")
 
         ax.legend(loc="lower left")
@@ -193,9 +193,12 @@ class LossDisparityPlot2Group(UpdatingPlot):
         (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
         (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)
 
-        ax_r.set_yticks([0, round(max_disparity, 1)])
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
+        ticks = ax_r.get_yticks()
+        ax_r.set_yticks([ticks[0], 0, ticks[-1]])
+        ticks = ax.get_xticks()
+        ax.set_xticks([ticks[0], ticks[-1]])
+        ticks = ax.get_yticks()
+        ax.set_yticks([ticks[0], ticks[-1]])
 
     def get_theta(self, loss):
         return np.arctan2(-loss[1], -loss[0])

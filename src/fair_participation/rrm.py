@@ -34,9 +34,7 @@ def rrm_step(
         vgs = values_and_grads(loss)
         rho = vgs["rho"]
         linear_weights = rho * group_sizes
-        opt_loss, _ = solve_qp(
-            w=linear_weights, hull=loss_hull, gamma=1.0 / (2.0 * eta), x0=loss
-        )
+        opt_loss = solve_qp(w=linear_weights, hull=loss_hull, eta=eta, x0=loss)
         opt_vgs = values_and_grads(opt_loss)
         return StateInfo(
             opt_loss,

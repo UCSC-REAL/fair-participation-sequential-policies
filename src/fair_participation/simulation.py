@@ -17,7 +17,7 @@ def get_trial_filename(name, method):
     return os.path.join(PROJECT_ROOT, "npz", f"{name}_{method}.npz")
 
 
-def update_env_fn(env, method, init_eta, init_alpha, eta_decay, alpha_decay):
+def update_env_fn(env, method, init_eta, eta_decay, alpha):
     if method == "RRM":
         _update_state = rrm_step(
             values_and_grads=env.values_and_grads,
@@ -46,13 +46,10 @@ def update_env_fn(env, method, init_eta, init_alpha, eta_decay, alpha_decay):
 
         # exponential decay
         # eta = init_eta * (eta_decay**step_num)
-        # alpha = init_alpha * (alpha_decay**step_num)
 
         # harmonic decay
         eta_scale = 1 / eta_decay - 1
-        alpha_scale = 1 / alpha_decay - 1
         eta = init_eta / (step_num * eta_scale + 1)
-        alpha = init_alpha / (step_num * alpha_scale + 1)
 
         if method == "FSEP":
             rates = (eta, alpha)
@@ -71,9 +68,8 @@ def update_env_fn(env, method, init_eta, init_alpha, eta_decay, alpha_decay):
 def simulate(
     env,
     init_eta: float = 0.002,
-    init_alpha: float = 1.0,
-    eta_decay: float = 0.7,
-    alpha_decay: float = 1.0,
+    eta_decay: float = 1.0,
+    alpha: float = 1.0,
     num_steps: int = 100,
     method: str = "RRM",
     **_,
@@ -85,8 +81,8 @@ def simulate(
     :param name: Name of the problem
     :param rho_fns: Rho functions for each group, or a single rho function for all groups. Defaults to concave_rho_fn.
     :param init_eta: Learning rate for primal variable.
-    :param init_alpha: Learning rate for dual variable.
     :param eta_decay: Learning rate decay for primal variable.
+    :param alpha: Learning rate for dual variable.
     :param alpha_decay: Learning rate decay for dual variable.
     :param num_steps: Number of steps to simulate.
     :param init_loss_direction: Initial direction of loss. Will choose achievable loss closest to this direction.
@@ -100,9 +96,7 @@ def simulate(
     distances = jnp.linalg.norm(vectors[:, jnp.newaxis] - vectors, axis=2)
     scale_init_eta = init_eta * jnp.max(distances) / 2
 
-    update_env = update_env_fn(
-        env, method, scale_init_eta, init_alpha, eta_decay, alpha_decay
-    )
+    update_env = update_env_fn(env, method, scale_init_eta, eta_decay, alpha)
 
     trial_filename = get_trial_filename(name=env.name, method=method)
 

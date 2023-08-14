@@ -6,9 +6,16 @@ from jax import numpy as jnp
 from jax import jit, Array
 from jax.typing import ArrayLike
 
+
 import cvxpy as cvx
 from cvxpy import Problem, Minimize, Variable, Constant
 from fair_participation.utils import EPS
+
+import matplotlib.pyplot as plt
+
+
+DEBUG_HACK = False
+# DEBUG_HACK = True
 
 
 @jit
@@ -28,18 +35,18 @@ def is_on_facet(point: ArrayLike, equations: ArrayLike, atol: bool = 1e-7) -> bo
 def solve_qp(
     w: ArrayLike,
     hull: ConvexHull,
-    gamma: Optional[float] = None,
+    eta: Optional[float] = None,
     x0: Optional[ArrayLike] = None,
 ) -> tuple[Array, Array]:
     """
     Solves the QP:
-        min_x <x, w> + gamma * ||x - x0||^2
+        min_x eta * <x, w> + ||x - x0||^2
         s.t. x in hull
 
     Used for RRM/MGD/FSEP updates.
     :param w: Array of linear weights.
     :param hull: ConvexHull object.
-    :param gamma: Coefficient of quadratic term.
+    :param eta: Coefficient of linear term.
     :param x0: Center of quadratic term.
     :return: Tuple of (x, xi) where x is the optimal point and xi is the optimal convex combination.
     """
@@ -53,8 +60,11 @@ def solve_qp(
         x == xi @ points,
     ]
     obj = x @ w
-    if gamma is not None:
-        obj += gamma * cvx.sum_squares(x - x0) ** 2
+
+    if eta is not None:
+        assert eta > 0
+        rt_eta = jnp.sqrt(eta)
+        obj = rt_eta * obj + 0.5 / rt_eta * cvx.sum_squares(x - x0) ** 2
 
     prob = Problem(
         Minimize(obj),
@@ -62,7 +72,11 @@ def solve_qp(
     )
     prob.solve()
 
-    return x.value, xi.value
+    # if x0 is not None:
+    #     if (x.value is None) or (jnp.dot(x.value, w) > jnp.dot(x0, w)):
+    #         return x0
+
+    return x.value
 
 
 def proj_qp(w: ArrayLike, hull: ConvexHull, slack: float = EPS):
@@ -94,9 +108,14 @@ def proj_qp(w: ArrayLike, hull: ConvexHull, slack: float = EPS):
     return x.value, xi.value
 
 
-def proj_tangent_qp(x0: ArrayLike, g: ArrayLike, hull: ConvexHull, slack: float = EPS):
+def proj_tangent_qp(
+    x0: ArrayLike, update: ArrayLike, hull: ConvexHull, slack: float = EPS
+):
     """
     project vector g at point x0 onto convex hull by minimizing distance
+
+    Can actually be a nonconvex problem, but we handle by projecting to
+    surface of minimum distance.
     """
 
     points = hull.points
@@ -111,17 +130,38 @@ def proj_tangent_qp(x0: ArrayLike, g: ArrayLike, hull: ConvexHull, slack: float 
     facet_dists = jnp.abs(jnp.einsum("ij,j->i", normals, x0) + offsets)
     facet_ix = facet_dists <= slack
 
+    closest = jnp.argmin(facet_dists)
+
     active_normals = normals[facet_ix]
     active_offsets = offsets[facet_ix]
 
     if not any(facet_ix):
-        return g
+        soln = update
+    else:
 
-    constraints = [-(active_normals @ x) >= active_offsets]
-    obj = cvx.norm(x - (x0 + g))
-    prob = Problem(
-        Minimize(obj),
-        constraints,
-    )
-    prob.solve()
-    return x.value - x0
+        if jnp.sum(active_normals @ update) <= 0:
+            # all(normal . vector + offset <= 0) is INSIDE
+            # constrain (x + update) to be outside
+            constraints = [normals[closest] @ x + offsets[closest] >= 0]
+        else:
+            # any(normal . vector - offset >= 0) is OUTSIDE
+            # constrain (x + update) to be inside
+            constraints = [(active_normals @ x) + active_offsets <= 0]
+
+        obj = cvx.norm(x - (x0 + update))
+        prob = Problem(
+            Minimize(obj),
+            constraints,
+        )
+        prob.solve()
+
+        soln = x.value - x0
+
+    if DEBUG_HACK:
+        for normal, offset in zip(active_normals, active_offsets):
+            plt.plot([0, normal[0]], [0, normal[1]], color="black", label="normal")
+            print("OFFSET", offset)
+            print("NORM * X0", jnp.dot(normal, x0))
+            print("NORM * X", jnp.dot(normal, x0 + soln))
+
+    return soln

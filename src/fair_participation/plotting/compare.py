@@ -174,7 +174,13 @@ def compare_solutions(env, methods):
             right_p.get_theta(loss), disparity, **markers[method], label=method
         )
 
-    # plt.show()
+        ticks = right_p.ax_r.get_yticks()
+        right_p.ax_r.set_yticks([ticks[0], 0, ticks[-1]])
+        ticks = right_p.ax.get_xticks()
+        right_p.ax.set_xticks([ticks[0], ticks[-1]])
+        ticks = right_p.ax.get_yticks()
+        right_p.ax.set_yticks([ticks[0], ticks[-1]])
+
     savefig(fig, save_filename)
 
 
