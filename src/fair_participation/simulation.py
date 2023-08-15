@@ -51,7 +51,7 @@ def update_env_fn(env, method, init_eta, eta_decay, alpha):
         eta_scale = 1 / eta_decay - 1
         eta = init_eta / (step_num * eta_scale + 1)
 
-        if method == "cpg":
+        if method == "CPG":
             rates = (eta, alpha)
         else:
             rates = (eta,)
