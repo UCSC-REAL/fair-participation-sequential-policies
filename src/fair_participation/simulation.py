@@ -29,7 +29,7 @@ def update_env_fn(env, method, init_eta, eta_decay, alpha):
             values_and_grads=env.values_and_grads,
             loss_hull=env.loss_hull,
         )
-    elif method == "UPG":
+    elif method == "CPG":
         _update_state = cpg_step(
             values_and_grads=env.values_and_grads,
             loss_hull=env.loss_hull,
