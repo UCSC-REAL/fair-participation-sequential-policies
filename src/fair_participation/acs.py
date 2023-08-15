@@ -36,7 +36,7 @@ IncomeThree = BasicProblem(
     preprocess=adult_filter,
     postprocess=lambda x: np.nan_to_num(x, -1),
 )
-Income_Three.census_state = "AL"
+IncomeThree.census_state = "AL"
 
 # group: RAC1P -> PINCP (0: <=50k, 1: >50k)
 Income = BasicProblem(
