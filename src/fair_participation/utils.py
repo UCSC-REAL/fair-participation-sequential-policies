@@ -2,8 +2,8 @@ from pathlib import Path
 from numpy.random import default_rng, RandomState
 
 # used for slack in equality constraints in cvxpy (see optimization.py) also
-# used for numerical stability issues in FSEP when (nabla disparity) is near
-# zero (see fsep.py)
+# used for numerical stability issues in CPG when (nabla disparity) is near
+# zero (see cpg.py)
 EPS = 1e-4
 
 # https://scikit-learn.org/stable/common_pitfalls.html

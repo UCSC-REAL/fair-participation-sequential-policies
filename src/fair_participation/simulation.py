@@ -5,8 +5,8 @@ import pandas as pd
 from tqdm import trange
 
 from fair_participation.rrm import rrm_step
-from fair_participation.mgd import mgd_step
-from fair_participation.fsep import fsep_step
+from fair_participation.mpg import mpg_step
+from fair_participation.cpg import cpg_step
 
 
 from fair_participation.base_logger import logger
@@ -24,13 +24,13 @@ def update_env_fn(env, method, init_eta, eta_decay, alpha):
             group_sizes=env.group_sizes,
             loss_hull=env.loss_hull,
         )
-    elif method == "MGD":
-        _update_state = mgd_step(
+    elif method == "MPG":
+        _update_state = mpg_step(
             values_and_grads=env.values_and_grads,
             loss_hull=env.loss_hull,
         )
-    elif method == "FSEP":
-        _update_state = fsep_step(
+    elif method == "UPG":
+        _update_state = cpg_step(
             values_and_grads=env.values_and_grads,
             loss_hull=env.loss_hull,
         )
@@ -51,7 +51,7 @@ def update_env_fn(env, method, init_eta, eta_decay, alpha):
         eta_scale = 1 / eta_decay - 1
         eta = init_eta / (step_num * eta_scale + 1)
 
-        if method == "FSEP":
+        if method == "cpg":
             rates = (eta, alpha)
         else:
             rates = (eta,)

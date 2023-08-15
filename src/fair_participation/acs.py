@@ -16,7 +16,7 @@ All class labels are 0/1 or False/True
 """
 
 # group: RAC1P -> PINCP (0: <30k, 1: >=30k, >60k, 2: >= 60k)
-Income_Three = BasicProblem(
+IncomeThree = BasicProblem(
     features=[
         "AGEP",
         "COW",

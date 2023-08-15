@@ -21,19 +21,19 @@ from cvxpy import Problem, Minimize, Variable, Constant
 from fair_participation.utils import EPS
 
 
-def fsep_linear_fn(
+def cpg_linear_fn(
     loss_hull: ConvexHull,
     values_and_grads: Callable,
 ) -> Callable:
     """
-    Returns callable to compute linear term of FSEP QP subproblem.
+    Returns callable to compute linear term of cpg QP subproblem.
     # :param value_and_grad_loss: Callable that returns loss and gradient.
     :param loss_hull: ConvexHull object of loss vectors.
     :param values_and_grads: Callable that returns commonly used values and gradients.
     :return: Callable.
     """
 
-    def _fsep_linear(
+    def _cpg_linear(
         loss: ArrayLike,
         scaled_disparity: float,
         loss_grad: ArrayLike,
@@ -67,26 +67,26 @@ def fsep_linear_fn(
 
         return linear_weights, lambda_estimate
 
-    return _fsep_linear
+    return _cpg_linear
 
 
-def fsep_step(
+def cpg_step(
     values_and_grads: Callable,
     loss_hull: ConvexHull,
 ) -> Callable[[ArrayLike], StateInfo]:
     """
-    Returns update callable that exactly solves the FSEP subproblem.
+    Returns update callable that exactly solves the cpg subproblem.
 
     :param values_and_grads: Callable that returns commonly used values and gradients.
     :param loss_hull: ConvexHull object of loss vectors.
     :return: Callable that performs a single update step.
     """
 
-    fsep_linear = fsep_linear_fn(loss_hull, values_and_grads)
+    cpg_linear = cpg_linear_fn(loss_hull, values_and_grads)
 
     def _step(loss: ArrayLike, rates: tuple[float]) -> StateInfo:
         """
-        FSEP update step.
+        cpg update step.
         :param loss: Current loss vector.
         :param rates: Learning rates.
         """
@@ -106,7 +106,7 @@ def fsep_step(
         # scaled_disparity = disparity * alpha
 
         # #####
-        # linear_weights, lambda_estimate = fsep_linear(
+        # linear_weights, lambda_estimate = cpg_linear(
         #     loss, scaled_disparity, loss_grad, proj_disparity_grad
         # )
 

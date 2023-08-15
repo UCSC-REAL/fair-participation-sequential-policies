@@ -52,8 +52,8 @@ markers = {
         "alpha": 0.5,
     },
     "RRM": {"marker": "D", "color": "coral", "s": 240, "alpha": 0.7},
-    "MGD": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
-    "FSEP": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
+    "MPG": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
+    "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
 }
 
 

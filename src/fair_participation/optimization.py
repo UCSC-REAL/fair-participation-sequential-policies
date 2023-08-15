@@ -43,7 +43,7 @@ def solve_qp(
         min_x eta * <x, w> + ||x - x0||^2
         s.t. x in hull
 
-    Used for RRM/MGD/FSEP updates.
+    Used for RRM/MPG/CPG updates.
     :param w: Array of linear weights.
     :param hull: ConvexHull object.
     :param eta: Coefficient of linear term.

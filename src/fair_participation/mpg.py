@@ -7,12 +7,12 @@ from fair_participation.state import StateInfo
 from fair_participation.optimization import solve_qp
 
 
-def mgd_step(
+def mpg_step(
     values_and_grads: Callable[[ArrayLike], dict],
     loss_hull: ConvexHull,
 ) -> Callable[[ArrayLike], StateInfo]:
     """
-    Returns update callable that exactly solves the MGD subproblem:
+    Returns update callable that exactly solves the MPG subproblem:
         min_l Sum_g (s_g * l_g * rho_g^t + )
         s.t. l in loss_hull
 

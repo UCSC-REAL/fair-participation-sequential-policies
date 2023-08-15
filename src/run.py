@@ -107,43 +107,41 @@ def run_problems(
 def main():
     base_problems = [
         {
-            "name": "Income_Three",
+            "name": "IncomeThree",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-            "num_steps": 20,
+            "num_steps": 30,
             "fair_epsilon": 0.05,
         },
         {
             "name": "Income",
             "rho_fns": localized_rho_fn(-0.75, 20),
             "init_loss_direction": 0.58,
-            "num_steps": 20,
+            "num_steps": 30,
         },
         {
             "name": "Mobility",
             "rho_fns": localized_rho_fn(-0.7, 10),
             "init_loss_direction": 0.6,
-            "eta_decay": 0.1,
-            "num_steps": 20,
+            "num_steps": 30,
         },
         {
             "name": "PublicCoverage",
             "rho_fns": localized_rho_fn(-0.7, 50),
             "init_loss_direction": 0.5,
-            "eta_decay": 0.25,
-            "num_steps": 20,
+            "num_steps": 30,
         },
         {
             "name": "TravelTime",
             "rho_fns": localized_rho_fn(-0.58, 100),
             "init_loss_direction": 0.52,
-            "num_steps": 20,
+            "num_steps": 30,
         },
     ]
     methods = (  # listed in environment.py
         "RRM",
-        "MGD",
-        "FSEP",
+        "MPG",
+        "CPG",
     )
     output_graphics = [
         "timeseries",
