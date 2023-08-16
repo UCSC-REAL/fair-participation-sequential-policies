@@ -148,10 +148,10 @@ def compare_solutions(env, methods):
 
             if right_p is not None:
                 right_p.ax.scatter(
-                    right_p.get_theta(loss), total_loss, **markers[method], label=method
+                    right_p.get_phi(loss), total_loss, **markers[method], label=method
                 )
                 right_p.ax_r.scatter(
-                    right_p.get_theta(loss), disparity, **markers[method], label=method
+                    right_p.get_phi(loss), disparity, **markers[method], label=method
                 )
 
     # show init
@@ -168,10 +168,10 @@ def compare_solutions(env, methods):
 
     if right_p is not None:
         right_p.ax.scatter(
-            right_p.get_theta(loss), total_loss, **markers[method], label=method
+            right_p.get_phi(loss), total_loss, **markers[method], label=method
         )
         right_p.ax_r.scatter(
-            right_p.get_theta(loss), disparity, **markers[method], label=method
+            right_p.get_phi(loss), disparity, **markers[method], label=method
         )
 
         ticks = right_p.ax_r.get_yticks()

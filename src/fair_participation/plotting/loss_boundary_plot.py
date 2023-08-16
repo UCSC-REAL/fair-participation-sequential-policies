@@ -127,7 +127,7 @@ class LossBoundaryPlot2Group(UpdatingPlot):
                 color="black",
             )
         )
-        plt.annotate("$\\theta$", self.rescale(-0.85, -0.1))
+        plt.annotate("$\\phi$", self.rescale(-0.85, -0.1))
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 

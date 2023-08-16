@@ -53,12 +53,12 @@ class LossDisparityPlot3Group:
         plt.sca(ax)
         self.loss_hull = loss_hull
 
-        pure_thetas = np.array([self.get_theta(loss) for loss in achievable_loss])
+        pure_phis = np.array([self.get_phi(loss) for loss in achievable_loss])
         pure_results = [values_and_grads(l) for l in achievable_loss]
 
-        tri = Delaunay(pure_thetas)
+        tri = Delaunay(pure_phis)
 
-        # upsample in theta space
+        # upsample in phi space
         points, faces, normals = tri.points, tri.simplices, tri.equations[:, :-1]
         for _ in range(0):
             points, faces, normals = upsample_triangles(points, faces, normals)
@@ -70,12 +70,12 @@ class LossDisparityPlot3Group:
         )
 
         ax.scatter(
-            *pure_thetas.T,
+            *pure_phis.T,
             [r["disparity"] for r in pure_results],
             color="red",
         )
         ax.scatter(
-            *pure_thetas.T,
+            *pure_phis.T,
             [r["total_loss"] for r in pure_results],
             color="blue",
         )
@@ -105,13 +105,13 @@ class LossDisparityPlot3Group:
         use_two_ticks_y(ax)
         use_two_ticks_z(ax)
 
-    def get_theta(self, loss):
+    def get_phi(self, loss):
         x, y, z = -loss[0], -loss[1], -loss[2]
         return [np.arctan(y / x), np.arctan(z / np.sqrt(x**2 + y**2))]
 
-    def get_loss(self, theta):
+    def get_loss(self, phi):
 
-        az, el = theta
+        az, el = phi
 
         z = np.sin(el)
         xy = np.cos(el)
@@ -142,11 +142,11 @@ class LossDisparityPlot2Group(UpdatingPlot):
         self.achievable_loss = achievable_loss
         self.loss_hull = loss_hull
 
-        min_theta = self.get_theta(solve_qp(np.array([1, 0]), loss_hull))
-        max_theta = self.get_theta(solve_qp(np.array([0, 1]), loss_hull))
-        theta_range = np.linspace(min_theta, max_theta, 300)
+        min_phi = self.get_phi(solve_qp(np.array([1, 0]), loss_hull))
+        max_phi = self.get_phi(solve_qp(np.array([0, 1]), loss_hull))
+        phi_range = np.linspace(min_phi, max_phi, 300)
 
-        losses = np.array([self.get_loss(theta) for theta in theta_range])
+        losses = np.array([self.get_loss(phi) for phi in phi_range])
         _values_and_grads = [values_and_grads(loss) for loss in losses]
 
         total_losses = [vgs["total_loss"] for vgs in _values_and_grads]
@@ -159,7 +159,7 @@ class LossDisparityPlot2Group(UpdatingPlot):
 
         # plot loss curve
         ax.plot(
-            theta_range,
+            phi_range,
             total_losses,
             "blue",
             label="Loss",
@@ -167,13 +167,13 @@ class LossDisparityPlot2Group(UpdatingPlot):
 
         # plot disparity curve
         ax_r.plot(
-            theta_range,
+            phi_range,
             disparities,
             "red",
             linestyle="dotted",
         )
         ax_r.plot(
-            [min_theta, max_theta],
+            [min_phi, max_phi],
             [0, 0],
             "red",
             linestyle="--",
@@ -182,7 +182,7 @@ class LossDisparityPlot2Group(UpdatingPlot):
         ax.plot([], [], "red", linestyle="--", label="$\\mathcal{H} = 0$")
 
         plt.title("Loss and Disparity Surfaces")
-        ax.set_xlabel("Parameter $\\theta$", labelpad=-10)
+        ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
         ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-30)
         ax.yaxis.label.set_color("blue")
         ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
@@ -200,12 +200,12 @@ class LossDisparityPlot2Group(UpdatingPlot):
         ticks = ax.get_yticks()
         ax.set_yticks([ticks[0], ticks[-1]])
 
-    def get_theta(self, loss):
+    def get_phi(self, loss):
         return np.arctan2(-loss[1], -loss[0])
 
-    def get_loss(self, theta):
+    def get_loss(self, phi):
 
-        w = np.array([-np.cos(theta), -np.sin(theta)])
+        w = np.array([-np.cos(phi), -np.sin(phi)])
 
         return proj_qp(w, self.loss_hull)[0]
 
@@ -214,6 +214,6 @@ class LossDisparityPlot2Group(UpdatingPlot):
         lambda defaults to zero if first run
         """
 
-        theta = self.get_theta(state["loss"])
-        self.loss_pt.set_data(theta, state["total_loss"])
-        self.disparity_pt.set_data(theta, state["disparity"])
+        phi = self.get_phi(state["loss"])
+        self.loss_pt.set_data(phi, state["total_loss"])
+        self.disparity_pt.set_data(phi, state["disparity"])

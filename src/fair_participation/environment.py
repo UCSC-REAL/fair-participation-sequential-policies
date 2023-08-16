@@ -26,6 +26,7 @@ def make_environment(
     rho_fns: Callable | tuple[Callable] = concave_rho_fn,
     init_loss_direction: float | ArrayLike = 0.6,
     fair_epsilon: float = 0.01,
+    n_loss_samples: int = 100,
     **_,
 ) -> None:
     """
@@ -47,7 +48,7 @@ def make_environment(
     except FileNotFoundError:
         logger.info("Caching achievable loss.")
         logger.info(f"  {losses_filename}")
-        achievable_loss = get_achievable_loss(name)
+        achievable_loss = get_achievable_loss(name, n_loss_samples)
         jnp.save(losses_filename, achievable_loss)
 
     n_groups = achievable_loss.shape[1]
