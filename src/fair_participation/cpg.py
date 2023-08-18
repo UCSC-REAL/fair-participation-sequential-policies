@@ -13,7 +13,7 @@ from fair_participation.state import StateInfo
 def cpg_step(
     values_and_grads: Callable,
     loss_hull: ConvexHull,
-) -> Callable[[ArrayLike], StateInfo]:
+) -> Callable[[ArrayLike, tuple[float, float]], StateInfo]:
     """
     Returns update callable that exactly solves the cpg subproblem.
 

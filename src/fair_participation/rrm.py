@@ -11,7 +11,7 @@ def rrm_step(
     values_and_grads: Callable[[ArrayLike], dict],
     group_sizes: ArrayLike,
     loss_hull: ConvexHull,
-) -> Callable[[ArrayLike], StateInfo]:
+) -> Callable[[ArrayLike, tuple[float, float]], StateInfo]:
     """
     Returns update callable that exactly solves the RRM subproblem:
         min_l Sum_g (s_g * l_g * rho_g^t)
@@ -23,14 +23,14 @@ def rrm_step(
     :return: Callable that performs a single update step.
     """
 
-    def _step(loss: ArrayLike, rates: tuple[float]) -> StateInfo:
+    def _step(loss: ArrayLike, rates: tuple[float, float]) -> StateInfo:
         """
         RRM update step.
         :param loss: Current loss vector.
-        :param rates: Learning rates.
+        :param rates: Learning rates. Only eta is used.
         :return: Dictionary of updated values.
         """
-        eta = rates[0]
+        eta, _ = rates
         vgs = values_and_grads(loss)
         rho = vgs["rho"]
         linear_weights = rho * group_sizes

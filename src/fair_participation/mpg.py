@@ -10,7 +10,7 @@ from fair_participation.optimization import solve_qp
 def mpg_step(
     values_and_grads: Callable[[ArrayLike], dict],
     loss_hull: ConvexHull,
-) -> Callable[[ArrayLike], StateInfo]:
+) -> Callable[[ArrayLike, tuple[float, float]], StateInfo]:
     """
     Returns update callable that exactly solves the MPG subproblem:
         min_l Sum_g (s_g * l_g * rho_g^t + )
@@ -21,15 +21,15 @@ def mpg_step(
     :return: Callable that performs a single update step.
     """
 
-    def _step(loss: ArrayLike, rates: tuple[float]) -> StateInfo:
+    def _step(loss: ArrayLike, rates: tuple[float, float]) -> StateInfo:
         """
         RRM update step.
 
         :param loss: Current loss vector.
-        :param rates: Learning rate.
+        :param rates: Learning rates. Only eta is used.
         :return: Dictionary of updated values.
         """
-        eta = rates[0]
+        eta, _ = rates
         vgs = values_and_grads(loss)
         linear_weights = vgs["full_deriv_total_loss"]
         opt_loss = solve_qp(w=linear_weights, hull=loss_hull, eta=eta, x0=loss)
