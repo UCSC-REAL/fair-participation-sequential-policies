@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,7 +20,7 @@ from fair_participation.plotting.plot_utils import (
 )
 
 
-def plot_fair_bndry_3d(ax, fair_epsilon: float, n: int = 30):
+def plot_fair_boundary_3d(ax, fair_epsilon: float, n: int = 30):
     u = np.linspace(0, np.pi * 2, n)
     v = np.linspace(0, 0.7, 2)
 
@@ -52,18 +52,34 @@ def make_participation_rate_plot(
     loss_hull: ConvexHull,
     values_and_grads: Callable,
     fair_epsilon: float,
-):
+) -> Any:
+    """
+    Plot the participation rates for 2 or 3 groups.
+    :param ax: matplotlib axis.
+    :param achievable_loss: Achievable loss values.
+    :param loss_hull: Convex hull of loss values.
+    :param values_and_grads: Function that returns the loss and gradient.
+    :param fair_epsilon: Fairness parameter.
+    :return: Plot object.
+    """
     num_groups = achievable_loss.shape[1]
     if num_groups == 2:
         return ParticipationRatePlot2Group(
-            ax, achievable_loss, loss_hull, values_and_grads, fair_epsilon
+            ax=ax,
+            achievable_loss=achievable_loss,
+            loss_hull=loss_hull,
+            values_and_grads=values_and_grads,
+            fair_epsilon=fair_epsilon,
         )
     elif num_groups == 3:
         return ParticipationRatePlot3Group(
-            ax, achievable_loss, loss_hull, values_and_grads, fair_epsilon
+            ax=ax,
+            achievable_loss=achievable_loss,
+            values_and_grads=values_and_grads,
+            fair_epsilon=fair_epsilon,
         )
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Only 2 or 3 groups supported.")
 
 
 class ParticipationRatePlot3Group(UpdatingPlot):
@@ -71,15 +87,16 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         self,
         ax: plt.Axes,
         achievable_loss: NDArray,
-        loss_hull: ConvexHull,
         values_and_grads: Callable,
         fair_epsilon: float,
     ):
         """
+        Plot the participation rates for 3 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param values_and_grads:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param values_and_grads: Function that returns the loss and gradient.
+        :param fair_epsilon: Fairness parameter.
         """
         self.ax = ax
         plt.sca(ax)
@@ -87,18 +104,10 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         pure_rho = np.array([values_and_grads(loss)["rho"] for loss in achievable_loss])
         ax.scatter(*pure_rho.T, color="black", label="Pure Policies")
 
-        # achievable_loss = np.array(
-        #     [[-0.7, -0.7, -0.7], [-1, -0.7, -0.7], [-0.7, -1, -0.7], [-0.7, -0.7, -1]]
-        # )
-
         upsample_deg = 3
         loss_samples, loss_tri, loss_normals = upsample_hull_3d(
             achievable_loss, upsample_deg
         )
-        # print("loss_samples", loss_samples)
-        # print("loss_tri", loss_tri)
-        # print("loss_normals", loss_normals)
-        # assert False
         rho_samples = np.array([values_and_grads(loss)["rho"] for loss in loss_samples])
 
         # generate triangles from hull in loss space
@@ -115,17 +124,16 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         ax.scatter(*np.array(pure_rho_samples).T, color="black")
 
         plt.title("Group Participation Rates")
-
-        plot_fair_bndry_3d(ax, fair_epsilon)
+        plot_fair_boundary_3d(ax, fair_epsilon)
 
         min_lim = 1
         max_lim = 0
 
-        for (a, b) in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
+        for a, b in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
             min_lim = min(min_lim, max(a, 0))
             max_lim = max(max_lim, min(b, 1))
-        ax.set_xlim([min_lim, max_lim])
-        ax.set_ylim([min_lim, max_lim])
+        ax.set_xlim(min_lim, max_lim)
+        ax.set_ylim(min_lim, max_lim)
         ax.set_zlim([min_lim, max_lim])
         ax.view_init(elev=30, azim=45)
 
@@ -136,8 +144,6 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
         use_two_ticks_z(ax)
-
-        # (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 
 
 class ParticipationRatePlot2Group(UpdatingPlot):
@@ -150,10 +156,13 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         fair_epsilon: float,
     ):
         """
+        Plot the participation rates for 2 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param values_and_grads:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param loss_hull: Convex hull of loss values.
+        :param values_and_grads: Function that returns the loss and gradient.
+        :param fair_epsilon: Fairness parameter.
         """
         self.ax = ax
         plt.sca(ax)
@@ -182,11 +191,11 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         min_lim = 1
         max_lim = 0
 
-        for (a, b) in [ax.get_xlim(), ax.get_ylim()]:
+        for a, b in [ax.get_xlim(), ax.get_ylim()]:
             min_lim = min(min_lim, max(a, 0))
             max_lim = max(max_lim, min(b, 1))
-        ax.set_xlim([min_lim, max_lim])
-        ax.set_ylim([min_lim, max_lim])
+        ax.set_xlim(min_lim, max_lim)
+        ax.set_ylim(min_lim, max_lim)
 
         dist = 2 * np.sqrt(fair_epsilon)
         ax.plot(
@@ -212,6 +221,6 @@ class ParticipationRatePlot2Group(UpdatingPlot):
 
     def update(self, state, **_):
         """
-        plot achieved rho
+        Plot achieved rho.
         """
         self.rate_pt.set_data(*state["rho"].T)
