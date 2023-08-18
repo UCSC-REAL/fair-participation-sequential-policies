@@ -50,9 +50,6 @@ class Video:
     def draw(self):
         # draw figure and clear axes
         self.writer.grab_frame()
-        # TODO check clear axes
-        # for ax in self.figure.axes:
-        #     ax.cla()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.writer.finish()

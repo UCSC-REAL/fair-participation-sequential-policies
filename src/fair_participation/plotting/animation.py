@@ -6,24 +6,22 @@ from tqdm import trange
 
 import jax.numpy as jnp
 
+from fair_participation.environment import Environment
 from fair_participation.simulation import get_trial_filename
-
 from fair_participation.base_logger import logger
-
 from fair_participation.plotting.video import Video, video_filename
 from fair_participation.plotting.compare import make_canvas
 
 
-def get_animation_title(name, method):
+def get_animation_title(name: str, method: str) -> str:
     return f"{name}_{method}"
 
 
-def get_animation_filename(name, method):
+def get_animation_filename(name: str, method: str) -> str:
     return video_filename(get_animation_title(name, method))
 
 
-def animate(env, method):
-
+def animate(env: Environment, method: str) -> None:
     animation_filename = get_animation_filename(env.name, method)
     if os.path.exists(animation_filename):
         logger.info(f"Animation exists; skipping:")
@@ -31,14 +29,14 @@ def animate(env, method):
         return
     logger.info(f"Rendering animation:")
 
-    num_groups = (env.group_sizes.shape)[0]
+    num_groups = env.group_sizes.shape[0]
 
     if num_groups == 2:
         fig, plots = make_canvas(env)
 
-        def update_callback(state):
+        def update_callback(state_):
             for plot in plots:
-                plot.update(state)
+                plot.update(state_)
 
     else:
         logger.info("Animation not implemented for this environment.")
@@ -46,14 +44,12 @@ def animate(env, method):
 
     trial_filename = get_trial_filename(env.name, method)
     with jnp.load(trial_filename) as npz:
-
         with Animation(
             fig,
             name=env.name,
             method=method,
             update_callback=update_callback,
         ) as animation:
-
             num_steps = len(npz["loss"])
             for k in trange(num_steps):
                 state = {f: npz[f][k] for f in npz.files}
@@ -83,7 +79,6 @@ class Animation(Video):
         self.update_callback = update_callback
 
     def render_frame(self, state: dict, **_):
-
         if self.update_callback:
             self.update_callback(state)
 
