@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 from scipy.spatial import ConvexHull, Delaunay
 from fair_participation.optimization import solve_qp, proj_qp
 
@@ -20,19 +20,33 @@ def make_loss_disparity_plot(
     achievable_loss: NDArray,
     loss_hull: ConvexHull,
     values_and_grads: Callable,
-    **kwargs
-):
+) -> Any:
+    """
+    Plot the loss and disparity surfaces for 2 or 3 groups.
+
+    :param ax: matplotlib axis.
+    :param achievable_loss: Achievable loss values.
+    :param loss_hull: Convex hull of loss values.
+    :param values_and_grads: Function that returns loss and disparity for a given loss.
+    :return: Plot object.
+    """
     num_groups = achievable_loss.shape[1]
     if num_groups == 2:
         return LossDisparityPlot2Group(
-            ax, achievable_loss, loss_hull, values_and_grads, **kwargs
+            ax=ax,
+            achievable_loss=achievable_loss,
+            loss_hull=loss_hull,
+            values_and_grads=values_and_grads,
         )
     elif num_groups == 3:
         return LossDisparityPlot3Group(
-            ax, achievable_loss, loss_hull, values_and_grads, **kwargs
+            ax=ax,
+            achievable_loss=achievable_loss,
+            loss_hull=loss_hull,
+            values_and_grads=values_and_grads,
         )
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Only 2 and 3 groups supported.")
 
 
 class LossDisparityPlot3Group:
@@ -44,17 +58,19 @@ class LossDisparityPlot3Group:
         values_and_grads: Callable,
     ):
         """
+        Plot the loss and disparity surfaces for 3 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param values_and_grads:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param loss_hull: Convex hull of loss values.
+        :param values_and_grads: Function that returns loss and disparity for a given loss.
         """
         self.ax = ax
         plt.sca(ax)
         self.loss_hull = loss_hull
 
         pure_phis = np.array([self.get_phi(loss) for loss in achievable_loss])
-        pure_results = [values_and_grads(l) for l in achievable_loss]
+        pure_results = [values_and_grads(loss) for loss in achievable_loss]
 
         tri = Delaunay(pure_phis)
 
@@ -64,7 +80,9 @@ class LossDisparityPlot3Group:
             points, faces, normals = upsample_triangles(points, faces, normals)
 
         upsampled_losses = [self.get_loss([a, e]) for (a, e) in points]
-        results = [values_and_grads(l) for l in upsampled_losses if l is not None]
+        results = [
+            values_and_grads(loss) for loss in upsampled_losses if loss is not None
+        ]
         az, el = zip(
             *[p for (i, p) in enumerate(points) if upsampled_losses[i] is not None]
         )
@@ -110,7 +128,6 @@ class LossDisparityPlot3Group:
         return [np.arctan(y / x), np.arctan(z / np.sqrt(x**2 + y**2))]
 
     def get_loss(self, phi):
-
         az, el = phi
 
         z = np.sin(el)
@@ -132,10 +149,12 @@ class LossDisparityPlot2Group(UpdatingPlot):
         values_and_grads: Callable,
     ):
         """
+        Plot the loss and disparity surfaces for 2 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param values_and_grads:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param loss_hull: Convex hull of loss values.
+        :param values_and_grads: Function that returns loss and disparity for a given loss.
         """
         self.ax = ax
 
@@ -151,9 +170,6 @@ class LossDisparityPlot2Group(UpdatingPlot):
 
         total_losses = [vgs["total_loss"] for vgs in _values_and_grads]
         disparities = [vgs["disparity"] for vgs in _values_and_grads]
-        max_disparity = max(disparities)
-        max_loss = max(total_losses)
-        min_loss = min(total_losses)
         ax_r = ax.twinx()
         self.ax_r = ax_r
 
@@ -204,7 +220,6 @@ class LossDisparityPlot2Group(UpdatingPlot):
         return np.arctan2(-loss[1], -loss[0])
 
     def get_loss(self, phi):
-
         w = np.array([-np.cos(phi), -np.sin(phi)])
 
         return proj_qp(w, self.loss_hull)[0]
