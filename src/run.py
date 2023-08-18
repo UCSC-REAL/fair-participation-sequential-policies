@@ -20,9 +20,16 @@ from fair_participation.plotting.compare import (
 from fair_participation.base_logger import logger
 
 
-def do_clean(name, methods, clean):
+def do_clean(name: str, methods: list[str], clean: str) -> None:
+    """
+    Clean up files from previous runs.
 
-    # clean everything, independent of which problems active
+    :param name: Name of the problem.
+    :param methods: Methods to be cleaned.
+    :param clean: Type of cleaning. One of "all", "pdfs", "graphics", "trials", "envs".
+    :return: None.
+    """
+    # clean everything, independent of which problems are active
     if clean == "all":
         clean_folders = ["losses", "npz", "mp4", "pdf"]
         for folder in clean_folders:
@@ -67,7 +74,12 @@ def run_problems(
 ) -> None:
     """
     Runs the simulation for each problem in the list of problems.
+
     :param problems: List of dictionaries containing the problem parameters.
+    :param methods: List of methods to be used.
+    :param clean_lvl: Level of cleaning to be done before running the simulation.
+    :param output_graphics: List of graphics to be output.
+    :return: None.
     """
 
     all_folders = ["data", "mp4", "npz", "pdf", "losses"]
@@ -79,7 +91,6 @@ def run_problems(
         logger.info(f"====={problem['name']}=====")
 
         name = problem["name"]
-
         do_clean(name, methods, clean_lvl)
 
         for method in methods:
@@ -138,24 +149,20 @@ def main():
             "num_steps": 30,
         },
     ]
-    methods = (  # listed in environment.py
+    methods = [  # listed in environment.py
         "RRM",
         "MPG",
         "CPG",
-    )
+    ]
     output_graphics = [
         "timeseries",
         "solutions",
-        # "animations",
     ]
-    # CLEAN_LVL = "timeseries"
-    # CLEAN_LVL = "solutions"
-    # CLEAN_LVL = "pdfs"
-    # CLEAN_LVL = "graphics"
-    CLEAN_LVL = "trials"
+
+    clean_lvl = "all"
 
     run_problems(
-        base_problems, methods, clean_lvl=CLEAN_LVL, output_graphics=output_graphics
+        base_problems, methods, clean_lvl=clean_lvl, output_graphics=output_graphics
     )
 
 
