@@ -1,8 +1,12 @@
+from typing import Optional
+
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 import numpy as np
+from numpy.typing import NDArray, ArrayLike
 
-from scipy.spatial import ConvexHull, Delaunay
+from scipy.spatial import ConvexHull
 from numpy.linalg import det
 import jax
 from fair_participation.base_logger import logger
@@ -21,7 +25,6 @@ mpl.rcParams.update(
 )
 
 font = {"size": 13}
-
 mpl.rc("font", **font)
 
 
@@ -31,13 +34,18 @@ def savefig(fig, filename):
 
 
 class UpdatingPlot:
-    def update(state, **_):
-        pass
+    def update(self, **_):
+        raise NotImplementedError
 
 
-def sample_hull_uniform(hull, n, seed=0):
+def sample_hull_uniform(hull: ConvexHull, n: int, seed: int = 0) -> ArrayLike:
     """
-    Uniformly sample points from surface of a convex hull
+    Uniformly sample points from surface of a convex hull.
+
+    :param hull: Convex hull.
+    :param n: Number of points to sample.
+    :param seed: Random seed.
+    :return: Array of points.
     """
     key = jax.random.PRNGKey(seed)
     dim = hull.points.shape[-1]
@@ -52,17 +60,16 @@ def sample_hull_uniform(hull, n, seed=0):
     return np.einsum("ijk, ij -> ik", faces[which_face], convex_comb)
 
 
-def upsample_triangles(points, faces, normals):
+def upsample_triangles(
+    points: ArrayLike, faces: ArrayLike, normals: ArrayLike
+) -> tuple[NDArray, NDArray, NDArray]:
     """
-    accept faces as array of indices of points
+    Upsample a triangulation by adding a new point at the center of each triangle.
 
-    points: array
-    faces: array
-    normals: array
-
-    give back new array of points,
-    new array of faces,
-    new array of normals.
+    :param points: Array of points.
+    :param faces: Array of faces.
+    :param normals: Array of normals.
+    :return: Upsampled points, faces, and normals.
     """
     new_points = list(points)
     new_faces = []
@@ -70,8 +77,7 @@ def upsample_triangles(points, faces, normals):
 
     idx = len(points)
 
-    for (i, face) in enumerate(faces):
-
+    for i, face in enumerate(faces):
         a, b, c = points[face]
 
         # 4 new points
@@ -101,7 +107,16 @@ def upsample_triangles(points, faces, normals):
     return np.array(new_points), np.array(new_faces), np.array(new_normals)
 
 
-def upsample_hull_3d(points, deg=1):
+def upsample_hull_3d(
+    points: ArrayLike, deg: int = 1
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Upsample a convex hull in 3d.
+
+    :param points: Array of points.
+    :param deg: Degree of upsampling.
+    :return: Upsampled points, faces, and normals.
+    """
     hull = ConvexHull(points)
 
     points = hull.points
@@ -114,29 +129,20 @@ def upsample_hull_3d(points, deg=1):
     return points, faces, normals
 
 
-# def sample_hull_3d(hull, deg):
-#     faces = hull.points[hull.simplices]
-
-#     upsampled_points = set(tuple(p) for p in hull.points)
-
-#     for f in faces:
-#         upsampled_points.update(tuple(p) for p in upsample_simplex_3d(list(f), deg))
-
-#     return np.array(list(upsampled_points))
-
-
-def inclusive_hull_order_2d(points_2d):
+def inclusive_hull_order_2d(points_2d: ArrayLike):
     """
-    O(n^2) insert method like insertion sort
+    O(n^2) insert method like insertion sort.
+    Given a list of points known to lie on a convex hull in 2d, order them counterclockwise.
 
-    Given a list of points known to lie on a convex hull in 2d,
-    order them counterclockwise.
+    :param points_2d: List of points.
+    :return: Ordered list of points.
     """
 
     hull = ConvexHull(points_2d)
     vertices = hull.vertices
     out = list(hull.points[vertices])
     left_out = list(set(range(len(points_2d))) - set(vertices))
+    idx = 0
 
     while left_out:
         p = hull.points[left_out.pop()]
@@ -155,69 +161,17 @@ def inclusive_hull_order_2d(points_2d):
     return out
 
 
-# def inclusive_triangulation_3d(points_3d):
-#     """
-#     return triangle indices and normal vectors of surface of convex shape in 3d
-
-#     O(n^2)
-#     """
-
-#     points_3d = np.array(points_3d)
-#     hull = ConvexHull(points_3d)
-#     hull_normals = hull.equations[:, :-1]
-#     hull_surfaces = hull.equations[:, -1]
-
-#     faces = [list(s) for s in hull.simplices]
-
-#     # indices of points not included in default triangulation
-#     left_out = list(set(range(len(points_3d))) - set(hull.vertices))
-
-#     # figure out which face each left-out point belongs to
-#     while left_out:
-#         p_idx = left_out.pop()
-#         p = points_3d[p_idx]
-#         f_idx = np.argmin(np.abs(np.einsum("ij,j->i", hull_normals, p) + hull_surfaces))
-#         faces[f_idx].append(p_idx)
-
-#     out = []
-#     normals = []
-#     for (i, f) in enumerate(faces):
-#         if len(f) == 3:
-#             out.append(f)
-#             normals.append(hull_normals[i])
-#             continue
-
-#         # contruct orthogonal basis for plane of simplex
-#         v = hull_normals[i]
-#         a, b, c = v
-#         if c < a:
-#             x = np.array([b, -a, 0])
-#         else:
-#             x = np.array([0, -c, b])
-
-#         # normalize vectors
-#         x = x / np.sqrt(np.dot(x, x))
-#         y = np.cross(v, x)
-#         y = y / np.sqrt(np.dot(y, y))
-
-#         # project onto local simplex
-#         points_2d = [np.array([np.dot(x, z), np.dot(y, z)]) for z in points_3d[f]]
-
-#         # generate triangles
-#         deln = Delaunay(points_2d)
-
-#         # get indices
-#         simps = [list(l) for l in np.array(f)[deln.simplices]]
-
-#         out.extend(simps)
-#         normals.extend([hull_normals[i]] * len(simps))
-
-#     return np.array(out), np.array(normals)
-
-
-def project_hull(points, val, dim=0, wrap=True):
+def project_hull(
+    points: ArrayLike, val: float, dim: int = 0, wrap: bool = True
+) -> NDArray:
     """
-    project a convex hull onto the plain (x_dim = val)
+    Project a convex hull onto the plane (x_dim = val).
+
+    :param points: Array of points.
+    :param val: Value to project onto.
+    :param dim: Dimension to project onto.
+    :param wrap: Whether to wrap the hull around.
+    :return: Projected points.
     """
     # eliminate chosen dimension and replace with val
     low_dim_points = np.delete(points, dim, 1)
@@ -230,39 +184,38 @@ def project_hull(points, val, dim=0, wrap=True):
     return np.insert(out, len(out), out[0, :], axis=0)
 
 
-# TODO vectorize
 def get_normal(triangle_3d):
     a, b, c = triangle_3d
     out = np.cross(b - a, c - a)
     return out / np.sqrt(np.dot(out, out))
 
 
-def plot_triangles(ax, triangles, normals, **kwargs):
-
+def plot_triangles(ax, triangles, normals):
     tri = a3.art3d.Poly3DCollection(triangles)
-
     ls = LightSource(azdeg=60, altdeg=60.0)
-
     rgb = np.array([0.0, 0.0, 1.0, 0.7])
-
     tri.set_facecolor(
         np.array([shade * rgb for shade in ls.shade_normals(normals, fraction=1.0)])
     )
-
     ax.add_collection3d(tri)
 
 
-# TODO not sure about these
-def use_two_ticks_x(ax, others=[]):
+def use_two_ticks_x(ax: plt.Axes, others: Optional[list] = None):
+    if others is None:
+        others = []
     x = ax.get_xticks()
     ax.set_xticks([min(x), max(x)] + others)
 
 
-def use_two_ticks_y(ax, others=[]):
+def use_two_ticks_y(ax, others: Optional[list] = None):
+    if others is None:
+        others = []
     y = ax.get_yticks()
     ax.set_yticks([min(y), max(y)] + others)
 
 
-def use_two_ticks_z(ax, others=[]):
+def use_two_ticks_z(ax, others: Optional[list] = None):
+    if others is None:
+        others = []
     z = ax.get_zticks()
     ax.set_zticks([min(z), max(z)] + others)
