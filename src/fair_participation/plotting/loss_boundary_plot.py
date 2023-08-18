@@ -16,26 +16,43 @@ from fair_participation.plotting.plot_utils import (
 
 
 def make_loss_boundary_plot(
-    ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+    ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull
 ):
+    """
+    Plot the loss boundary surfaces for 2 or 3 groups.
+
+    :param ax: matplotlib axis.
+    :param achievable_loss: Achievable loss values.
+    :param loss_hull: Convex hull of loss values.
+    :return: Plot object.
+    """
     num_groups = achievable_loss.shape[1]
     if num_groups == 2:
-        return LossBoundaryPlot2Group(ax, achievable_loss, loss_hull, **kwargs)
+        return LossBoundaryPlot2Group(
+            ax=ax, achievable_loss=achievable_loss, loss_hull=loss_hull
+        )
     elif num_groups == 3:
-        return LossBoundaryPlot3Group(ax, achievable_loss, loss_hull, **kwargs)
+        return LossBoundaryPlot3Group(
+            ax=ax, achievable_loss=achievable_loss, loss_hull=loss_hull
+        )
     else:
         raise NotImplementedError
 
 
 class LossBoundaryPlot3Group(UpdatingPlot):
     def __init__(
-        self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+        self,
+        ax: plt.Axes,
+        achievable_loss: NDArray,
+        loss_hull: ConvexHull,
     ):
         """
+        Plot the loss boundary surface for 3 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param loss_hull:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param loss_hull: Convex hull of loss values.
+        :return: Plot object.
         """
 
         self.ax = ax
@@ -47,7 +64,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
         plot_triangles(ax, triangles, -normals)
 
-        for (val, dim) in zip([0, 0, 0], [0, 1, 2]):
+        for val, dim in zip([0, 0, 0], [0, 1, 2]):
             ax.plot(
                 *(project_hull(loss_hull.points[loss_hull.vertices], val, dim)).T,
                 color="black",
@@ -57,12 +74,12 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         min_lim = 0
         max_lim = -1
 
-        for (a, b) in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
+        for a, b in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
             min_lim = min(min_lim, max(a, -1))
             max_lim = max(max_lim, min(b, 0))
 
-        ax.set_xlim([min_lim, max_lim])
-        ax.set_ylim([min_lim, max_lim])
+        ax.set_xlim(min_lim, max_lim)
+        ax.set_ylim(min_lim, max_lim)
         ax.set_zlim([min_lim, max_lim])
         ax.invert_xaxis()
         ax.invert_yaxis()
@@ -82,15 +99,19 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
 class LossBoundaryPlot2Group(UpdatingPlot):
     def __init__(
-        self, ax: plt.Axes, achievable_loss: NDArray, loss_hull: ConvexHull, **kwargs
+        self,
+        ax: plt.Axes,
+        achievable_loss: NDArray,
+        loss_hull: ConvexHull,
     ):
         """
+        Plot the loss boundary surface for 2 groups.
 
-        :param ax:
-        :param achievable_loss:
-        :param loss_hull:
+        :param ax: matplotlib axis.
+        :param achievable_loss: Achievable loss values.
+        :param loss_hull: Convex hull of loss values.
+        :return: Plot object.
         """
-
         self.ax = ax
         plt.sca(ax)
         ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
@@ -104,11 +125,11 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         min_lim = 0
         max_lim = -1
 
-        for (a, b) in [ax.get_xlim(), ax.get_ylim()]:
+        for a, b in [ax.get_xlim(), ax.get_ylim()]:
             min_lim = min(min_lim, max(a, -1))
             max_lim = max(max_lim, min(b, 0))
-        ax.set_xlim([min_lim, max_lim])
-        ax.set_ylim([min_lim, max_lim])
+        ax.set_xlim(min_lim, max_lim)
+        ax.set_ylim(min_lim, max_lim)
 
         self.min_lim = min_lim
         self.max_lim = max_lim
@@ -158,7 +179,6 @@ class LossBoundaryPlot2Group(UpdatingPlot):
 
     def update(self, state, **_):
         """
-        TODO
         - Plot current location on achievable loss curve (point)
         - Plot vector in direction opposite rho
         """
