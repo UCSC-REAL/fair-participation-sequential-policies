@@ -77,7 +77,7 @@ def run_problems(
 
     :param problems: List of dictionaries containing the problem parameters.
     :param methods: List of methods to be used.
-    :param clean_lvl: Level of cleaning to be done before running the simulation.
+    :param clean_lvl: Level of cleaning to be done before running each simulation.
     :param output_graphics: List of graphics to be output.
     :return: None.
     """
@@ -159,7 +159,7 @@ def main():
         "solutions",
     ]
 
-    clean_lvl = "all"
+    clean_lvl = None
 
     run_problems(
         base_problems, methods, clean_lvl=clean_lvl, output_graphics=output_graphics

@@ -75,6 +75,7 @@ def simulate(
     alpha: float = 1.0,
     num_steps: int = 100,
     method: str = "RRM",
+    **_,
 ) -> Environment:
     """
     Simulates the environment for a given number of steps and caches the results.

@@ -97,6 +97,7 @@ def make_environment(
     init_loss_direction: float | ArrayLike = 0.6,
     fair_epsilon: float = 0.01,
     n_loss_samples: int = 100,
+    **_,
 ) -> Environment:
     """
     Prepares environment for a given problem. Will cache values if possible.
