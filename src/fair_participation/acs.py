@@ -34,7 +34,7 @@ IncomeThree = BasicProblem(
     group="PINCP",
     group_transform=lambda x: np.minimum(x // 60000, 2).astype(int),
     preprocess=adult_filter,
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 IncomeThree.census_state = "AL"
 
@@ -57,7 +57,7 @@ Income = BasicProblem(
     group="PINCP",
     group_transform=lambda x: x > 50000,
     preprocess=adult_filter,
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 Income.census_state = "AL"
 
@@ -86,7 +86,7 @@ Employment = BasicProblem(
     group="RAC1P",
     group_transform=lambda x: x == 2,
     preprocess=lambda x: x[x["RAC1P"].isin([1, 2])],
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 Employment.census_state = "TX"
 
@@ -118,7 +118,7 @@ PublicCoverage = BasicProblem(
     group="SEX",
     group_transform=lambda x: x == 2,
     preprocess=public_coverage_filter,
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 PublicCoverage.census_state = "AK"
 
@@ -148,7 +148,7 @@ TravelTime = BasicProblem(
     group="AGEP",
     group_transform=lambda x: x > 35,
     preprocess=travel_time_filter,
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 TravelTime.census_state = "CA"
 
@@ -182,7 +182,7 @@ Mobility = BasicProblem(
     group="MIG",
     group_transform=lambda x: x == 1,
     preprocess=lambda x: x.drop(x.loc[(x["AGEP"] <= 18) | (x["AGEP"] >= 35)].index),
-    postprocess=lambda x: np.nan_to_num(x, -1),
+    postprocess=lambda x: np.nan_to_num(x, nan=-1),
 )
 Mobility.census_state = "FL"
 
