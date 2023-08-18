@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.path as mpath
@@ -7,6 +5,7 @@ import numpy as np
 from jax import numpy as jnp
 import os
 
+from fair_participation.environment import Environment
 from fair_participation.simulation import get_trial_filename
 
 from fair_participation.plotting.loss_boundary_plot import make_loss_boundary_plot
@@ -14,11 +13,7 @@ from fair_participation.plotting.participation_rate_plot import (
     make_participation_rate_plot,
 )
 from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
-from fair_participation.plotting.plot_utils import (
-    savefig,
-    use_two_ticks_x,
-    use_two_ticks_y,
-)
+from fair_participation.plotting.plot_utils import savefig
 
 from fair_participation.base_logger import logger
 from fair_participation.utils import PROJECT_ROOT
@@ -57,12 +52,15 @@ markers = {
 }
 
 
-def make_canvas(env):
+def make_canvas(env: Environment) -> tuple:
     """
-    save_init is filename
+    Makes a canvas for plotting the loss boundary, participation rate, and loss.
+
+    :param env: Environment object
+    :return: tuple of (fig, plots)
     """
 
-    num_groups = (env.group_sizes.shape)[0]
+    num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
         fig, (lax, cax, rax) = plt.subplots(1, 3, figsize=(18, 6))
 
@@ -106,18 +104,25 @@ def make_canvas(env):
         )
 
         plots = (left_plot, center_plot)
+    else:
+        raise NotImplementedError(f"Cannot plot {num_groups} groups.")
 
     fig.tight_layout()
-
     return fig, plots
 
 
-def get_compare_solutions_filename(name):
+def get_compare_solutions_filename(name: str) -> str:
     return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions.pdf")
 
 
-def compare_solutions(env, methods):
+def compare_solutions(env: Environment, methods: list[str]) -> None:
+    """
+    Compare solutions for a given environment.
 
+    :param env: Environment object.
+    :param methods: List of methods to compare.
+    :return: None
+    """
     save_filename = get_compare_solutions_filename(env.name)
     if os.path.exists(save_filename):
         logger.info("Graphic exists; skipping:")
@@ -135,7 +140,6 @@ def compare_solutions(env, methods):
         right_p = None
 
     for method in methods:
-
         trial_filename = get_trial_filename(env.name, method)
         with jnp.load(trial_filename) as npz:
             loss = npz["loss"][-1]
@@ -180,16 +184,21 @@ def compare_solutions(env, methods):
         right_p.ax.set_xticks([ticks[0], ticks[-1]])
         ticks = right_p.ax.get_yticks()
         right_p.ax.set_yticks([ticks[0], ticks[-1]])
-
     savefig(fig, save_filename)
 
 
-def get_compare_timeseries_filename(name):
+def get_compare_timeseries_filename(name: str) -> str:
     return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series.pdf")
 
 
-def compare_timeseries(name, methods):
+def compare_timeseries(name: str, methods: list[str]) -> None:
+    """
+    Compare time series for a given environment.
 
+    :param name: Name of the problem.
+    :param methods: List of methods to compare.
+    :return: None.
+    """
     save_filename = get_compare_timeseries_filename(name)
     if os.path.exists(save_filename):
         logger.info("Graphic exists; skipping.")
@@ -210,11 +219,9 @@ def compare_timeseries(name, methods):
     disparity_min = np.inf
     disparity_max = -np.inf
     for i, method in enumerate(methods):
-
         trial_filename = get_trial_filename(name, method)
 
         if os.path.exists(trial_filename):
-
             with jnp.load(trial_filename) as npz:
                 num_steps = len(npz["total_loss"])
 
