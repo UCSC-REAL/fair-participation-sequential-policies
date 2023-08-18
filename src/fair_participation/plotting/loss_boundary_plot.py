@@ -166,7 +166,7 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         )
 
     def rescale(self, x, y, vel=True):
-        "(-1, 0) -> (min_lim, max_lim)"
+        """(-1, 0) -> (min_lim, max_lim)"""
         if vel:
             return (
                 (x + 1) * (self.max_lim - self.min_lim) + self.min_lim,
