@@ -1,7 +1,5 @@
 import os
-
 import numpy as np
-from functools import partial
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -40,7 +38,7 @@ def get_loss(theta: NDArray) -> NDArray:
     return np.array([-np.cos(theta), -np.sin(theta)]).T
 
 
-rho_fn = partial(localized_rho_fn, -0.62, 20)
+rho_fn = localized_rho_fn(-0.62, 20)
 
 
 def get_rho(loss_: NDArray) -> NDArray:
@@ -112,10 +110,6 @@ def plot():
 
     left.plot([0, -ra[0] / ram], [0, -ra[1] / ram], color="red")
     left.plot([0, -rb[0] / rbm], [0, -rb[1] / rbm], color="blue", linestyle="--")
-    # d = -np.sqrt(np.einsum("g,g->", ra, ra))
-    # left.plot([d / ra[0], 0], [0, d / ra[1]], "red", alpha=0.5)
-    # d = -np.sqrt(np.einsum("g,g->", rb, rb))
-    # left.plot([d / rb[0], 0], [0, d / rb[1]], "blue", alpha=0.5, linestyle="--")
     left.add_patch(
         patches.FancyArrowPatch(
             (-0.9, 0.0),
@@ -205,3 +199,7 @@ def plot():
     right.set_position((0.5, 0.5, s, s))
 
     fig.savefig(os.path.join(PROJECT_ROOT, "pdf", "dual.pdf"))
+
+
+if __name__ == "__main__":
+    plot()
