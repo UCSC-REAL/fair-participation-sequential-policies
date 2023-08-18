@@ -12,6 +12,7 @@ def _logistic(x: ArrayLike) -> Array:
 def localized_rho_fn(center: float, sensitivity: float) -> Callable[[ArrayLike], Array]:
     """
     Returns a callable rho function centered at `loss`.
+
     :param center: Center of the rho function.
     :param sensitivity: Sensitivity of the rho function.
     :return: Callable rho function mapping loss (vector) -> participation rate (vector) .
