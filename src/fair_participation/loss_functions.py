@@ -7,8 +7,10 @@ from jax.typing import ArrayLike
 
 def fairness_disparity(rho: ArrayLike, fair_epsilon: float = 0.01) -> Any:
     """
-    Symmetric fairness disparity function.
+    Symmetric fairness disparity function (variance of participation rates).
+
     :param: rho: Array of participation rates.
+    :param: fair_epsilon: Fairness constraint.
     :return: Violation of fairness constraint.
     """
     return jnp.var(rho) - fair_epsilon
@@ -20,6 +22,7 @@ def _value_and_grad_total_loss_fn(
 ) -> Callable:
     """
     Returns a callable to compute the total loss and its gradient with respect to the loss vector.
+
     :param rho_fn: Callable that maps loss vector to the participation rate vector.
     :param group_sizes: Array of group sizes summing to 1.
     :return: Callable.
@@ -53,10 +56,10 @@ def _value_and_grad_total_loss_fn(
     return vg_total_loss
 
 
-# TODO vectorize
 def _value_rho_fn(rho_fns: tuple[Callable]) -> Callable:
     """
     Returns a callable to compute the participation rates for each group using lax.switch.
+
     :param rho_fns: Tuple of rho functions for each group.
     :return: Callable mapping loss vector to participation rates vector.
     """
@@ -80,6 +83,7 @@ def _full_deriv_total_loss_fn(
 ) -> Callable:
     """
     Returns a callable to compute the total loss and its total derivative with respect to the loss vector.
+
     :param rho_fn: Callable that maps loss vector to the participation rate vector.
     :param group_sizes: Array of group sizes summing to 1.
     :return: Callable.
@@ -109,6 +113,7 @@ def values_and_grads_fns(
 
     :param rho_fns: Tuple of rho functions for each group.
     :param group_sizes: Array of group sizes summing to 1.
+    :param fair_epsilon: Fairness constraint.
     :return: Tuple of callables:
         - Callable that returns a dict of the loss and its gradient with respect to theta.
         - Callable that returns a dict of:
