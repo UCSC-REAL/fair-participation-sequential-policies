@@ -24,6 +24,7 @@ def mpg_step(
     def _step(loss: ArrayLike, rates: tuple[float]) -> StateInfo:
         """
         RRM update step.
+
         :param loss: Current loss vector.
         :param rates: Learning rate.
         :return: Dictionary of updated values.
