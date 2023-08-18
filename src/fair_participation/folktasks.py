@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 import jax
@@ -14,7 +16,7 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from fair_participation.acs import problems
-from fair_participation.utils import rng_old
+from fair_participation.utils import rng_old, PROJECT_ROOT
 
 
 def get_random_group_weights(num_groups: int, num_samples: int, seed: int = 0) -> Array:
@@ -49,7 +51,12 @@ def achievable_loss(
     """
 
     problem, states = problems[problem_name]
-    data_source = ACSDataSource(survey_year=f"2018", horizon="1-Year", survey="person")
+    data_source = ACSDataSource(
+        survey_year=f"2018",
+        horizon="1-Year",
+        survey="person",
+        root_dir=os.path.join(PROJECT_ROOT, "data"),
+    )
     acs_data = data_source.get_data(states=states, download=True)
     # get features, labels and groups
     x, y, g = problem.df_to_pandas(acs_data)
