@@ -7,7 +7,8 @@ from jax.typing import ArrayLike
 from scipy.spatial import ConvexHull
 
 from fair_participation.base_logger import logger
-from fair_participation.folktasks import achievable_loss as get_achievable_loss
+from fair_participation.folktasks import achievable_loss as folktasks_get_achievable_loss
+from fair_participation.grouplens import achievable_loss as grouplens_get_achievable_loss
 from fair_participation.loss_functions import values_and_grads_fns
 from fair_participation.rate_functions import concave_rho_fn
 from fair_participation.state import StateInfo
@@ -92,6 +93,7 @@ class Environment:
 
 
 def make_environment(
+    source: str,
     name: str,
     rho_fns: Callable | tuple[Callable] = concave_rho_fn,
     init_loss_direction: float | ArrayLike = 0.6,
@@ -120,7 +122,12 @@ def make_environment(
     except FileNotFoundError:
         logger.info("Caching achievable loss.")
         logger.info(f"  {losses_filename}")
-        achievable_loss = get_achievable_loss(name, n_loss_samples)
+        if source == "folktasks":
+            achievable_loss = folktasks_get_achievable_loss(name, n_loss_samples)
+        elif source == "grouplens":
+            achievable_loss = grouplens_get_achievable_loss(name, n_loss_samples)
+        else:
+            raise ValueError(f"Unknown source {source}")
         jnp.save(losses_filename, achievable_loss)
 
     n_groups = achievable_loss.shape[1]

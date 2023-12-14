@@ -117,37 +117,50 @@ def run_problems(
 
 def main():
     base_problems = [
+        # {
+        #     "source": "folktasks",
+        #     "name": "IncomeThree",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
+        #     "num_steps": 30,
+        #     "fair_epsilon": 0.05,
+        # },
+        # {
+        #     "source": "folktasks",
+        #     "name": "Income",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": 0.58,
+        #     "num_steps": 30,
+        # },
+        # {
+        #     "source": "folktasks",
+        #     "name": "Mobility",
+        #     "rho_fns": localized_rho_fn(-0.7, 10),
+        #     "init_loss_direction": 0.6,
+        #     "num_steps": 30,
+        # },
+        # {
+        #     "source": "folktasks",
+        #     "name": "PublicCoverage",
+        #     "rho_fns": localized_rho_fn(-0.7, 50),
+        #     "init_loss_direction": 0.5,
+        #     "num_steps": 30,
+        # },
+        # {
+        #     "source": "folktasks",
+        #     "name": "TravelTime",
+        #     "rho_fns": localized_rho_fn(-0.58, 100),
+        #     "init_loss_direction": 0.52,
+        #     "num_steps": 30,
+        # },
         {
-            "name": "IncomeThree",
-            "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-            "num_steps": 30,
-            "fair_epsilon": 0.05,
-        },
-        {
-            "name": "Income",
-            "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": 0.58,
-            "num_steps": 30,
-        },
-        {
-            "name": "Mobility",
-            "rho_fns": localized_rho_fn(-0.7, 10),
-            "init_loss_direction": 0.6,
-            "num_steps": 30,
-        },
-        {
-            "name": "PublicCoverage",
-            "rho_fns": localized_rho_fn(-0.7, 50),
-            "init_loss_direction": 0.5,
-            "num_steps": 30,
-        },
-        {
-            "name": "TravelTime",
-            "rho_fns": localized_rho_fn(-0.58, 100),
+            "source": "grouplens",
+            "name": "Grouplens",
+            "rho_fns": localized_rho_fn(-0.7, 20),
             "init_loss_direction": 0.52,
             "num_steps": 30,
-        },
+            "fair_epsilon": 0.0005
+        }
     ]
     methods = [  # listed in environment.py
         "RRM",
