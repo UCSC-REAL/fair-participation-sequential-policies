@@ -1,4 +1,5 @@
-import matplotlib as mpl
+import pandas as pd
+import seaborn as sns
 from matplotlib import pyplot as plt
 import matplotlib.path as mpath
 import numpy as np
@@ -17,18 +18,6 @@ from fair_participation.plotting.plot_utils import savefig
 
 from fair_participation.base_logger import logger
 from fair_participation.utils import PROJECT_ROOT
-
-mpl.rcParams.update(
-    {
-        "font.family": "serif",
-        "mathtext.fontset": "cm",
-        "mathtext.rm": "serif",
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
-    }
-)
-font = {"size": 13}
-mpl.rc("font", **font)
 
 star = mpath.Path.unit_regular_star(6)
 circle = mpath.Path.unit_circle()
@@ -200,81 +189,123 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     :return: None.
     """
     save_filename = get_compare_timeseries_filename(name)
-    if os.path.exists(save_filename):
-        logger.info("Graphic exists; skipping.")
-        logger.info(f"  {save_filename}")
-        return
+    # if os.path.exists(save_filename):
+    #     logger.info("Graphic exists; skipping.")
+    #     logger.info(f"  {save_filename}")
+    #     return
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
-    num_methods = len(methods)
-    fig, axs = plt.subplots(1, num_methods, figsize=(5 * num_methods, 5), sharey=True)
-    if num_methods == 1:
-        axs = [axs]
-    axs_r = [ax.twinx() for ax in axs]
+    base_theme_kwargs = {
+        "style": "whitegrid",
+        "context": "paper",
+        "font": "serif",
+    }
+    base_rcparams = {
+        "text.usetex": True,
+        "axes.labelsize": 20.0,
+        "xtick.labelsize": 18.0,
+        "ytick.labelsize": 18.0,
+        "axes.titlesize": 20.0,
+        "legend.fontsize": 18.0,
+        "xtick.bottom": True,
+        # "xtick.color": ".8",
+    }
+    sns.set_theme(
+        **base_theme_kwargs,
+        font_scale=3,
+        rc={
+            **base_rcparams,
+            "lines.linewidth": 3,
+            "legend.fontsize": 16.5,
+        },
+    )
+    fig = plt.figure(figsize=(8, 5))
+    ax = plt.axes()
+    ax_r = ax.twinx()
+
+    plt.title(f"{name} Comparison")
+    ax.tick_params("y", colors="blue")
+    ax_r.tick_params("y", colors="red")
+    ax.set_xlabel("Timestep")
+    ax.set_ylabel("Total Loss $\\mathcal{L}$")
+    ax.yaxis.label.set_color("blue")
+    ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=2)
+    ax_r.yaxis.label.set_color("red")
 
     # load and compare data
-    loss_min = np.inf
-    loss_max = -np.inf
-    disparity_min = np.inf
-    disparity_max = -np.inf
+    df = pd.DataFrame()
     for i, method in enumerate(methods):
         trial_filename = get_trial_filename(name, method)
+        with jnp.load(trial_filename) as npz:
+            method_df = pd.DataFrame()
+            for item in npz.files:
+                vals = npz[item]
+                if vals.ndim == 1:
+                    method_df[item] = vals
+                else:
+                    for j, val in enumerate(vals.T):
+                        method_df[f"{item}_{j}"] = val
+            method_df["method"] = method
+            method_df["Timestep"] = np.arange(len(method_df))
+        df = pd.concat([df, method_df])
 
-        if os.path.exists(trial_filename):
-            with jnp.load(trial_filename) as npz:
-                num_steps = len(npz["total_loss"])
+    sns.lineplot(
+        data=df,
+        x="Timestep",
+        y="total_loss",
+        hue="method",
+        style="method",
+        palette=sns.color_palette("Blues", n_colors=3),
+        ax=ax,
+        legend=False,
+    )
 
-                loss_min = min(loss_min, min(npz["total_loss"]))
-                loss_max = max(loss_max, max(npz["total_loss"]))
-                disparity_min = min(disparity_min, min(npz["disparity"]))
-                disparity_max = max(disparity_max, max(npz["disparity"]))
+    sns.lineplot(
+        data=df,
+        x="Timestep",
+        y="disparity",
+        hue="method",
+        style="method",
+        palette=sns.color_palette("Reds", n_colors=3),
+        ax=ax_r,
+        # legend=True,
+    )
 
-                axs[i].set_title(f"{name}, {method}")
-                axs[i].plot(npz["total_loss"], color="blue", label="Loss")
-                axs[i].tick_params("y", colors="blue")
-                axs_r[i].plot(
-                    npz["disparity"], color="red", linestyle="--", label="Disparity"
-                )
-                axs_r[i].tick_params("y", colors="red")
-                axs[i].set_xlabel("Time Step")
+    # Make legend without title
+    ax_r.legend(
+        loc="upper right",
+        frameon=True,
+        framealpha=0.9,
+        title=None,
+    )
+    # Make each legend line black
+    for line in ax_r.get_legend().get_lines():
+        line.set_color("black")
 
-                axs_r[i].scatter(num_steps - 1, npz["disparity"][-1], **markers[method])
-                axs[i].scatter(num_steps - 1, npz["total_loss"][-1], **markers[method])
+    # ax.scatter(num_steps - 1, npz["total_loss"][-1], **markers[method])
+    # ax_r.scatter(num_steps - 1, npz["disparity"][-1], **markers[method])
+    #
+    # lambdas = npz["lambda_estimate"]
+    # if sum(lambdas) > 0:
+    #     ax_rr = ax.twinx()
+    #     ax_rr.spines.right.set_position(("axes", 1.3))
+    #     ax_rr.set_ylabel("$\\lambda$", labelpad=15)
+    #
+    #     ax_rr.plot(
+    #         np.arange(num_steps),
+    #         lambdas,
+    #         color="black",
+    #         linestyle="dotted",
+    #         label="$\\lambda$",
+    #     )
+    #     ax_rr.plot([], [], color="blue", label="Loss")
+    #     ax_rr.plot([], [], color="red", linestyle="dashed", label="$\\mathcal{H}$")
+    #     # legend
+    #     ax_rr.legend()
 
-                lambdas = npz["lambda_estimate"]
-                if sum(lambdas) > 0:
-                    ax_rr = axs[i].twinx()
-                    ax_rr.spines.right.set_position(("axes", 1.3))
-                    ax_rr.set_ylabel("$\\lambda$", labelpad=15)
-
-                    ax_rr.plot(
-                        np.arange(num_steps),
-                        lambdas,
-                        color="black",
-                        linestyle="dotted",
-                        label="$\\lambda$",
-                    )
-                    ax_rr.plot([], [], color="blue", label="Loss")
-                    ax_rr.plot(
-                        [], [], color="red", linestyle="dashed", label="$\\mathcal{H}$"
-                    )
-                    # legend
-                    ax_rr.legend()
-
-        else:
-            raise FileNotFoundError(trial_filename)
-
-    axs[0].set_ylabel("Total Loss $\\mathcal{L}$")
-    axs[0].yaxis.label.set_color("blue")
-    for ax in axs_r[:-1]:
-        ax.set_yticks([])
-    axs_r[-1].set_ylabel("Disparity $\\mathcal{H}$", labelpad=2)
-    axs_r[-1].yaxis.label.set_color("red")
-
-    for ax, ax_r in zip(axs, axs_r):
-        ax.set_ylim(loss_min - 0.01, loss_max + 0.01)
-        ax_r.set_ylim(disparity_min - 0.1, disparity_max + 0.1)
+    ax.set_ylim(df["total_loss"].min() - 0.01, df["total_loss"].max() + 0.01)
+    ax_r.set_ylim(df["disparity"].min() - 0.1, df["disparity"].max() + 0.1)
 
     fig.tight_layout()
     savefig(fig, save_filename)
