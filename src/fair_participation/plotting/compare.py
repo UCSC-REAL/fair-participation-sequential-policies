@@ -231,11 +231,12 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
             legend=False,
         )
 
-    vmargin = 0.075
-    hmargin = 0.055
-    plt.subplots_adjust(
-        left=hmargin, right=1 - hmargin, top=1 - vmargin, bottom=vmargin, wspace=0.35
-    )
+    # vmargin = 0.075
+    # hmargin = 0.055
+    # plt.subplots_adjust(
+    #     left=hmargin, right=1 - hmargin, top=1 - vmargin, bottom=vmargin, wspace=0.35
+    # )
+    plt.subplots_adjust(left=0.05, right=0.95)
     savefig(save_filename)
 
 
