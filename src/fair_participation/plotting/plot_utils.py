@@ -28,9 +28,9 @@ font = {"size": 13}
 mpl.rc("font", **font)
 
 
-def savefig(fig, filename):
+def savefig(filename, **kwargs):
     logger.info(f"Saving {filename}")
-    fig.savefig(filename)
+    plt.savefig(filename, **kwargs)
 
 
 class UpdatingPlot:

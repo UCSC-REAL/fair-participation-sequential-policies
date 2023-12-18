@@ -117,14 +117,14 @@ def run_problems(
 
 def main():
     base_problems = [
-        # {
-        #     "source": "folktasks",
-        #     "name": "IncomeThree",
-        #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-        #     "num_steps": 30,
-        #     "fair_epsilon": 0.05,
-        # },
+        {
+            "source": "folktasks",
+            "name": "IncomeThree",
+            "rho_fns": localized_rho_fn(-0.75, 20),
+            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
+            "num_steps": 30,
+            "fair_epsilon": 0.05,
+        },
         {
             "source": "folktasks",
             "name": "Income",
@@ -139,13 +139,13 @@ def main():
         #     "init_loss_direction": 0.6,
         #     "num_steps": 30,
         # },
-        # {
-        #     "source": "folktasks",
-        #     "name": "PublicCoverage",
-        #     "rho_fns": localized_rho_fn(-0.7, 50),
-        #     "init_loss_direction": 0.5,
-        #     "num_steps": 30,
-        # },
+        {
+            "source": "folktasks",
+            "name": "PublicCoverage",
+            "rho_fns": localized_rho_fn(-0.7, 50),
+            "init_loss_direction": 0.5,
+            "num_steps": 30,
+        },
         # {
         #     "source": "folktasks",
         #     "name": "TravelTime",

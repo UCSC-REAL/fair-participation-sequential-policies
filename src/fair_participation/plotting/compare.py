@@ -173,11 +173,11 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         right_p.ax.set_xticks([ticks[0], ticks[-1]])
         ticks = right_p.ax.get_yticks()
         right_p.ax.set_yticks([ticks[0], ticks[-1]])
-    savefig(fig, save_filename)
+    savefig(save_filename)
 
 
 def get_compare_timeseries_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series.pdf")
+    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series_updated.pdf")
 
 
 def compare_timeseries(name: str, methods: list[str]) -> None:
@@ -189,15 +189,11 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     :return: None.
     """
     save_filename = get_compare_timeseries_filename(name)
-    # if os.path.exists(save_filename):
-    #     logger.info("Graphic exists; skipping.")
-    #     logger.info(f"  {save_filename}")
-    #     return
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
     base_theme_kwargs = {
-        "style": "whitegrid",
+        "style": "white",
         "context": "paper",
         "font": "serif",
     }
@@ -220,11 +216,11 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
             "legend.fontsize": 16.5,
         },
     )
-    fig = plt.figure(figsize=(8, 5))
+    fig = plt.figure(figsize=(7, 5.5))
     ax = plt.axes()
     ax_r = ax.twinx()
 
-    plt.title(f"{name} Comparison")
+    plt.title(f"{name} Task")
     ax.tick_params("y", colors="blue")
     ax_r.tick_params("y", colors="red")
     ax.set_xlabel("Timestep")
@@ -250,13 +246,15 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
             method_df["Timestep"] = np.arange(len(method_df))
         df = pd.concat([df, method_df])
 
+    n_methods = len(methods)
+
     sns.lineplot(
         data=df,
         x="Timestep",
         y="total_loss",
         hue="method",
         style="method",
-        palette=sns.color_palette("Blues", n_colors=3),
+        palette=sns.color_palette("Blues", n_colors=n_methods),
         ax=ax,
         legend=False,
     )
@@ -267,25 +265,19 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
         y="disparity",
         hue="method",
         style="method",
-        palette=sns.color_palette("Reds", n_colors=3),
+        palette=sns.color_palette("Reds", n_colors=n_methods),
         ax=ax_r,
-        # legend=True,
     )
-
-    # Make legend without title
     ax_r.legend(
-        loc="upper right",
+        loc="upper center",
         frameon=True,
-        framealpha=0.9,
         title=None,
+        bbox_to_anchor=(0.5, -0.25),
+        ncol=n_methods,
     )
-    # Make each legend line black
     for line in ax_r.get_legend().get_lines():
         line.set_color("black")
 
-    # ax.scatter(num_steps - 1, npz["total_loss"][-1], **markers[method])
-    # ax_r.scatter(num_steps - 1, npz["disparity"][-1], **markers[method])
-    #
     # lambdas = npz["lambda_estimate"]
     # if sum(lambdas) > 0:
     #     ax_rr = ax.twinx()
@@ -307,5 +299,5 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax.set_ylim(df["total_loss"].min() - 0.01, df["total_loss"].max() + 0.01)
     ax_r.set_ylim(df["disparity"].min() - 0.1, df["disparity"].max() + 0.1)
 
-    fig.tight_layout()
-    savefig(fig, save_filename)
+    fig.tight_layout(pad=1.0)
+    savefig(save_filename, bbox_inches="tight")
