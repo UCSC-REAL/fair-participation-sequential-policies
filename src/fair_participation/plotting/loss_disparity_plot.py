@@ -172,6 +172,8 @@ class LossDisparityPlot2Group(UpdatingPlot):
         disparities = [vgs["disparity"] for vgs in _values_and_grads]
         ax_r = ax.twinx()
         self.ax_r = ax_r
+        # Keeps aspect ratio at 1
+        self.ax_r.set_box_aspect(1)
 
         # plot loss curve
         ax.plot(
@@ -188,33 +190,38 @@ class LossDisparityPlot2Group(UpdatingPlot):
             "red",
             linestyle="dotted",
         )
-        ax_r.plot(
-            [min_phi, max_phi],
-            [0, 0],
+        ax_r.hlines(
+            0,
+            min_phi,
+            max_phi,
             "red",
             linestyle="--",
         )
+
         ax.plot([], [], "red", linestyle="dotted", label="Disparity")
         ax.plot([], [], "red", linestyle="--", label="$\\mathcal{H} = 0$")
 
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
-        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-30)
+        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-40)
         ax.yaxis.label.set_color("blue")
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-40)
         ax_r.yaxis.label.set_color("red")
 
         ax.legend(loc="lower left")
 
-        (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
-        (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)
+        # (self.disparity_pt,) = ax_r.plot([], [], color="red", marker="^", markersize=10)
+        # (self.loss_pt,) = ax.plot([], [], color="blue", marker="o", markersize=10)
 
-        ticks = ax_r.get_yticks()
-        ax_r.set_yticks([ticks[0], 0, ticks[-1]])
-        ticks = ax.get_xticks()
-        ax.set_xticks([ticks[0], ticks[-1]])
-        ticks = ax.get_yticks()
-        ax.set_yticks([ticks[0], ticks[-1]])
+        plt.xlim([min_phi, max_phi])
+
+        yrticks = ax_r.get_yticks()
+        ax_r.set_yticks([yrticks[0], yrticks[-1]])
+        ax.set_xticks([min_phi, max_phi])
+        ax.set_xticklabels([round(min_phi, 2), round(max_phi, 2)])
+
+        yticks = ax.get_yticks()
+        ax.set_yticks([yticks[0], yticks[-1]])
 
     def get_phi(self, loss):
         return np.arctan2(-loss[1], -loss[0])

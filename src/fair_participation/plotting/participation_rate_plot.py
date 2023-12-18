@@ -102,7 +102,7 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         plt.sca(ax)
 
         pure_rho = np.array([values_and_grads(loss)["rho"] for loss in achievable_loss])
-        ax.scatter(*pure_rho.T, color="black", label="Pure Policies")
+        ax.scatter(*pure_rho.T, color="black", label="Pure policies")
 
         upsample_deg = 3
         loss_samples, loss_tri, loss_normals = upsample_hull_3d(
@@ -168,7 +168,9 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         plt.sca(ax)
 
         pure_rho = np.array([values_and_grads(loss)["rho"] for loss in achievable_loss])
-        ax.scatter(*pure_rho.T, color="black", label="Pure Policies")
+        ax.scatter(
+            *pure_rho.T, color="black", label="Pure policies", zorder=10, clip_on=False
+        )
 
         loss_samples = inclusive_hull_order_2d(
             list(sample_hull_uniform(loss_hull, 100)) + list(achievable_loss)

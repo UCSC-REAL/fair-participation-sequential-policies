@@ -26,19 +26,38 @@ cut_star = mpath.Path(
     codes=np.concatenate([circle.codes, star.codes]),
 )
 
-markers = {
-    "Init": {
-        "marker": "o",
-        "color": "white",
-        "edgecolor": "black",
-        "linewidth": 2,
-        "s": 150,
-        "alpha": 0.5,
-    },
-    "RRM": {"marker": "D", "color": "coral", "s": 240, "alpha": 0.7},
-    "MPG": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
-    "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
-}
+# markers = {
+#     "Init": {
+#         "marker": "o",
+#         "color": "white",
+#         "edgecolor": "black",
+#         "linewidth": 2,
+#         "s": 150,
+#         "alpha": 0.5,
+#     },
+#     "RRM": {"marker": "D", "color": "coral", "s": 240, "alpha": 0.7},
+#     "MPG": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
+#     "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
+# }
+
+
+def load_methods(name: str, methods: list[str]) -> pd.DataFrame:
+    df = pd.DataFrame()
+    for i, method in enumerate(methods):
+        trial_filename = get_trial_filename(name, method)
+        with jnp.load(trial_filename) as npz:
+            method_df = pd.DataFrame()
+            for item in npz.files:
+                vals = npz[item]
+                if vals.ndim == 1:
+                    method_df[item] = vals
+                else:
+                    for j, val in enumerate(vals.T):
+                        method_df[f"{item}_{j}"] = val
+            method_df["method"] = method
+            method_df["Timestep"] = np.arange(len(method_df))
+        df = pd.concat([df, method_df])
+    return df
 
 
 def make_canvas(env: Environment) -> tuple:
@@ -46,12 +65,14 @@ def make_canvas(env: Environment) -> tuple:
     Makes a canvas for plotting the loss boundary, participation rate, and loss.
 
     :param env: Environment object
-    :return: tuple of (fig, plots)
+    :return: tuple of (fig, axes)
     """
 
     num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
-        fig, (lax, cax, rax) = plt.subplots(1, 3, figsize=(18, 6))
+        fig, (lax, cax, rax) = plt.subplots(
+            1, 3, figsize=(15, 5), subplot_kw=dict(box_aspect=1)
+        )
 
         left_plot = make_loss_boundary_plot(
             ax=lax,
@@ -75,6 +96,7 @@ def make_canvas(env: Environment) -> tuple:
         plots = (left_plot, center_plot, right_plot)
 
     elif num_groups == 3:
+        # TODO change
         fig, (lax, cax) = plt.subplots(
             1, 2, figsize=(12, 6), subplot_kw={"projection": "3d"}
         )
@@ -96,7 +118,6 @@ def make_canvas(env: Environment) -> tuple:
     else:
         raise NotImplementedError(f"Cannot plot {num_groups} groups.")
 
-    fig.tight_layout()
     return fig, plots
 
 
@@ -113,66 +134,100 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     :return: None
     """
     save_filename = get_compare_solutions_filename(env.name)
-    if os.path.exists(save_filename):
-        logger.info("Graphic exists; skipping:")
-        logger.info(f"  {save_filename}")
-        return
+    # if os.path.exists(save_filename):
+    #     logger.info("Graphic exists; skipping:")
+    #     logger.info(f"  {save_filename}")
+    #     return
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
-    fig, plots = make_canvas(env)
+    fig, (left, center, *right) = make_canvas(env)
+    df = load_methods(env.name, methods)
+    n_methods = len(methods)
 
-    left, center = plots[0].ax, plots[1].ax
-    if len(plots) > 2:
-        right_p = plots[2]
-    else:
-        right_p = None
+    markers = {
+        "Initial loss": {"marker": "o", "color": "green", "s": 150},
+        "RRM": {"marker": "D", "color": "coral", "s": 240},
+        "MPG": {"marker": "o", "color": "turquoise", "s": 240},
+        "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240},
+    }
 
-    for method in methods:
-        trial_filename = get_trial_filename(env.name, method)
-        with jnp.load(trial_filename) as npz:
-            loss = npz["loss"][-1]
-            rho = npz["rho"][-1]
-            total_loss = npz["total_loss"][-1]
-            disparity = npz["disparity"][-1]
+    def _marker_map(key: str) -> dict:
+        return {k: v[key] for k, v in markers.items()}
 
-            left.scatter(*loss, **markers[method], label=method)
-            center.scatter(*rho, **markers[method], label=method)
+    init_data = df[df.index == df["Timestep"].min()][:1]
+    init_data["method"] = "Initial loss"
+    data = df[df.index == df["Timestep"].max()]
+    data = pd.concat((init_data, data))
 
-            if right_p is not None:
-                right_p.ax.scatter(
-                    right_p.get_phi(loss), total_loss, **markers[method], label=method
-                )
-                right_p.ax_r.scatter(
-                    right_p.get_phi(loss), disparity, **markers[method], label=method
-                )
+    sns.scatterplot(
+        data=data,
+        x="loss_0",
+        y="loss_1",
+        size="method",
+        sizes=_marker_map("s"),
+        style="method",
+        markers=_marker_map("marker"),
+        hue="method",
+        palette=_marker_map("color"),
+        alpha=0.7,
+        ax=left.ax,
+        clip_on=False,
+        zorder=10,
+    )
+    #
+    left.ax.legend(
+        loc="upper right",
+        frameon=True,
+        title=None,
+        # bbox_to_anchor=(0.5, -0.25),
+    )
 
-    # show init
-    method = "Init"
-    loss = env.init_loss
-    results = env.values_and_grads(loss)
-    rho = results["rho"]
-    total_loss = results["total_loss"]
-    disparity = results["disparity"]
-    left.scatter(*loss, **markers[method], label=method)
-    center.scatter(*rho, **markers[method], label=method)
-    center.legend(loc="upper right")
-    left.legend(loc="upper right")
-
-    if right_p is not None:
-        right_p.ax.scatter(
-            right_p.get_phi(loss), total_loss, **markers[method], label=method
-        )
-        right_p.ax_r.scatter(
-            right_p.get_phi(loss), disparity, **markers[method], label=method
-        )
-
-        ticks = right_p.ax_r.get_yticks()
-        right_p.ax_r.set_yticks([ticks[0], 0, ticks[-1]])
-        ticks = right_p.ax.get_xticks()
-        right_p.ax.set_xticks([ticks[0], ticks[-1]])
-        ticks = right_p.ax.get_yticks()
-        right_p.ax.set_yticks([ticks[0], ticks[-1]])
+    # center.scatter(*rho, **markers[method], label=method)
+    #
+    # if right_p is not None:
+    #     right_p.ax.scatter(
+    #         right_p.get_phi(loss), total_loss, **markers[method], label=method
+    #     )
+    #     right_p.ax_r.scatter(
+    #         right_p.get_phi(loss), disparity, **markers[method], label=method
+    #     )
+    #
+    # # show init
+    # method = "Init"
+    # loss = env.init_loss
+    # results = env.values_and_grads(loss)
+    # rho = results["rho"]
+    # total_loss = results["total_loss"]
+    # disparity = results["disparity"]
+    # left.scatter(*loss, **markers[method], label=method)
+    # center.scatter(*rho, **markers[method], label=method)
+    # center.legend(loc="upper right")
+    # left.legend(loc="upper right")
+    #
+    # if right_p is not None:
+    #     right_p.ax.scatter(
+    #         right_p.get_phi(loss), total_loss, **markers[method], label=method
+    #     )
+    #     right_p.ax_r.scatter(
+    #         right_p.get_phi(loss), disparity, **markers[method], label=method
+    #     )
+    #
+    #     ticks = right_p.ax_r.get_yticks()
+    #     right_p.ax_r.set_yticks([ticks[0], 0, ticks[-1]])
+    #     ticks = right_p.ax.get_xticks()
+    #     right_p.ax.set_xticks([ticks[0], ticks[-1]])
+    #     ticks = right_p.ax.get_yticks()
+    #     right_p.ax.set_yticks([ticks[0], ticks[-1]])
+    # plt.tight_layout(1.0)
+    # fig.tight_layout(pad=1.0)
+    # plt.gca().set_axis_off()
+    # plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    # plt.margins(0, 0)
+    margin = 0.075
+    plt.subplots_adjust(
+        left=margin, right=1 - margin, top=1 - margin, bottom=margin, wspace=0.3
+    )
     savefig(save_filename)
 
 
@@ -229,23 +284,7 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=2)
     ax_r.yaxis.label.set_color("red")
 
-    # load and compare data
-    df = pd.DataFrame()
-    for i, method in enumerate(methods):
-        trial_filename = get_trial_filename(name, method)
-        with jnp.load(trial_filename) as npz:
-            method_df = pd.DataFrame()
-            for item in npz.files:
-                vals = npz[item]
-                if vals.ndim == 1:
-                    method_df[item] = vals
-                else:
-                    for j, val in enumerate(vals.T):
-                        method_df[f"{item}_{j}"] = val
-            method_df["method"] = method
-            method_df["Timestep"] = np.arange(len(method_df))
-        df = pd.concat([df, method_df])
-
+    df = load_methods(name, methods)
     n_methods = len(methods)
 
     sns.lineplot(

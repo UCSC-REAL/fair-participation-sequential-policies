@@ -114,7 +114,13 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         """
         self.ax = ax
         plt.sca(ax)
-        ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
+        ax.scatter(
+            *achievable_loss.T,
+            color="black",
+            label="Pure policies",
+            clip_on=False,
+            zorder=10,
+        )
         ax.fill(
             list(loss_hull.points[:, 0]) + [loss_hull.points[0, 0]],
             list(loss_hull.points[:, 1]) + [loss_hull.points[0, 1]],
@@ -152,7 +158,13 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 
-        (self.loss_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+        (self.loss_pt,) = plt.plot(
+            [],
+            [],
+            color="red",
+            marker="^",
+            markersize=15,
+        )
 
         self.rho_arrow = plt.quiver(
             *self.rescale(-0.5, -0.5),
