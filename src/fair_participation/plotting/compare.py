@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from matplotlib.colors import to_rgba as to_rgba
 import matplotlib.path as mpath
 import numpy as np
 from jax import numpy as jnp
@@ -71,7 +72,7 @@ def make_canvas(env: Environment) -> tuple:
     num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
         fig, (lax, cax, rax) = plt.subplots(
-            1, 3, figsize=(15, 5), subplot_kw=dict(box_aspect=1)
+            1, 3, figsize=(14, 5), subplot_kw=dict(box_aspect=1)
         )
 
         left_plot = make_loss_boundary_plot(
@@ -122,7 +123,7 @@ def make_canvas(env: Environment) -> tuple:
 
 
 def get_compare_solutions_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions.pdf")
+    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions_updated.pdf")
 
 
 def compare_solutions(env: Environment, methods: list[str]) -> None:
@@ -143,13 +144,30 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
 
     fig, (left, center, *right) = make_canvas(env)
     df = load_methods(env.name, methods)
-    n_methods = len(methods)
+
+    cb_colors = sns.color_palette("colorblind")
 
     markers = {
-        "Initial loss": {"marker": "o", "color": "green", "s": 150},
-        "RRM": {"marker": "D", "color": "coral", "s": 240},
-        "MPG": {"marker": "o", "color": "turquoise", "s": 240},
-        "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240},
+        "Initial loss": {
+            "marker": "s",
+            "color": to_rgba(cb_colors[7], alpha=0.8),
+            "s": 300,
+        },
+        "RRM": {
+            "marker": "D",
+            "color": to_rgba(cb_colors[2], alpha=0.8),
+            "s": 240,
+        },
+        "MPG": {
+            "marker": "o",
+            "color": to_rgba(cb_colors[4], alpha=0.8),
+            "s": 240,
+        },
+        "CPG": {
+            "marker": cut_star,
+            "color": to_rgba(cb_colors[1], alpha=0.9),
+            "s": 260,
+        },
     }
 
     def _marker_map(key: str) -> dict:
@@ -160,73 +178,63 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     data = df[df.index == df["Timestep"].max()]
     data = pd.concat((init_data, data))
 
+    marker_kwargs = {
+        "size": "method",
+        "sizes": _marker_map("s"),
+        "style": "method",
+        "markers": _marker_map("marker"),
+        "hue": "method",
+        "palette": _marker_map("color"),
+        "linewidth": 0.0,
+        "clip_on": False,
+        "zorder": 10,
+    }
+
     sns.scatterplot(
         data=data,
         x="loss_0",
         y="loss_1",
-        size="method",
-        sizes=_marker_map("s"),
-        style="method",
-        markers=_marker_map("marker"),
-        hue="method",
-        palette=_marker_map("color"),
-        alpha=0.7,
+        **marker_kwargs,
         ax=left.ax,
-        clip_on=False,
-        zorder=10,
     )
-    #
     left.ax.legend(
         loc="upper right",
         frameon=True,
         title=None,
         # bbox_to_anchor=(0.5, -0.25),
     )
+    sns.scatterplot(
+        data=data,
+        x="rho_0",
+        y="rho_1",
+        ax=center.ax,
+        **marker_kwargs,
+        legend=False,
+    )
 
-    # center.scatter(*rho, **markers[method], label=method)
-    #
-    # if right_p is not None:
-    #     right_p.ax.scatter(
-    #         right_p.get_phi(loss), total_loss, **markers[method], label=method
-    #     )
-    #     right_p.ax_r.scatter(
-    #         right_p.get_phi(loss), disparity, **markers[method], label=method
-    #     )
-    #
-    # # show init
-    # method = "Init"
-    # loss = env.init_loss
-    # results = env.values_and_grads(loss)
-    # rho = results["rho"]
-    # total_loss = results["total_loss"]
-    # disparity = results["disparity"]
-    # left.scatter(*loss, **markers[method], label=method)
-    # center.scatter(*rho, **markers[method], label=method)
-    # center.legend(loc="upper right")
-    # left.legend(loc="upper right")
-    #
-    # if right_p is not None:
-    #     right_p.ax.scatter(
-    #         right_p.get_phi(loss), total_loss, **markers[method], label=method
-    #     )
-    #     right_p.ax_r.scatter(
-    #         right_p.get_phi(loss), disparity, **markers[method], label=method
-    #     )
-    #
-    #     ticks = right_p.ax_r.get_yticks()
-    #     right_p.ax_r.set_yticks([ticks[0], 0, ticks[-1]])
-    #     ticks = right_p.ax.get_xticks()
-    #     right_p.ax.set_xticks([ticks[0], ticks[-1]])
-    #     ticks = right_p.ax.get_yticks()
-    #     right_p.ax.set_yticks([ticks[0], ticks[-1]])
-    # plt.tight_layout(1.0)
-    # fig.tight_layout(pad=1.0)
-    # plt.gca().set_axis_off()
-    # plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    # plt.margins(0, 0)
-    margin = 0.075
+    if right is not None:
+        phi = [right[0].get_phi(loss) for loss in data[["loss_0", "loss_1"]].values]
+        sns.scatterplot(
+            data=data,
+            x=phi,
+            y="total_loss",
+            **marker_kwargs,
+            ax=right[0].ax,
+            legend=False,
+        )
+        sns.scatterplot(
+            data=data,
+            x=phi,
+            y="disparity",
+            **marker_kwargs,
+            ax=right[0].ax_r,
+            legend=False,
+        )
+
+    vmargin = 0.075
+    hmargin = 0.055
     plt.subplots_adjust(
-        left=margin, right=1 - margin, top=1 - margin, bottom=margin, wspace=0.3
+        left=hmargin, right=1 - hmargin, top=1 - vmargin, bottom=vmargin, wspace=0.35
     )
     savefig(save_filename)
 

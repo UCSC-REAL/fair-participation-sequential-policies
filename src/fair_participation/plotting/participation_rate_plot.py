@@ -6,6 +6,7 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.transform import Rotation
 import matplotlib.tri as mtri
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 from fair_participation.plotting.plot_utils import (
     use_two_ticks_x,
@@ -169,7 +170,11 @@ class ParticipationRatePlot2Group(UpdatingPlot):
 
         pure_rho = np.array([values_and_grads(loss)["rho"] for loss in achievable_loss])
         ax.scatter(
-            *pure_rho.T, color="black", label="Pure policies", zorder=10, clip_on=False
+            *pure_rho.T,
+            color="black",
+            # label="Pure policies",
+            zorder=10,
+            clip_on=False,
         )
 
         loss_samples = inclusive_hull_order_2d(
@@ -200,22 +205,24 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         ax.set_ylim(min_lim, max_lim)
 
         dist = 2 * np.sqrt(fair_epsilon)
+        h_color = sns.color_palette("colorblind")[3]
         ax.plot(
             [min_lim, max_lim - dist],
             [min_lim + dist, max_lim],
-            color="red",
+            color=h_color,
             linestyle="--",
             label="$\\mathcal{H} = 0$",
         )
         ax.plot(
             [min_lim + dist, max_lim],
             [min_lim, max_lim - dist],
-            color="red",
+            color=h_color,
             linestyle="--",
         )
+        ax.legend(loc="upper right", framealpha=0.95)
 
-        ax.set_xlabel("Group 1 participation rate $\\rho_1$", labelpad=-10)
-        ax.set_ylabel("Group 2 participation rate $\\rho_2$", labelpad=-10)
+        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-15)
+        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-5)
         use_two_ticks_x(ax)
         use_two_ticks_y(ax)
 

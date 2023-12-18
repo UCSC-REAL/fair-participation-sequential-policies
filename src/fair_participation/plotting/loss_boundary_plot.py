@@ -140,8 +140,8 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         self.min_lim = min_lim
         self.max_lim = max_lim
 
-        plt.xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
-        plt.ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
+        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
+        plt.ylabel("$\\ell_2$ (Group 2)", labelpad=-10)
         plt.title("Group Loss")
 
         ax.legend(loc="upper right")
