@@ -249,20 +249,3 @@ def set_nice_limits(
     plt.xlim(lims[0])
     plt.ylim(lims[1])
     plt.sca(old_ax)
-
-
-def use_two_ticks(ax, axis: str, others: Optional[list] = None):
-    if axis == "x":
-        getticks, setticks, getlim = ax.get_xticks, ax.set_xticks, ax.get_xlim
-    elif axis == "y":
-        getticks, setticks, getlim = ax.get_yticks, ax.set_yticks, ax.get_ylim
-    elif axis == "z":
-        getticks, setticks, getlim = ax.get_zticks, ax.set_zticks, ax.get_zlim
-    else:
-        raise ValueError
-    if others is None:
-        others = []
-    # TODO this was not right: ticks can be outside the axes
-    min_ = min(tick for tick in getticks() if tick > getlim()[0])
-    max_ = max(tick for tick in getticks() if tick < getlim()[1])
-    setticks([min_, max_] + others)

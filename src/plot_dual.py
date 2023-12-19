@@ -1,37 +1,16 @@
 import os
 import numpy as np
 
-import matplotlib as mpl
+import seaborn as sns
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 from numpy.typing import NDArray
 
-from fair_participation.plotting.plot_utils import use_two_ticks
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.utils import PROJECT_ROOT
 
-mpl.rcParams.update(
-    {
-        "font.family": "serif",
-        "mathtext.fontset": "cm",
-        "mathtext.rm": "serif",
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
-    }
-)
-
-font = {"size": 13}
-
-mpl.rc("font", **font)
-
-################################################################################
-
-# fig = plt.figure()
-# gs = fig.add_gridspec(2, 2, hspace=0, wspace=0)
-# (ax1, right), (left, ax4) = gs.subplots(sharex="col", sharey="row")
-
-fig, axs = plt.subplots(1, 4, figsize=(10, 10))
-left, right, inset_l, inset_r = axs
+from fair_participation.plotting.plot_utils import set_corner_ticks
+from fair_participation.plotting.params import base_sns_theme_kwargs, base_rcparams
 
 
 def get_loss(theta: NDArray) -> NDArray:
@@ -46,30 +25,37 @@ def get_rho(loss_: NDArray) -> NDArray:
 
 
 def plot():
+    sns.set_theme(
+        **base_sns_theme_kwargs,
+        rc=base_rcparams,
+        font_scale=3,
+    )
+
+    fig, axs = plt.subplots(1, 4, figsize=(11, 11))
+    left, right, inset_l, inset_r = axs
+
     ts = np.linspace(0, np.pi / 2, 100)
     loss = get_loss(ts)
     rho = get_rho(loss)
 
     left.plot(*loss.T, color="black")
-    left.set_xlabel("Group 1 loss $\\ell_1$")
+    left.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
     left.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
     left.set_xlim(-1, 0)
     left.set_ylim(-1, 0)
-    use_two_ticks(left, axis="x")
-    use_two_ticks(left, axis="y")
+    set_corner_ticks(left, "xy")
 
     right.plot(*rho.T, color="black")
     right.yaxis.tick_right()
     right.yaxis.set_label_position("right")
     right.xaxis.tick_top()
     right.xaxis.set_label_position("top")
-    right.set_xlabel("Group 1 Participation Rate $\\rho_1$")
+    right.set_xlabel("Group 1 Participation Rate $\\rho_1$", labelpad=-5)
     right.set_ylabel("Group 2 Participation Rate $\\rho_2$")
     right.set_xlim(0, 1)
     right.set_ylim(0, 1)
 
-    use_two_ticks(right, axis="x")
-    use_two_ticks(right, axis="y")
+    set_corner_ticks(right, "xy")
 
     a = 0.45 * np.pi / 2
     b = 0.55 * np.pi / 2
@@ -78,7 +64,7 @@ def plot():
     ra = get_rho(np.array([la]))[0]
     rb = get_rho(np.array([lb]))[0]
 
-    ms = 100  # markersize
+    ms = 250
 
     left.scatter([la[0]], [la[1]], color="red", marker="^", s=ms)
     left.scatter([lb[0]], [lb[1]], color="blue", marker="o", s=ms)
@@ -140,23 +126,21 @@ def plot():
             linestyle="dashed",
         )
     )
-    left.text(-0.3, -0.8, "$\\ell_1^2 + \\ell_2^2 = 1$")
+    left.text(-0.43, -0.85, "$\\ell_1^2 + \\ell_2^2 = 1$")
 
     inset_l.plot(loss[:, 0], rho[:, 0], color="black")
-    inset_l.set_xlabel("Group 1 loss $\\ell_1$")
+    inset_l.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
     inset_l.set_xlim(-1, 0)
     inset_l.set_ylabel("Group 1 Participation Rate $\\rho_1$")
     inset_l.set_ylim(0, 1)
     inset_l.scatter([la[0]], [ra[0]], color="red", marker="^", s=ms)
     inset_l.scatter([lb[0]], [rb[0]], color="blue", marker="o", s=ms)
     inset_l.text(
-        -0.57,
+        -0.62,
         0.8,
         r"$\frac{1}{1 + \exp[20(\ell_g + 0.62)]}$",
-        fontsize=19,
     )
-    use_two_ticks(inset_l, axis="x")
-    use_two_ticks(inset_l, axis="y")
+    set_corner_ticks(inset_l, "xy")
 
     la = np.einsum("i,i->", ra, la) / 2
     lb = np.einsum("i,i->", rb, lb) / 2
@@ -167,8 +151,8 @@ def plot():
     )
     inset_r.yaxis.set_label_position("right")
     inset_r.yaxis.tick_right()
-    inset_r.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g s_g$", labelpad=-20)
-    inset_r.set_xlabel("Parameter $\\theta$")
+    inset_r.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g s_g$", labelpad=-30)
+    inset_r.set_xlabel("Parameter $\\theta$", labelpad=-10)
     inset_r.scatter([a], [la], color="red", marker="^", s=ms)
     inset_r.scatter([b], [lb], color="blue", marker="o", s=ms)
     inset_r.add_patch(
@@ -190,7 +174,7 @@ def plot():
             linestyle="dashed",
         )
     )
-    inset_r.set_yticks([-0.6, -0.4])
+    inset_r.set_yticks([-0.6, -0.45])
     inset_r.set_xticks([0, np.pi / 2])
 
     s = 0.4
@@ -199,7 +183,7 @@ def plot():
     left.set_position((0.5 - s, 0.5 - s, s, s))
     right.set_position((0.5, 0.5, s, s))
 
-    fig.savefig(os.path.join(PROJECT_ROOT, "pdf", "dual.pdf"))
+    fig.savefig(os.path.join(PROJECT_ROOT, "pdf", "dual.pdf"), bbox_inches="tight")
 
 
 if __name__ == "__main__":
