@@ -2,8 +2,7 @@ import pandas as pd
 from fair_participation.plotting.plot_utils import savefig
 import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib.colors import to_rgba as to_rgba
-import matplotlib.path as mpath
+
 import numpy as np
 from jax import numpy as jnp
 import os
@@ -16,16 +15,14 @@ from fair_participation.plotting.participation_rate_plot import (
     make_participation_rate_plot,
 )
 from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
+from fair_participation.plotting.params import (
+    base_sns_theme_kwargs,
+    base_rcparams,
+    marker_map,
+)
 
 from fair_participation.base_logger import logger
 from fair_participation.utils import PROJECT_ROOT
-
-star = mpath.Path.unit_regular_star(6)
-circle = mpath.Path.unit_circle()
-cut_star = mpath.Path(
-    vertices=np.concatenate([circle.vertices, star.vertices[::-1, ...]]),
-    codes=np.concatenate([circle.codes, star.codes]),
-)
 
 
 def load_methods(name: str, methods: list[str]) -> pd.DataFrame:
@@ -81,16 +78,16 @@ def make_canvas(env: Environment) -> tuple:
         )
 
         rbox = rax.get_position()
-        rbox.x0 += 0.05 # shift right
-        rbox.x1 += 0.05 # shift right
+        rbox.x0 += 0.05  # shift right
+        rbox.x1 += 0.05  # shift right
         rax.set_position(rbox)
         cbox = cax.get_position()
-        cbox.x0 += 0.06 # shift right
-        cbox.x1 += 0.06 # shift right
+        cbox.x0 += 0.06  # shift right
+        cbox.x1 += 0.06  # shift right
         cax.set_position(cbox)
         lbox = lax.get_position()
-        lbox.x0 += 0.07 # shift right
-        lbox.x1 += 0.07 # shift right
+        lbox.x0 += 0.07  # shift right
+        lbox.x1 += 0.07  # shift right
         lax.set_position(lbox)
 
         plots = (left_plot, center_plot, right_plot)
@@ -107,8 +104,8 @@ def make_canvas(env: Environment) -> tuple:
             loss_hull=env.loss_hull,
         )
         bbox = lax.get_position()
-        bbox.x0 += 0.1 # shift right
-        bbox.x1 += 0.1 # shift right
+        bbox.x0 += 0.1  # shift right
+        bbox.x1 += 0.1  # shift right
         lax.set_position(bbox)
         center_plot = make_participation_rate_plot(
             ax=cax,
@@ -118,8 +115,8 @@ def make_canvas(env: Environment) -> tuple:
             fair_epsilon=env.fair_epsilon,
         )
         bbox = cax.get_position()
-        bbox.x0 += 0.1 # shift right
-        bbox.x1 += 0.1 # shift right
+        bbox.x0 += 0.1  # shift right
+        bbox.x1 += 0.1  # shift right
         cax.set_position(bbox)
 
         plots = (left_plot, center_plot, None)
@@ -145,36 +142,14 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
+    sns.set_theme(
+        **base_sns_theme_kwargs,
+        font_scale=3,
+        rc=base_rcparams,
+    )
+
     fig, (left, center, right) = make_canvas(env)
     df = load_methods(env.name, methods)
-
-    cb_colors = sns.color_palette("colorblind")
-
-    markers = {
-        "Initialization": {
-            "marker": "s",
-            "color": to_rgba(cb_colors[7], alpha=0.8),
-            "s": 300,
-        },
-        "RRM": {
-            "marker": "D",
-            "color": to_rgba(cb_colors[2], alpha=0.8),
-            "s": 240,
-        },
-        "MPG": {
-            "marker": "o",
-            "color": to_rgba(cb_colors[4], alpha=0.8),
-            "s": 240,
-        },
-        "CPG": {
-            "marker": cut_star,
-            "color": to_rgba(cb_colors[1], alpha=0.9),
-            "s": 260,
-        },
-    }
-
-    def _marker_map(key: str) -> dict:
-        return {k: v[key] for k, v in markers.items()}
 
     init_data = df[df.index == df["Timestep"].min()][:1]
     init_data["method"] = "Initialization"
@@ -183,14 +158,13 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
 
     marker_kwargs = {
         "size": "method",
-        "sizes": _marker_map("s"),
+        "sizes": marker_map("s"),
         "style": "method",
-        "markers": _marker_map("marker"),
+        "markers": marker_map("marker"),
         "hue": "method",
-        "palette": _marker_map("color"),
+        "palette": marker_map("color"),
         "linewidth": 0.0,
     }
-    # left.ax.set_clip_on(False)
     sns.scatterplot(
         data=data,
         x="loss_0",
@@ -219,12 +193,10 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     for ax in (left.ax, center.ax, right.ax, right.ax_r):
         plt.setp(ax.collections, clip_on=False, zorder=10)
 
-    # plt.subplots_adjust(left=0.05, right=0.95)
     savefig(save_filename)
 
 
 def compare_solutions_3D(env, methods):
-
     save_filename = get_compare_solutions_filename(env.name)
     if os.path.exists(save_filename):
         logger.info("Graphic exists; skipping:")
@@ -241,34 +213,8 @@ def compare_solutions_3D(env, methods):
     else:
         right_p = None
 
-
-    cb_colors = sns.color_palette("colorblind")
-
-    markers = {
-        "Initialization": {
-            "marker": "s",
-            "color": to_rgba(cb_colors[7], alpha=0.8),
-            "s": 300,
-        },
-        "RRM": {
-            "marker": "D",
-            "color": to_rgba(cb_colors[2], alpha=0.8),
-            "s": 240,
-        },
-        "MPG": {
-            "marker": "o",
-            "color": to_rgba(cb_colors[4], alpha=0.8),
-            "s": 240,
-        },
-        "CPG": {
-            "marker": cut_star,
-            "color": to_rgba(cb_colors[1], alpha=0.9),
-            "s": 260,
-        },
-    }
-
+    # TODO duplicate
     for method in methods:
-
         trial_filename = get_trial_filename(env.name, method)
         with jnp.load(trial_filename) as npz:
             loss = npz["loss"][-1]
@@ -333,29 +279,10 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
-    base_theme_kwargs = {
-        "style": "white",
-        "context": "paper",
-        "font": "serif",
-    }
-    base_rcparams = {
-        "text.usetex": True,
-        "axes.labelsize": 20.0,
-        "xtick.labelsize": 18.0,
-        "ytick.labelsize": 18.0,
-        "axes.titlesize": 20.0,
-        "legend.fontsize": 18.0,
-        "xtick.bottom": True,
-        # "xtick.color": ".8",
-    }
     sns.set_theme(
-        **base_theme_kwargs,
+        **base_sns_theme_kwargs,
         font_scale=3,
-        rc={
-            **base_rcparams,
-            "lines.linewidth": 3,
-            "legend.fontsize": 16.5,
-        },
+        rc=base_rcparams,
     )
     fig = plt.figure(figsize=(6, 5.25))
     ax = plt.axes()
@@ -373,6 +300,7 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     df = load_methods(name, methods)
     n_methods = len(methods)
 
+    # TODO fix these palettes
     sns.lineplot(
         data=df,
         x="Timestep",
@@ -424,5 +352,6 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax.set_ylim(df["total_loss"].min() - 0.01, df["total_loss"].max() + 0.01)
     ax_r.set_ylim(df["disparity"].min() - 0.1, df["disparity"].max() + 0.1)
 
+    # TODO not sure about this one
     fig.tight_layout(pad=1.0)
     savefig(save_filename, bbox_inches="tight")

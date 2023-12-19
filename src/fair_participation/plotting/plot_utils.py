@@ -27,6 +27,7 @@ mpl.rcParams.update(
 font = {"size": 13}
 mpl.rc("font", **font)
 
+
 def savefig(filename, **kwargs):
     logger.info(f"Saving {filename}")
     plt.savefig(filename, **kwargs)
@@ -190,7 +191,6 @@ def get_normal(triangle_3d):
 
 
 def plot_triangles(ax, triangles, normals):
-
     tri = a3.art3d.Poly3DCollection(triangles, zorder=1)
     ls = LightSource(azdeg=60, altdeg=60.0)
     rgb = np.array([0.0, 0.0, 1.0, 0.5])
@@ -202,6 +202,37 @@ def plot_triangles(ax, triangles, normals):
         np.array([shade * rgbt for shade in ls.shade_normals(normals, fraction=1.0)])
     )
     ax.add_collection3d(tri)
+
+
+def set_corner_ticks(ax, axes: str):
+    """Set ticks only at the corners of the current axes.
+
+    :param ax: Matplotlib axis.
+    :param axes: String of axes to set ticks on. Should be a subset of "xyz".
+    """
+    if "x" in axes:
+        ax.set_xticks(ax.get_xlim())
+    if "y" in axes:
+        ax.set_yticks(ax.get_ylim())
+    if "z" in axes:
+        ax.set_zticks(ax.get_zlim())
+
+
+def set_nice_limits(ax: mpl.axes, min_: float, max_: float, res: float = 0.02):
+    old_ax = plt.gca()
+    plt.sca(ax)
+    res = 0.02
+    lims = []
+    for plt_lim in plt.xlim, plt.ylim:
+        lim = plt_lim()
+        lim = np.array([np.floor(lim[0] / res), np.ceil(lim[1] / res)]) * res
+        lims.append(np.clip(lim, -1, 0))
+    lims = np.array(lims)
+    # Since we need equal aspect, keep the larger range
+    lim_range = np.max(lims[:, 1] - lims[:, 0])
+    plt.xlim(lims[0, 0], lims[0, 0] + lim_range)
+    plt.ylim(lims[1, 0], lims[1, 0] + lim_range)
+    plt.sca(old_ax)
 
 
 def use_two_ticks(ax, axis: str, others: Optional[list] = None):

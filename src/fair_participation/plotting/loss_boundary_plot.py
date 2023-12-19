@@ -6,7 +6,8 @@ from matplotlib import patches
 from matplotlib import pyplot as plt
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks,
+    set_nice_limits,
+    set_corner_ticks,
     UpdatingPlot,
     project_hull,
     plot_triangles,
@@ -89,9 +90,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         ax.set_zlabel("$\\ell_3$ (Group 3)", labelpad=-10)
         plt.title("Group Losses")
 
-        use_two_ticks(ax, axis="x")
-        use_two_ticks(ax, axis="y")
-        use_two_ticks(ax, axis="z")
+        set_corner_ticks(ax, "xyz")
 
         ax.scatter(*achievable_loss.T, color="black", label="Pure Policies", zorder=2)
 
@@ -111,6 +110,9 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         :param loss_hull: Convex hull of loss values.
         :return: Plot object.
         """
+
+        ax.set_aspect("equal")
+        ax.apply_aspect()
         self.ax = ax
         plt.sca(ax)
         ax.scatter(
@@ -125,66 +127,44 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             alpha=0.3,
         )
 
-        min_lim = 0
-        max_lim = -1
-
-        for a, b in [ax.get_xlim(), ax.get_ylim()]:
-            min_lim = min(min_lim, max(a, -1))
-            max_lim = max(max_lim, min(b, 0))
-        ax.set_xlim(min_lim, max_lim)
-        ax.set_ylim(min_lim, max_lim)
-
-        self.min_lim = min_lim
-        self.max_lim = max_lim
-
         plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-5)
         plt.ylabel("$\\ell_2$ (Group 2)", labelpad=-15)
         plt.title("Group Loss")
 
-        ax.legend(loc="upper right")
+        set_nice_limits(ax, -1, 0, res=0.02)
+        set_corner_ticks(ax, "xy")
+
+        ax2data = ax.transLimits.inverted().transform
         ax.add_patch(
             patches.FancyArrowPatch(
-                self.rescale(-0.9, 0.0),
-                self.rescale(-np.cos(0.2) * 0.9, -np.sin(0.2) * 0.9),
+                ax2data((0.1, 1)),
+                ax2data((0.15, 0.8)),
                 connectionstyle="arc3,rad=0.08",
                 arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8",
                 color="black",
             )
         )
-        plt.annotate("$\\phi$", self.rescale(-0.85, -0.1))
-        use_two_ticks(ax, axis="x")
-        use_two_ticks(ax, axis="y")
 
-        (self.loss_pt,) = plt.plot(
-            [],
-            [],
-            color="red",
-            marker="^",
-            markersize=15,
-        )
+        plt.annotate("$\\phi$", (0.15, 0.9), xycoords="axes fraction")
 
-        self.rho_arrow = plt.quiver(
-            *self.rescale(-0.5, -0.5),
-            0,
-            0,
-            color="blue",
-            scale=1,
-            scale_units="xy",
-            width=0.01,
-            alpha=0.0,
-        )
-
-    def rescale(self, x, y, vel=True):
-        """(-1, 0) -> (min_lim, max_lim)"""
-        if vel:
-            return (
-                (x + 1) * (self.max_lim - self.min_lim) + self.min_lim,
-                (y + 1) * (self.max_lim - self.min_lim) + self.min_lim,
-            )
-        return (  # for, e.g, velocity
-            x * (self.max_lim - self.min_lim),
-            y * (self.max_lim - self.min_lim),
-        )
+        # (self.loss_pt,) = plt.plot(
+        #     [],
+        #     [],
+        #     color="red",
+        #     marker="^",
+        #     markersize=15,
+        # )
+        #
+        # self.rho_arrow = plt.quiver(
+        #     *tf(-0.5, -0.5),
+        #     0,
+        #     0,
+        #     color="blue",
+        #     scale=1,
+        #     scale_units="xy",
+        #     width=0.01,
+        #     alpha=0.0,
+        # )
 
     def update(self, state, **_):
         """
@@ -194,5 +174,6 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         self.loss_pt.set_data(*state["loss"])
         rho = state["linear_weights"]
         rho_arrow = rho / (np.linalg.norm(rho) * 4)
-        self.rho_arrow.set_UVC(*self.rescale(*(-rho_arrow), vel=False))
+        # TODO need to fix this using transLimits
+        self.rho_arrow.set_UVC(*(-rho_arrow))
         self.rho_arrow.set_alpha(0.5)

@@ -1,6 +1,5 @@
 from typing import Callable, Any
 
-from matplotlib.colors import to_rgb
 from scipy.spatial import ConvexHull, Delaunay
 from fair_participation.optimization import solve_qp, proj_qp
 
@@ -10,7 +9,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks,
+    set_corner_ticks,
     UpdatingPlot,
     upsample_triangles,
 )
@@ -120,9 +119,7 @@ class LossDisparityPlot3Group:
         ax.set_ylabel("Elevation", labelpad=-10)
         ax.set_zlabel("Loss; Disparity", labelpad=-10)
 
-        use_two_ticks(ax, axis="x")
-        use_two_ticks(ax, axis="y")
-        use_two_ticks(ax, axis="z")
+        set_corner_ticks(ax, "xyz")
 
     def get_phi(self, loss):
         x, y, z = -loss[0], -loss[1], -loss[2]
@@ -157,6 +154,8 @@ class LossDisparityPlot2Group(UpdatingPlot):
         :param loss_hull: Convex hull of loss values.
         :param values_and_grads: Function that returns loss and disparity for a given loss.
         """
+        ax.set_aspect("equal")
+        ax.apply_aspect()
         self.ax = ax
 
         self.achievable_loss = achievable_loss

@@ -10,7 +10,7 @@ import seaborn as sns
 import matplotlib as mpl
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks,
+    set_corner_ticks,
     UpdatingPlot,
     sample_hull_uniform,
     upsample_hull_3d,
@@ -43,7 +43,15 @@ def plot_fair_boundary_3d(ax, fair_epsilon: float, n: int = 30):
     ).T
 
     tri = mtri.Triangulation(u, v)
-    ax.plot_trisurf(x, y, z, triangles=tri.triangles, color="red", edgecolor=mpl.colors.colorConverter.to_rgba('red', alpha=.2), alpha=0.2)
+    ax.plot_trisurf(
+        x,
+        y,
+        z,
+        triangles=tri.triangles,
+        color="red",
+        edgecolor=mpl.colors.colorConverter.to_rgba("red", alpha=0.2),
+        alpha=0.2,
+    )
 
 
 def make_participation_rate_plot(
@@ -130,18 +138,16 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         for a, b in [ax.get_xlim(), ax.get_ylim(), ax.get_zlim()]:
             min_lim = min(min_lim, max(a, 0))
             max_lim = max(max_lim, min(b, 1))
-        ax.set_xlim(min_lim, max_lim)
-        ax.set_ylim(min_lim, max_lim)
-        ax.set_zlim([min_lim, max_lim])
+        plt.xlim(min_lim, max_lim)
+        plt.ylim(min_lim, max_lim)
+        plt.zlim(min_lim, max_lim)
         ax.view_init(elev=30, azim=45)
 
-        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
-        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
-        ax.set_zlabel("$\\rho_3$ (Group 3)", labelpad=-10)
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
-        use_two_ticks_z(ax)
-
+        plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
+        plt.ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
+        plt.zlabel("$\\rho_3$ (Group 3)", labelpad=-10)
+        # TODO fix this
+        set_corner_ticks(ax, "xyz")
         ax.scatter(*pure_rho.T, color="black", zorder=2)
 
 
@@ -163,6 +169,8 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         :param values_and_grads: Function that returns the loss and gradient.
         :param fair_epsilon: Fairness parameter.
         """
+        ax.set_aspect("equal")
+        ax.apply_aspect()
         self.ax = ax
         plt.sca(ax)
 
@@ -176,53 +184,45 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         loss_samples = inclusive_hull_order_2d(
             list(sample_hull_uniform(loss_hull, 100)) + list(achievable_loss)
         )
-
         rho_samples = np.array(
             [
                 values_and_grads(loss)["rho"]
                 for loss in (list(loss_samples) + [loss_samples[0]])
             ]
         )
+        ax.fill(*rho_samples.T, color="black", alpha=0.3)
 
-        ax.fill(
-            *rho_samples.T,
-            color="black",
-            alpha=0.3,
-        )
         plt.title("Group Participation Rates")
+        plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
+        plt.ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
 
-        min_lim = 1
-        max_lim = 0
+        # Make these start at 0 and end at at next highest percent
+        max_lim = max([plt.xlim()[1], plt.ylim()[1]])
+        max_lim = np.ceil(max_lim / 0.01) * 0.01
+        max_lim = np.clip(max_lim, 0, 1)
+        plt.xlim(0, max_lim)
+        plt.ylim(0, max_lim)
 
-        for a, b in [ax.get_xlim(), ax.get_ylim()]:
-            min_lim = min(min_lim, max(a, 0))
-            max_lim = max(max_lim, min(b, 1))
-        ax.set_xlim(min_lim, max_lim)
-        ax.set_ylim(min_lim, max_lim)
+        set_corner_ticks(ax, "xy")
 
         dist = 2 * np.sqrt(fair_epsilon)
         h_color = sns.color_palette("colorblind")[3]
+
         ax.plot(
-            [min_lim, max_lim - dist],
-            [min_lim + dist, max_lim],
+            [0, 1 - dist],
+            [dist, 1],
             color=h_color,
             linestyle="--",
             label="$\\mathcal{H} = 0$",
         )
         ax.plot(
-            [min_lim + dist, max_lim],
-            [min_lim, max_lim - dist],
+            [dist, 1],
+            [0, 1 - dist],
             color=h_color,
             linestyle="--",
         )
         ax.legend(loc="upper right", framealpha=0.95)
-
-        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
-        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
-
-        (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+        # (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 
     def update(self, state, **_):
         """
