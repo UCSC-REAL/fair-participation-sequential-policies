@@ -22,6 +22,8 @@ base_rcparams = {
 }
 
 cb_palette = sns.color_palette("colorblind")
+LOSS_COLOR = cb_palette[0]
+DISPARITY_COLOR = cb_palette[3]
 
 
 _star = mpath.Path.unit_regular_star(6)

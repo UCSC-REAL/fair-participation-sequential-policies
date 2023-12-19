@@ -147,33 +147,34 @@ class LossBoundaryPlot2Group(UpdatingPlot):
 
         plt.annotate("$\\phi$", (0.15, 0.9), xycoords="axes fraction")
 
-        # (self.loss_pt,) = plt.plot(
-        #     [],
-        #     [],
-        #     color="red",
-        #     marker="^",
-        #     markersize=15,
-        # )
-        #
-        # self.rho_arrow = plt.quiver(
-        #     *tf(-0.5, -0.5),
-        #     0,
-        #     0,
-        #     color="blue",
-        #     scale=1,
-        #     scale_units="xy",
-        #     width=0.01,
-        #     alpha=0.0,
-        # )
-
-    def update(self, state, **_):
-        """
-        - Plot current location on achievable loss curve (point)
-        - Plot vector in direction opposite rho
-        """
-        self.loss_pt.set_data(*state["loss"])
-        rho = state["linear_weights"]
-        rho_arrow = rho / (np.linalg.norm(rho) * 4)
-        # TODO need to fix this using transLimits
-        self.rho_arrow.set_UVC(*(-rho_arrow))
-        self.rho_arrow.set_alpha(0.5)
+    # TODO Disable this stuff for camera-ready just in case it messes with things
+    #     (self.loss_pt,) = plt.plot(
+    #         [],
+    #         [],
+    #         color="red",
+    #         marker="^",
+    #         markersize=15,
+    #     )
+    #
+    #     self.rho_arrow = plt.quiver(
+    #         *tf(-0.5, -0.5),
+    #         0,
+    #         0,
+    #         color="blue",
+    #         scale=1,
+    #         scale_units="xy",
+    #         width=0.01,
+    #         alpha=0.0,
+    #     )
+    #
+    # def update(self, state, **_):
+    #     """
+    #     - Plot current location on achievable loss curve (point)
+    #     - Plot vector in direction opposite rho
+    #     """
+    #     self.loss_pt.set_data(*state["loss"])
+    #     rho = state["linear_weights"]
+    #     rho_arrow = rho / (np.linalg.norm(rho) * 4)
+    #     # TODO need to fix this using transLimits
+    #     self.rho_arrow.set_UVC(*(-rho_arrow))
+    #     self.rho_arrow.set_alpha(0.5)

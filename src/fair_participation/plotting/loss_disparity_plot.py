@@ -9,10 +9,12 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 from fair_participation.plotting.plot_utils import (
+    set_nice_limits,
     set_corner_ticks,
     UpdatingPlot,
     upsample_triangles,
 )
+from fair_participation.plotting.params import LOSS_COLOR, DISPARITY_COLOR
 
 
 def make_loss_disparity_plot(
@@ -154,8 +156,8 @@ class LossDisparityPlot2Group(UpdatingPlot):
         :param loss_hull: Convex hull of loss values.
         :param values_and_grads: Function that returns loss and disparity for a given loss.
         """
-        ax.set_aspect("equal")
-        ax.apply_aspect()
+        # We only need this one to be equal box -- coordinates aren't related
+        ax.set_box_aspect(aspect=1)
         self.ax = ax
 
         self.achievable_loss = achievable_loss
@@ -172,47 +174,53 @@ class LossDisparityPlot2Group(UpdatingPlot):
         disparities = [vgs["disparity"] for vgs in _values_and_grads]
         ax_r = ax.twinx()
         self.ax_r = ax_r
-        # Keeps aspect ratio at 1
-        self.ax_r.set_box_aspect(1)
-
-        cb_colors = sns.color_palette("colorblind")
+        ax_r.set_box_aspect(aspect=1)
 
         # plot loss curve
-        ax.plot(phi_range, total_losses, c=cb_colors[0])
+        ax.plot(phi_range, total_losses, c=LOSS_COLOR)
 
-        h_color = cb_colors[3]
         # plot disparity curve
         ax_r.plot(
             phi_range,
             disparities,
-            c=h_color,
+            c=DISPARITY_COLOR,
             linestyle="dotted",
         )
         ax_r.hlines(
             0,
             min_phi,
             max_phi,
-            h_color,
+            DISPARITY_COLOR,
             linestyle="--",
         )
 
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
         ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=5)
-        ax.yaxis.label.set_color(cb_colors[0])
+        ax.yaxis.label.set_color(LOSS_COLOR)
         ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
-        ax_r.yaxis.label.set_color(cb_colors[3])
+        ax_r.yaxis.label.set_color(DISPARITY_COLOR)
 
-        plt.xlim([min_phi, max_phi])
+        rounded_min_phi = np.ceil(min_phi / 0.01) * 0.01
+        rounded_max_phi = np.floor(max_phi / 0.01) * 0.01
+        for cax, res in zip([ax, ax_r], [0.01, 0.001]):
+            set_nice_limits(
+                cax,
+                (rounded_min_phi, -100),
+                (rounded_max_phi, 100),
+                res=0.001,
+                equal_aspect=False,
+            )
+            set_corner_ticks(cax, "xy")
 
-        yrticks = ax_r.get_yticks()
-        ax_r.set_yticks([yrticks[0], 0, yrticks[-1]])
-
-        ax.set_xticks([min_phi, max_phi])
-        ax.set_xticklabels([round(min_phi, 2), round(max_phi, 2)])
-
-        yticks = ax.get_yticks()
-        ax.set_yticks([yticks[0], yticks[-1]])
+        # yrticks = ax_r.get_yticks()
+        # ax_r.set_yticks([yrticks[0], 0, yrticks[-1]])
+        #
+        # ax.set_xticks([min_phi, max_phi])
+        # ax.set_xticklabels([round(min_phi, 2), round(max_phi, 2)])
+        #
+        # yticks = ax.get_yticks()
+        # ax.set_yticks([yticks[0], yticks[-1]])
 
     def get_phi(self, loss):
         return np.arctan2(-loss[1], -loss[0])

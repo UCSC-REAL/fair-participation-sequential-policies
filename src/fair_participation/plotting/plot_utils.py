@@ -218,20 +218,36 @@ def set_corner_ticks(ax, axes: str):
         ax.set_zticks(ax.get_zlim())
 
 
-def set_nice_limits(ax: mpl.axes, min_: float, max_: float, res: float = 0.02):
+def set_nice_limits(
+    ax: mpl.axes,
+    clip_min: float | ArrayLike,
+    clip_max: float | ArrayLike,
+    res: float = 0.02,
+    equal_aspect: bool = True,
+):
+    """For an axis with equal box aspect ratio, set the limits of the current axes to be the closest square.
+
+    If equal_aspect is True, ensure that the aspect ratio of the current axes is equal, not just the box.
+    """
     old_ax = plt.gca()
     plt.sca(ax)
-    res = 0.02
     lims = []
-    for plt_lim in plt.xlim, plt.ylim:
+    if isinstance(clip_min, (int, float)):
+        clip_min = np.array([clip_min, clip_min])
+    if isinstance(clip_max, (int, float)):
+        clip_max = np.array([clip_max, clip_max])
+    for plt_lim, cmin, cmax in zip((plt.xlim, plt.ylim), clip_min, clip_max):
         lim = plt_lim()
         lim = np.array([np.floor(lim[0] / res), np.ceil(lim[1] / res)]) * res
-        lims.append(np.clip(lim, -1, 0))
+        lims.append(np.clip(lim, cmin, cmax))
     lims = np.array(lims)
-    # Since we need equal aspect, keep the larger range
-    lim_range = np.max(lims[:, 1] - lims[:, 0])
-    plt.xlim(lims[0, 0], lims[0, 0] + lim_range)
-    plt.ylim(lims[1, 0], lims[1, 0] + lim_range)
+    if equal_aspect:
+        # Since we need equal aspect, keep the larger range
+        lim_range = np.max(lims[:, 1] - lims[:, 0])
+        lims[0, 1] = lims[0, 0] + lim_range
+        lims[1, 1] = lims[1, 0] + lim_range
+    plt.xlim(lims[0])
+    plt.ylim(lims[1])
     plt.sca(old_ax)
 
 

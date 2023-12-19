@@ -18,6 +18,7 @@ from fair_participation.plotting.plot_utils import (
     plot_triangles,
     get_normal,
 )
+from fair_participation.plotting.params import DISPARITY_COLOR
 
 
 def plot_fair_boundary_3d(ax, fair_epsilon: float, n: int = 30):
@@ -206,26 +207,28 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         set_corner_ticks(ax, "xy")
 
         dist = 2 * np.sqrt(fair_epsilon)
-        h_color = sns.color_palette("colorblind")[3]
 
         ax.plot(
             [0, 1 - dist],
             [dist, 1],
-            color=h_color,
+            color=DISPARITY_COLOR,
             linestyle="--",
             label="$\\mathcal{H} = 0$",
         )
         ax.plot(
             [dist, 1],
             [0, 1 - dist],
-            color=h_color,
+            color=DISPARITY_COLOR,
             linestyle="--",
         )
         ax.legend(loc="upper right", framealpha=0.95)
-        # (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 
-    def update(self, state, **_):
-        """
-        Plot achieved rho.
-        """
-        self.rate_pt.set_data(*state["rho"].T)
+    # TODO Disable for camera ready just in case
+
+    #     (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
+    #
+    # def update(self, state, **_):
+    #     """
+    #     Plot achieved rho.
+    #     """
+    #     self.rate_pt.set_data(*state["rho"].T)
