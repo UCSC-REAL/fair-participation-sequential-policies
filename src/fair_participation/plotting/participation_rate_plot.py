@@ -7,6 +7,7 @@ from scipy.spatial.transform import Rotation
 import matplotlib.tri as mtri
 from matplotlib import pyplot as plt
 import seaborn as sns
+import matplotlib as mpl
 
 from fair_participation.plotting.plot_utils import (
     use_two_ticks,
@@ -42,7 +43,7 @@ def plot_fair_boundary_3d(ax, fair_epsilon: float, n: int = 30):
     ).T
 
     tri = mtri.Triangulation(u, v)
-    ax.plot_trisurf(x, y, z, triangles=tri.triangles, color="red", alpha=0.2)
+    ax.plot_trisurf(x, y, z, triangles=tri.triangles, color="red", edgecolor=mpl.colors.colorConverter.to_rgba('red', alpha=.2), alpha=0.2)
 
 
 def make_participation_rate_plot(
@@ -101,7 +102,6 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         plt.sca(ax)
 
         pure_rho = np.array([values_and_grads(loss)["rho"] for loss in achievable_loss])
-        ax.scatter(*pure_rho.T, color="black", label="Pure policies")
 
         upsample_deg = 3
         loss_samples, loss_tri, loss_normals = upsample_hull_3d(
@@ -120,7 +120,6 @@ class ParticipationRatePlot3Group(UpdatingPlot):
 
         # scatter plot for rhos corresponding to original achievable losses
         pure_rho_samples = rho_samples[: len(achievable_loss)]
-        ax.scatter(*np.array(pure_rho_samples).T, color="black")
 
         plt.title("Group Participation Rates")
         plot_fair_boundary_3d(ax, fair_epsilon)
@@ -136,13 +135,14 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         ax.set_zlim([min_lim, max_lim])
         ax.view_init(elev=30, azim=45)
 
-        ax.set_xlabel("Group 1 rate $\\rho_1$", labelpad=-10)
-        ax.set_ylabel("Group 2 rate $\\rho_2$", labelpad=-10)
-        ax.set_zlabel("Group 3 rate $\\rho_3$", labelpad=-10)
-        ax.legend(loc="upper right")
-        use_two_ticks(ax, axis="x")
-        use_two_ticks(ax, axis="y")
-        use_two_ticks(ax, axis="z")
+        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
+        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
+        ax.set_zlabel("$\\rho_3$ (Group 3)", labelpad=-10)
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
+        use_two_ticks_z(ax)
+
+        ax.scatter(*pure_rho.T, color="black", zorder=2)
 
 
 class ParticipationRatePlot2Group(UpdatingPlot):
@@ -217,10 +217,10 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         )
         ax.legend(loc="upper right", framealpha=0.95)
 
-        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-5)
+        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
         ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
-        use_two_ticks(ax, axis="x")
-        use_two_ticks(ax, axis="y")
+        use_two_ticks_x(ax)
+        use_two_ticks_y(ax)
 
         (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 

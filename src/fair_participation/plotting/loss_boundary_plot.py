@@ -55,7 +55,6 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
         self.ax = ax
         plt.sca(ax)
-        ax.scatter(*achievable_loss.T, color="black", label="Pure Policies")
 
         triangles = [loss_hull.points[s] for s in loss_hull.simplices]
         normals = loss_hull.equations[:, :-1]
@@ -85,14 +84,16 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
         ax.view_init(elev=30, azim=45)
 
-        ax.set_xlabel("Group 1 loss $\\ell_1$", labelpad=-10)
-        ax.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
-        ax.set_zlabel("Group 3 loss $\\ell_3$", labelpad=-10)
-        plt.title("Group Loss")
+        ax.set_xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
+        ax.set_ylabel("$\\ell_2$ (Group 2)", labelpad=-10)
+        ax.set_zlabel("$\\ell_3$ (Group 3)", labelpad=-10)
+        plt.title("Group Losses")
 
         use_two_ticks(ax, axis="x")
         use_two_ticks(ax, axis="y")
         use_two_ticks(ax, axis="z")
+
+        ax.scatter(*achievable_loss.T, color="black", label="Pure Policies", zorder=2)
 
 
 class LossBoundaryPlot2Group(UpdatingPlot):

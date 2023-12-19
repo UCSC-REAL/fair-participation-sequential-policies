@@ -12,6 +12,7 @@ from fair_participation.environment import make_environment, get_env_filename
 from fair_participation.plotting.animation import animate, get_animation_filename
 from fair_participation.plotting.compare import (
     compare_solutions,
+    compare_solutions_3D,
     compare_timeseries,
     get_compare_timeseries_filename,
     get_compare_solutions_filename,
@@ -112,19 +113,24 @@ def run_problems(
         # compare (on loss/rho surfaces) different methods in same environment
         if output_graphics is not None and "solutions" in output_graphics:
             env = make_environment(**problem)
-            compare_solutions(env, methods)
+
+            # is 3D, not 2D
+            if env.achievable_loss.shape[1] == 3:
+                compare_solutions_3D(env, methods)
+            else:
+                compare_solutions(env, methods)
 
 
 def main():
     base_problems = [
-        # {
-        #     "source": "folktasks",
-        #     "name": "IncomeThree",
-        #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-        #     "num_steps": 30,
-        #     "fair_epsilon": 0.05,
-        # },
+        {
+            "source": "folktasks",
+            "name": "IncomeThree",
+            "rho_fns": localized_rho_fn(-0.75, 20),
+            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
+            "num_steps": 30,
+            "fair_epsilon": 0.05,
+        },
         {
             "source": "folktasks",
             "name": "Income",
@@ -132,13 +138,13 @@ def main():
             "init_loss_direction": 0.58,
             "num_steps": 30,
         },
-        # {
-        #     "source": "folktasks",
-        #     "name": "Mobility",
-        #     "rho_fns": localized_rho_fn(-0.7, 10),
-        #     "init_loss_direction": 0.6,
-        #     "num_steps": 30,
-        # },
+        {
+            "source": "folktasks",
+            "name": "Mobility",
+            "rho_fns": localized_rho_fn(-0.7, 10),
+            "init_loss_direction": 0.6,
+            "num_steps": 30,
+        },
         {
             "source": "folktasks",
             "name": "PublicCoverage",
@@ -146,21 +152,21 @@ def main():
             "init_loss_direction": 0.5,
             "num_steps": 30,
         },
-        # {
-        #     "source": "folktasks",
-        #     "name": "TravelTime",
-        #     "rho_fns": localized_rho_fn(-0.58, 100),
-        #     "init_loss_direction": 0.52,
-        #     "num_steps": 30,
-        # },
-        # {
-        #     "source": "grouplens",
-        #     "name": "Grouplens",
-        #     "rho_fns": localized_rho_fn(-0.7, 20),
-        #     "init_loss_direction": 0.52,
-        #     "num_steps": 30,
-        #     "fair_epsilon": 0.0005,
-        # },
+        {
+            "source": "folktasks",
+            "name": "TravelTime",
+            "rho_fns": localized_rho_fn(-0.58, 100),
+            "init_loss_direction": 0.52,
+            "num_steps": 30,
+        },
+        {
+            "source": "grouplens",
+            "name": "Grouplens",
+            "rho_fns": localized_rho_fn(-0.7, 20),
+            "init_loss_direction": 0.52,
+            "num_steps": 30,
+            "fair_epsilon": 0.0005,
+        },
     ]
     methods = [  # listed in environment.py
         "RRM",

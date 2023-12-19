@@ -27,7 +27,6 @@ mpl.rcParams.update(
 font = {"size": 13}
 mpl.rc("font", **font)
 
-
 def savefig(filename, **kwargs):
     logger.info(f"Saving {filename}")
     plt.savefig(filename, **kwargs)
@@ -191,11 +190,16 @@ def get_normal(triangle_3d):
 
 
 def plot_triangles(ax, triangles, normals):
-    tri = a3.art3d.Poly3DCollection(triangles)
+
+    tri = a3.art3d.Poly3DCollection(triangles, zorder=1)
     ls = LightSource(azdeg=60, altdeg=60.0)
-    rgb = np.array([0.0, 0.0, 1.0, 0.7])
+    rgb = np.array([0.0, 0.0, 1.0, 0.5])
+    rgbt = np.array([0.0, 0.0, 0.0, 0.0])
     tri.set_facecolor(
         np.array([shade * rgb for shade in ls.shade_normals(normals, fraction=1.0)])
+    )
+    tri.set_edgecolor(
+        np.array([shade * rgbt for shade in ls.shade_normals(normals, fraction=1.0)])
     )
     ax.add_collection3d(tri)
 

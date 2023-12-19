@@ -1,4 +1,5 @@
 import pandas as pd
+from fair_participation.plotting.plot_utils import savefig
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_rgba as to_rgba
@@ -15,7 +16,6 @@ from fair_participation.plotting.participation_rate_plot import (
     make_participation_rate_plot,
 )
 from fair_participation.plotting.loss_disparity_plot import make_loss_disparity_plot
-from fair_participation.plotting.plot_utils import savefig
 
 from fair_participation.base_logger import logger
 from fair_participation.utils import PROJECT_ROOT
@@ -58,10 +58,14 @@ def make_canvas(env: Environment) -> tuple:
     num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
         fig, (lax, cax, rax) = plt.subplots(
+<<<<<<< HEAD
             1,
             3,
             figsize=(15, 5),
             layout="compressed",
+=======
+            1, 3, figsize=(18, 5), subplot_kw=dict(box_aspect=1)
+>>>>>>> 8df6a56 (Reilly figures)
         )
 
         left_plot = make_loss_boundary_plot(
@@ -83,12 +87,25 @@ def make_canvas(env: Environment) -> tuple:
             values_and_grads=env.values_and_grads,
         )
 
+        rbox = rax.get_position()
+        rbox.x0 += 0.05 # shift right
+        rbox.x1 += 0.05 # shift right
+        rax.set_position(rbox)
+        cbox = cax.get_position()
+        cbox.x0 += 0.06 # shift right
+        cbox.x1 += 0.06 # shift right
+        cax.set_position(cbox)
+        lbox = lax.get_position()
+        lbox.x0 += 0.07 # shift right
+        lbox.x1 += 0.07 # shift right
+        lax.set_position(lbox)
+
         plots = (left_plot, center_plot, right_plot)
 
     elif num_groups == 3:
         # TODO change
         fig, (lax, cax) = plt.subplots(
-            1, 2, figsize=(12, 6), subplot_kw={"projection": "3d"}
+            1, 2, figsize=(14, 6), subplot_kw={"projection": "3d"}
         )
 
         left_plot = make_loss_boundary_plot(
@@ -96,6 +113,10 @@ def make_canvas(env: Environment) -> tuple:
             achievable_loss=env.achievable_loss,
             loss_hull=env.loss_hull,
         )
+        bbox = lax.get_position()
+        bbox.x0 += 0.1 # shift right
+        bbox.x1 += 0.1 # shift right
+        lax.set_position(bbox)
         center_plot = make_participation_rate_plot(
             ax=cax,
             achievable_loss=env.achievable_loss,
@@ -103,6 +124,10 @@ def make_canvas(env: Environment) -> tuple:
             values_and_grads=env.values_and_grads,
             fair_epsilon=env.fair_epsilon,
         )
+        bbox = cax.get_position()
+        bbox.x0 += 0.1 # shift right
+        bbox.x1 += 0.1 # shift right
+        cax.set_position(bbox)
 
         plots = (left_plot, center_plot, None)
     else:
@@ -112,7 +137,7 @@ def make_canvas(env: Environment) -> tuple:
 
 
 def get_compare_solutions_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions_updated.pdf")
+    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions.pdf")
 
 
 def compare_solutions(env: Environment, methods: list[str]) -> None:
@@ -133,7 +158,7 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     cb_colors = sns.color_palette("colorblind")
 
     markers = {
-        "Initial loss": {
+        "Initialization": {
             "marker": "s",
             "color": to_rgba(cb_colors[7], alpha=0.8),
             "s": 300,
@@ -159,7 +184,7 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         return {k: v[key] for k, v in markers.items()}
 
     init_data = df[df.index == df["Timestep"].min()][:1]
-    init_data["method"] = "Initial loss"
+    init_data["method"] = "Initialization"
     data = df[df.index == df["Timestep"].max()]
     data = pd.concat((init_data, data))
 
@@ -181,7 +206,11 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         ax=left.ax,
     )
     left.ax.legend(
+<<<<<<< HEAD
         loc="best",
+=======
+        loc=(-0.85, 0.3),
+>>>>>>> 8df6a56 (Reilly figures)
         frameon=True,
         title=None,
     )
@@ -201,12 +230,110 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     for ax in (left.ax, center.ax, right.ax, right.ax_r):
         plt.setp(ax.collections, clip_on=False, zorder=10)
 
+<<<<<<< HEAD
     fig.get_layout_engine().set(wspace=0.1)
+=======
+    # plt.subplots_adjust(left=0.05, right=0.95)
+    savefig(save_filename)
+
+
+def compare_solutions_3D(env, methods):
+
+    save_filename = get_compare_solutions_filename(env.name)
+    if os.path.exists(save_filename):
+        logger.info("Graphic exists; skipping:")
+        logger.info(f"  {save_filename}")
+        return
+    logger.info(f"Rendering graphic:")
+    logger.info(f"  {save_filename}")
+
+    fig, plots = make_canvas(env)
+
+    left, center = plots[0].ax, plots[1].ax
+    if len(plots) > 2:
+        right_p = plots[2]
+    else:
+        right_p = None
+
+
+    cb_colors = sns.color_palette("colorblind")
+
+    markers = {
+        "Initialization": {
+            "marker": "s",
+            "color": to_rgba(cb_colors[7], alpha=0.8),
+            "s": 300,
+        },
+        "RRM": {
+            "marker": "D",
+            "color": to_rgba(cb_colors[2], alpha=0.8),
+            "s": 240,
+        },
+        "MPG": {
+            "marker": "o",
+            "color": to_rgba(cb_colors[4], alpha=0.8),
+            "s": 240,
+        },
+        "CPG": {
+            "marker": cut_star,
+            "color": to_rgba(cb_colors[1], alpha=0.9),
+            "s": 260,
+        },
+    }
+
+    for method in methods:
+
+        trial_filename = get_trial_filename(env.name, method)
+        with jnp.load(trial_filename) as npz:
+            loss = npz["loss"][-1]
+            rho = npz["rho"][-1]
+            total_loss = npz["total_loss"][-1]
+            disparity = npz["disparity"][-1]
+
+            left.scatter(*loss, **markers[method], label=method)
+            center.scatter(*rho, **markers[method], label=method)
+
+            if right_p is not None:
+                right_p.ax.scatter(
+                    right_p.get_phi(loss), total_loss, **markers[method], label=method
+                )
+                right_p.ax_r.scatter(
+                    right_p.get_phi(loss), disparity, **markers[method], label=method
+                )
+
+    # show init
+    method = "Initialization"
+    loss = env.init_loss
+    results = env.values_and_grads(loss)
+    rho = results["rho"]
+    total_loss = results["total_loss"]
+    disparity = results["disparity"]
+
+    left.scatter(*loss, **markers[method], label=method)
+    center.scatter(*rho, **markers[method], label=method)
+    left.legend(loc=(-0.6, 0.3))
+
+    if right_p is not None:
+        right_p.ax.scatter(
+            right_p.get_phi(loss), total_loss, **markers[method], label=method
+        )
+        right_p.ax_r.scatter(
+            right_p.get_phi(loss), disparity, **markers[method], label=method
+        )
+
+        ticks = right_p.ax_r.get_yticks()
+        right_p.ax_r.set_yticks([ticks[0], 0, ticks[-1]])
+        ticks = right_p.ax.get_xticks()
+        right_p.ax.set_xticks([ticks[0], ticks[-1]])
+        ticks = right_p.ax.get_yticks()
+        right_p.ax.set_yticks([ticks[0], ticks[-1]])
+
+>>>>>>> 8df6a56 (Reilly figures)
     savefig(save_filename)
 
 
 def get_compare_timeseries_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series_updated.pdf")
+    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series.pdf")
 
 
 def compare_timeseries(name: str, methods: list[str]) -> None:
@@ -245,7 +372,7 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
             "legend.fontsize": 16.5,
         },
     )
-    fig = plt.figure(figsize=(7, 5.5))
+    fig = plt.figure(figsize=(6, 5.25))
     ax = plt.axes()
     ax_r = ax.twinx()
 
