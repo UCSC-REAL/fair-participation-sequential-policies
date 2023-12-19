@@ -198,17 +198,10 @@ class LossDisparityPlot2Group(UpdatingPlot):
         )
 
         plt.title("Loss and Disparity Surfaces")
-<<<<<<< HEAD
-        ax.set_xlabel("Parameter $\\phi$", labelpad=-5)
-        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=8)
-        ax.yaxis.label.set_color(cb_colors[0])
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-20)
-=======
         ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
         ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=5)
         ax.yaxis.label.set_color(cb_colors[0])
         ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
->>>>>>> 8df6a56 (Reilly figures)
         ax_r.yaxis.label.set_color(cb_colors[3])
 
         plt.xlim([min_phi, max_phi])
