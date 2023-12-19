@@ -58,14 +58,7 @@ def make_canvas(env: Environment) -> tuple:
     num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
         fig, (lax, cax, rax) = plt.subplots(
-<<<<<<< HEAD
-            1,
-            3,
-            figsize=(15, 5),
-            layout="compressed",
-=======
             1, 3, figsize=(18, 5), subplot_kw=dict(box_aspect=1)
->>>>>>> 8df6a56 (Reilly figures)
         )
 
         left_plot = make_loss_boundary_plot(
@@ -206,11 +199,7 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         ax=left.ax,
     )
     left.ax.legend(
-<<<<<<< HEAD
-        loc="best",
-=======
         loc=(-0.85, 0.3),
->>>>>>> 8df6a56 (Reilly figures)
         frameon=True,
         title=None,
     )
@@ -230,9 +219,6 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     for ax in (left.ax, center.ax, right.ax, right.ax_r):
         plt.setp(ax.collections, clip_on=False, zorder=10)
 
-<<<<<<< HEAD
-    fig.get_layout_engine().set(wspace=0.1)
-=======
     # plt.subplots_adjust(left=0.05, right=0.95)
     savefig(save_filename)
 
@@ -328,7 +314,6 @@ def compare_solutions_3D(env, methods):
         ticks = right_p.ax.get_yticks()
         right_p.ax.set_yticks([ticks[0], ticks[-1]])
 
->>>>>>> 8df6a56 (Reilly figures)
     savefig(save_filename)
 
 
