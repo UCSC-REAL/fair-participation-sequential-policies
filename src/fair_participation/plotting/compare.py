@@ -19,6 +19,8 @@ from fair_participation.plotting.params import (
     base_sns_theme_kwargs,
     base_rcparams,
     marker_map,
+    LOSS_COLOR,
+    DISPARITY_COLOR,
 )
 
 from fair_participation.base_logger import logger
@@ -284,23 +286,22 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
         font_scale=3,
         rc=base_rcparams,
     )
-    fig = plt.figure(figsize=(6, 5.25))
+    fig = plt.figure(figsize=(6, 5.25), layout="constrained")
     ax = plt.axes()
     ax_r = ax.twinx()
 
     plt.title(f"{name} Task")
-    ax.tick_params("y", colors="blue")
-    ax_r.tick_params("y", colors="red")
+    ax.tick_params("y", colors=LOSS_COLOR)
+    ax_r.tick_params("y", colors=DISPARITY_COLOR)
     ax.set_xlabel("Timestep")
     ax.set_ylabel("Total Loss $\\mathcal{L}$")
-    ax.yaxis.label.set_color("blue")
-    ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=2)
-    ax_r.yaxis.label.set_color("red")
+    ax.yaxis.label.set_color(LOSS_COLOR)
+    ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=5)
+    ax_r.yaxis.label.set_color(DISPARITY_COLOR)
 
     df = load_methods(name, methods)
     n_methods = len(methods)
 
-    # TODO fix these palettes
     sns.lineplot(
         data=df,
         x="Timestep",
@@ -352,6 +353,4 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax.set_ylim(df["total_loss"].min() - 0.01, df["total_loss"].max() + 0.01)
     ax_r.set_ylim(df["disparity"].min() - 0.1, df["disparity"].max() + 0.1)
 
-    # TODO not sure about this one
-    fig.tight_layout(pad=1.0)
-    savefig(save_filename, bbox_inches="tight")
+    savefig(save_filename)  # , bbox_inches="tight")
