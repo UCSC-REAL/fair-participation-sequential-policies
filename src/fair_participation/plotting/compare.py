@@ -27,20 +27,6 @@ cut_star = mpath.Path(
     codes=np.concatenate([circle.codes, star.codes]),
 )
 
-# markers = {
-#     "Init": {
-#         "marker": "o",
-#         "color": "white",
-#         "edgecolor": "black",
-#         "linewidth": 2,
-#         "s": 150,
-#         "alpha": 0.5,
-#     },
-#     "RRM": {"marker": "D", "color": "coral", "s": 240, "alpha": 0.7},
-#     "MPG": {"marker": "o", "color": "turquoise", "s": 240, "alpha": 0.7},
-#     "CPG": {"marker": cut_star, "color": "darkviolet", "s": 240, "alpha": 0.7},
-# }
-
 
 def load_methods(name: str, methods: list[str]) -> pd.DataFrame:
     df = pd.DataFrame()
@@ -72,7 +58,10 @@ def make_canvas(env: Environment) -> tuple:
     num_groups = env.group_sizes.shape[0]
     if num_groups == 2:
         fig, (lax, cax, rax) = plt.subplots(
-            1, 3, figsize=(14, 5), subplot_kw=dict(box_aspect=1)
+            1,
+            3,
+            figsize=(15, 5),
+            layout="compressed",
         )
 
         left_plot = make_loss_boundary_plot(
@@ -115,7 +104,7 @@ def make_canvas(env: Environment) -> tuple:
             fair_epsilon=env.fair_epsilon,
         )
 
-        plots = (left_plot, center_plot)
+        plots = (left_plot, center_plot, None)
     else:
         raise NotImplementedError(f"Cannot plot {num_groups} groups.")
 
@@ -135,14 +124,10 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     :return: None
     """
     save_filename = get_compare_solutions_filename(env.name)
-    # if os.path.exists(save_filename):
-    #     logger.info("Graphic exists; skipping:")
-    #     logger.info(f"  {save_filename}")
-    #     return
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
-    fig, (left, center, *right) = make_canvas(env)
+    fig, (left, center, right) = make_canvas(env)
     df = load_methods(env.name, methods)
 
     cb_colors = sns.color_palette("colorblind")
@@ -186,10 +171,8 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         "hue": "method",
         "palette": _marker_map("color"),
         "linewidth": 0.0,
-        "clip_on": False,
-        "zorder": 10,
     }
-
+    # left.ax.set_clip_on(False)
     sns.scatterplot(
         data=data,
         x="loss_0",
@@ -198,10 +181,9 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         ax=left.ax,
     )
     left.ax.legend(
-        loc="upper right",
+        loc="best",
         frameon=True,
         title=None,
-        # bbox_to_anchor=(0.5, -0.25),
     )
     sns.scatterplot(
         data=data,
@@ -213,30 +195,13 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
     )
 
     if right is not None:
-        phi = [right[0].get_phi(loss) for loss in data[["loss_0", "loss_1"]].values]
-        sns.scatterplot(
-            data=data,
-            x=phi,
-            y="total_loss",
-            **marker_kwargs,
-            ax=right[0].ax,
-            legend=False,
-        )
-        sns.scatterplot(
-            data=data,
-            x=phi,
-            y="disparity",
-            **marker_kwargs,
-            ax=right[0].ax_r,
-            legend=False,
-        )
+        phi = [right.get_phi(loss) for loss in data[["loss_0", "loss_1"]].values]
+        for ax, y in zip([right.ax, right.ax_r], ["total_loss", "disparity"]):
+            sns.scatterplot(data=data, x=phi, y=y, **marker_kwargs, ax=ax, legend=False)
+    for ax in (left.ax, center.ax, right.ax, right.ax_r):
+        plt.setp(ax.collections, clip_on=False, zorder=10)
 
-    # vmargin = 0.075
-    # hmargin = 0.055
-    # plt.subplots_adjust(
-    #     left=hmargin, right=1 - hmargin, top=1 - vmargin, bottom=vmargin, wspace=0.35
-    # )
-    plt.subplots_adjust(left=0.05, right=0.95)
+    fig.get_layout_engine().set(wspace=0.1)
     savefig(save_filename)
 
 

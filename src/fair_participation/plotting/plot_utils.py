@@ -200,22 +200,18 @@ def plot_triangles(ax, triangles, normals):
     ax.add_collection3d(tri)
 
 
-def use_two_ticks_x(ax: plt.Axes, others: Optional[list] = None):
+def use_two_ticks(ax, axis: str, others: Optional[list] = None):
+    if axis == "x":
+        getticks, setticks, getlim = ax.get_xticks, ax.set_xticks, ax.get_xlim
+    elif axis == "y":
+        getticks, setticks, getlim = ax.get_yticks, ax.set_yticks, ax.get_ylim
+    elif axis == "z":
+        getticks, setticks, getlim = ax.get_zticks, ax.set_zticks, ax.get_zlim
+    else:
+        raise ValueError
     if others is None:
         others = []
-    x = ax.get_xticks()
-    ax.set_xticks([min(x), max(x)] + others)
-
-
-def use_two_ticks_y(ax, others: Optional[list] = None):
-    if others is None:
-        others = []
-    y = ax.get_yticks()
-    ax.set_yticks([min(y), max(y)] + others)
-
-
-def use_two_ticks_z(ax, others: Optional[list] = None):
-    if others is None:
-        others = []
-    z = ax.get_zticks()
-    ax.set_zticks([min(z), max(z)] + others)
+    # TODO this was not right: ticks can be outside the axes
+    min_ = min(tick for tick in getticks() if tick > getlim()[0])
+    max_ = max(tick for tick in getticks() if tick < getlim()[1])
+    setticks([min_, max_] + others)

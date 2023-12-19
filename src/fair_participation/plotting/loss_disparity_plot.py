@@ -10,9 +10,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks_x,
-    use_two_ticks_y,
-    use_two_ticks_z,
+    use_two_ticks,
     UpdatingPlot,
     upsample_triangles,
 )
@@ -122,9 +120,9 @@ class LossDisparityPlot3Group:
         ax.set_ylabel("Elevation", labelpad=-10)
         ax.set_zlabel("Loss; Disparity", labelpad=-10)
 
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
-        use_two_ticks_z(ax)
+        use_two_ticks(ax, axis="x")
+        use_two_ticks(ax, axis="y")
+        use_two_ticks(ax, axis="z")
 
     def get_phi(self, loss):
         x, y, z = -loss[0], -loss[1], -loss[2]
@@ -200,10 +198,10 @@ class LossDisparityPlot2Group(UpdatingPlot):
         )
 
         plt.title("Loss and Disparity Surfaces")
-        ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
-        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=-40)
+        ax.set_xlabel("Parameter $\\phi$", labelpad=-5)
+        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=8)
         ax.yaxis.label.set_color(cb_colors[0])
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-40)
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-20)
         ax_r.yaxis.label.set_color(cb_colors[3])
 
         plt.xlim([min_phi, max_phi])

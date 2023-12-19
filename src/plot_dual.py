@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 from numpy.typing import NDArray
 
-from fair_participation.plotting.plot_utils import use_two_ticks_x, use_two_ticks_y
+from fair_participation.plotting.plot_utils import use_two_ticks
 from fair_participation.rate_functions import localized_rho_fn
 from fair_participation.utils import PROJECT_ROOT
 
@@ -55,8 +55,8 @@ def plot():
     left.set_ylabel("Group 2 loss $\\ell_2$", labelpad=-10)
     left.set_xlim(-1, 0)
     left.set_ylim(-1, 0)
-    use_two_ticks_x(left)
-    use_two_ticks_y(left)
+    use_two_ticks(left, axis="x")
+    use_two_ticks(left, axis="y")
 
     right.plot(*rho.T, color="black")
     right.yaxis.tick_right()
@@ -67,8 +67,9 @@ def plot():
     right.set_ylabel("Group 2 Participation Rate $\\rho_2$")
     right.set_xlim(0, 1)
     right.set_ylim(0, 1)
-    use_two_ticks_x(right)
-    use_two_ticks_y(right)
+
+    use_two_ticks(right, axis="x")
+    use_two_ticks(right, axis="y")
 
     a = 0.45 * np.pi / 2
     b = 0.55 * np.pi / 2
@@ -154,8 +155,8 @@ def plot():
         r"$\frac{1}{1 + \exp[20(\ell_g + 0.62)]}$",
         fontsize=19,
     )
-    use_two_ticks_x(inset_l)
-    use_two_ticks_y(inset_l)
+    use_two_ticks(inset_l, axis="x")
+    use_two_ticks(inset_l, axis="y")
 
     la = np.einsum("i,i->", ra, la) / 2
     lb = np.einsum("i,i->", rb, lb) / 2

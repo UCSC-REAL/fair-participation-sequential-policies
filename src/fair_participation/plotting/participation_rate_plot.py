@@ -9,9 +9,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks_x,
-    use_two_ticks_y,
-    use_two_ticks_z,
+    use_two_ticks,
     UpdatingPlot,
     sample_hull_uniform,
     upsample_hull_3d,
@@ -142,9 +140,9 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         ax.set_ylabel("Group 2 rate $\\rho_2$", labelpad=-10)
         ax.set_zlabel("Group 3 rate $\\rho_3$", labelpad=-10)
         ax.legend(loc="upper right")
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
-        use_two_ticks_z(ax)
+        use_two_ticks(ax, axis="x")
+        use_two_ticks(ax, axis="y")
+        use_two_ticks(ax, axis="z")
 
 
 class ParticipationRatePlot2Group(UpdatingPlot):
@@ -173,8 +171,6 @@ class ParticipationRatePlot2Group(UpdatingPlot):
             *pure_rho.T,
             color="black",
             # label="Pure policies",
-            zorder=10,
-            clip_on=False,
         )
 
         loss_samples = inclusive_hull_order_2d(
@@ -221,10 +217,10 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         )
         ax.legend(loc="upper right", framealpha=0.95)
 
-        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-15)
-        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-5)
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
+        ax.set_xlabel("$\\rho_1$ (Group 1)", labelpad=-5)
+        ax.set_ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
+        use_two_ticks(ax, axis="x")
+        use_two_ticks(ax, axis="y")
 
         (self.rate_pt,) = plt.plot([], [], color="red", marker="^", markersize=10)
 

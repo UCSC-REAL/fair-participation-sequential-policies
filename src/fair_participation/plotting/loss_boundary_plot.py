@@ -6,9 +6,7 @@ from matplotlib import patches
 from matplotlib import pyplot as plt
 
 from fair_participation.plotting.plot_utils import (
-    use_two_ticks_x,
-    use_two_ticks_y,
-    use_two_ticks_z,
+    use_two_ticks,
     UpdatingPlot,
     project_hull,
     plot_triangles,
@@ -92,9 +90,9 @@ class LossBoundaryPlot3Group(UpdatingPlot):
         ax.set_zlabel("Group 3 loss $\\ell_3$", labelpad=-10)
         plt.title("Group Loss")
 
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
-        use_two_ticks_z(ax)
+        use_two_ticks(ax, axis="x")
+        use_two_ticks(ax, axis="y")
+        use_two_ticks(ax, axis="z")
 
 
 class LossBoundaryPlot2Group(UpdatingPlot):
@@ -118,8 +116,6 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             *achievable_loss.T,
             color="black",
             label="Pure policies",
-            clip_on=False,
-            zorder=10,
         )
         ax.fill(
             list(loss_hull.points[:, 0]) + [loss_hull.points[0, 0]],
@@ -140,8 +136,8 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         self.min_lim = min_lim
         self.max_lim = max_lim
 
-        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
-        plt.ylabel("$\\ell_2$ (Group 2)", labelpad=-10)
+        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-5)
+        plt.ylabel("$\\ell_2$ (Group 2)", labelpad=-15)
         plt.title("Group Loss")
 
         ax.legend(loc="upper right")
@@ -155,8 +151,8 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             )
         )
         plt.annotate("$\\phi$", self.rescale(-0.85, -0.1))
-        use_two_ticks_x(ax)
-        use_two_ticks_y(ax)
+        use_two_ticks(ax, axis="x")
+        use_two_ticks(ax, axis="y")
 
         (self.loss_pt,) = plt.plot(
             [],
