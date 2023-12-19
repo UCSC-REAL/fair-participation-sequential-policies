@@ -4,5 +4,5 @@ import plot_dual
 import run
 
 if __name__ == "__main__":
-    # run.main()
+    run.main()
     plot_dual.plot()
