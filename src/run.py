@@ -123,21 +123,21 @@ def run_problems(
 
 def main():
     base_problems = [
-        # {
-        #     "source": "folktasks",
-        #     "name": "IncomeThree",
-        #     "rho_fns": localized_rho_fn(-0.75, 20),
-        #     "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
-        #     "num_steps": 30,
-        #     "fair_epsilon": 0.05,
-        # },
         {
             "source": "folktasks",
-            "name": "Income",
+            "name": "IncomeThree",
             "rho_fns": localized_rho_fn(-0.75, 20),
-            "init_loss_direction": 0.58,
+            "init_loss_direction": jnp.array([-0.5, -0.3, -0.3]),
             "num_steps": 30,
+            "fair_epsilon": 0.05,
         },
+        # {
+        #     "source": "folktasks",
+        #     "name": "Income",
+        #     "rho_fns": localized_rho_fn(-0.75, 20),
+        #     "init_loss_direction": 0.58,
+        #     "num_steps": 30,
+        # },
         # {
         #     "source": "folktasks",
         #     "name": "Mobility",
@@ -159,14 +159,14 @@ def main():
         #     "init_loss_direction": 0.52,
         #     "num_steps": 30,
         # },
-        {
-            "source": "grouplens",
-            "name": "Grouplens",
-            "rho_fns": localized_rho_fn(-0.7, 20),
-            "init_loss_direction": 0.52,
-            "num_steps": 30,
-            "fair_epsilon": 0.0005,
-        },
+        # {
+        #     "source": "grouplens",
+        #     "name": "Grouplens",
+        #     "rho_fns": localized_rho_fn(-0.7, 20),
+        #     "init_loss_direction": 0.52,
+        #     "num_steps": 30,
+        #     "fair_epsilon": 0.0005,
+        # },
     ]
     methods = [  # listed in environment.py
         "RRM",

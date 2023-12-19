@@ -141,12 +141,12 @@ class ParticipationRatePlot3Group(UpdatingPlot):
             max_lim = max(max_lim, min(b, 1))
         plt.xlim(min_lim, max_lim)
         plt.ylim(min_lim, max_lim)
-        plt.zlim(min_lim, max_lim)
+        ax.set_zlim(min_lim, max_lim)
         ax.view_init(elev=30, azim=45)
 
         plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
         plt.ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
-        plt.zlabel("$\\rho_3$ (Group 3)", labelpad=-10)
+        ax.set_zlabel("$\\rho_3$ (Group 3)", labelpad=0)
         # TODO fix this
         set_corner_ticks(ax, "xyz")
         ax.scatter(*pure_rho.T, color="black", zorder=2)

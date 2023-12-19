@@ -19,6 +19,7 @@ from fair_participation.plotting.params import (
     base_sns_theme_kwargs,
     base_rcparams,
     marker_map,
+    _method_markers,
     LOSS_COLOR,
     DISPARITY_COLOR,
 )
@@ -106,8 +107,8 @@ def make_canvas(env: Environment) -> tuple:
             loss_hull=env.loss_hull,
         )
         bbox = lax.get_position()
-        bbox.x0 += 0.1  # shift right
-        bbox.x1 += 0.1  # shift right
+        bbox.x0 += 0.12  # shift right
+        bbox.x1 += 0.12  # shift right
         lax.set_position(bbox)
         center_plot = make_participation_rate_plot(
             ax=cax,
@@ -200,10 +201,10 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
 
 def compare_solutions_3D(env, methods):
     save_filename = get_compare_solutions_filename(env.name)
-    if os.path.exists(save_filename):
-        logger.info("Graphic exists; skipping:")
-        logger.info(f"  {save_filename}")
-        return
+    # if os.path.exists(save_filename):
+    #     logger.info("Graphic exists; skipping:")
+    #     logger.info(f"  {save_filename}")
+    #     return
     logger.info(f"Rendering graphic:")
     logger.info(f"  {save_filename}")
 
@@ -215,7 +216,9 @@ def compare_solutions_3D(env, methods):
     else:
         right_p = None
 
-    # TODO duplicate
+    # TODO should coalesce, but w/e
+    markers = _method_markers
+
     for method in methods:
         trial_filename = get_trial_filename(env.name, method)
         with jnp.load(trial_filename) as npz:
@@ -245,7 +248,7 @@ def compare_solutions_3D(env, methods):
 
     left.scatter(*loss, **markers[method], label=method)
     center.scatter(*rho, **markers[method], label=method)
-    left.legend(loc=(-0.6, 0.3))
+    left.legend(loc=(-0.7, 0.3))
 
     if right_p is not None:
         right_p.ax.scatter(

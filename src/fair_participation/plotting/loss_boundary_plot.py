@@ -87,7 +87,7 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
         ax.set_xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
         ax.set_ylabel("$\\ell_2$ (Group 2)", labelpad=-10)
-        ax.set_zlabel("$\\ell_3$ (Group 3)", labelpad=-10)
+        ax.set_zlabel("$\\ell_3$ (Group 3)", labelpad=0)
         plt.title("Group Losses")
 
         set_corner_ticks(ax, "xyz")
