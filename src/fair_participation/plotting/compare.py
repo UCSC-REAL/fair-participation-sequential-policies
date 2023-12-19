@@ -78,16 +78,16 @@ def make_canvas(env: Environment) -> tuple:
         )
 
         rbox = rax.get_position()
-        rbox.x0 += 0.05  # shift right
-        rbox.x1 += 0.05  # shift right
+        rbox.x0 += 0.05
+        rbox.x1 += 0.05
         rax.set_position(rbox)
         cbox = cax.get_position()
-        cbox.x0 += 0.06  # shift right
-        cbox.x1 += 0.06  # shift right
+        cbox.x0 += 0.04
+        cbox.x1 += 0.04
         cax.set_position(cbox)
         lbox = lax.get_position()
-        lbox.x0 += 0.07  # shift right
-        lbox.x1 += 0.07  # shift right
+        lbox.x0 += 0.05
+        lbox.x1 += 0.05
         lax.set_position(lbox)
 
         plots = (left_plot, center_plot, right_plot)
@@ -173,7 +173,7 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         ax=left.ax,
     )
     left.ax.legend(
-        loc=(-0.85, 0.3),
+        loc=(-0.84, 0.3),
         frameon=True,
         title=None,
     )

@@ -196,10 +196,13 @@ class LossDisparityPlot2Group(UpdatingPlot):
 
         plt.title("Loss and Disparity Surfaces")
         ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
-        ax.set_ylabel("Total Loss $\\mathcal{L}$", labelpad=5)
+        ax.set_ylabel("Total Loss $\\mathcal{L}$")
         ax.yaxis.label.set_color(LOSS_COLOR)
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=-30)
+        ax.yaxis.set_label_coords(-0.05, 0.6)
+
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$")
         ax_r.yaxis.label.set_color(DISPARITY_COLOR)
+        ax_r.yaxis.set_label_coords(1.05, 0.6)
 
         rounded_min_phi = np.ceil(min_phi / 0.01) * 0.01
         rounded_max_phi = np.floor(max_phi / 0.01) * 0.01
@@ -213,14 +216,8 @@ class LossDisparityPlot2Group(UpdatingPlot):
             )
             set_corner_ticks(cax, "xy")
 
-        # yrticks = ax_r.get_yticks()
-        # ax_r.set_yticks([yrticks[0], 0, yrticks[-1]])
-        #
-        # ax.set_xticks([min_phi, max_phi])
-        # ax.set_xticklabels([round(min_phi, 2), round(max_phi, 2)])
-        #
-        # yticks = ax.get_yticks()
-        # ax.set_yticks([yticks[0], yticks[-1]])
+        plt.sca(ax_r)
+        plt.yticks(list(plt.yticks()[0]) + [0.0])
 
     def get_phi(self, loss):
         return np.arctan2(-loss[1], -loss[0])

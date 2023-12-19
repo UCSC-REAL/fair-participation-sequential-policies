@@ -195,9 +195,10 @@ class ParticipationRatePlot2Group(UpdatingPlot):
 
         plt.title("Group Participation Rates")
         plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
-        plt.ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
+        plt.ylabel("$\\rho_2$ (Group 2)")
+        ax.yaxis.set_label_coords(-0.05, 0.5)
 
-        # Make these start at 0 and end at at next highest percent
+        # Make these start at 0 and end at next highest percent
         max_lim = max([plt.xlim()[1], plt.ylim()[1]])
         max_lim = np.ceil(max_lim / 0.01) * 0.01
         max_lim = np.clip(max_lim, 0, 1)

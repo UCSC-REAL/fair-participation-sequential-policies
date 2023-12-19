@@ -127,8 +127,9 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             alpha=0.3,
         )
 
-        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-5)
-        plt.ylabel("$\\ell_2$ (Group 2)", labelpad=-15)
+        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
+        plt.ylabel("$\\ell_2$ (Group 2)")
+        ax.yaxis.set_label_coords(-0.05, 0.5)
         plt.title("Group Loss")
 
         set_nice_limits(ax, -1, 0, res=0.02)
@@ -148,6 +149,7 @@ class LossBoundaryPlot2Group(UpdatingPlot):
         plt.annotate("$\\phi$", (0.15, 0.9), xycoords="axes fraction")
 
     # TODO Disable this stuff for camera-ready just in case it messes with things
+
     #     (self.loss_pt,) = plt.plot(
     #         [],
     #         [],

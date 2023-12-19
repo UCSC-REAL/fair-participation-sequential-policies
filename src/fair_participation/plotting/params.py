@@ -11,11 +11,11 @@ base_sns_theme_kwargs = {
 }
 base_rcparams = {
     "text.usetex": True,
-    "axes.labelsize": 20.0,
-    "xtick.labelsize": 18.0,
-    "ytick.labelsize": 18.0,
+    "axes.labelsize": 22.0,
+    "xtick.labelsize": 20.0,
+    "ytick.labelsize": 20.0,
     "axes.titlesize": 20.0,
-    "legend.fontsize": 16.5,
+    "legend.fontsize": 19.0,
     "xtick.bottom": True,
     "ytick.left": True,
     "lines.linewidth": 3,
