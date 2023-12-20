@@ -27,31 +27,32 @@ def do_clean(name: str, methods: list[str], clean: str) -> None:
 
     :param name: Name of the problem.
     :param methods: Methods to be cleaned.
-    :param clean: Type of cleaning. One of "all", "pdfs", "graphics", "trials", "envs".
+    :param clean: Type of cleaning. One of "all", "pngs", "graphics", "trials", "envs".
     :return: None.
     """
     # clean everything, independent of which problems are active
     if clean == "all":
-        clean_folders = ["losses", "npz", "mp4", "pdf"]
+        clean_folders = ["losses", "npz", "mp4", "png"]
         for folder in clean_folders:
             full_folder = os.path.join(PROJECT_ROOT, folder)
             for file in os.listdir(full_folder):
                 ext = pathlib.Path(file).suffix
-                if ext in (".npz", ".mp4", ".pdf", ".npy"):
+                if ext in (".npz", ".mp4", ".png", ".npy"):
                     os.remove(os.path.join(folder, file))
         return
 
     # clean only for currently active problems
-    # pdf:      pdfs
-    # graphics: pdfs + mp4
-    # trials:   pdfs + mp4 + npz
-    # env:      pdfs + mp4 + npz + losses
+    # pdfs:     pdfs
+    # pngs:     pngs
+    # graphics: pngs + mp4
+    # trials:   pngs + mp4 + npz
+    # env:      pngs + mp4 + npz + losses
     targets = set()
 
-    if clean in ["timeseries", "pdfs", "graphics", "trials", "envs"]:
+    if clean in ["timeseries", "pdfs", "pngs", "graphics", "trials", "envs"]:
         targets.add(get_compare_timeseries_filename(name))
 
-    if clean in ["solutions", "pdfs", "graphics", "trials", "envs"]:
+    if clean in ["solutions", "pdfs", "pngs", "graphics", "trials", "envs"]:
         targets.add(get_compare_solutions_filename(name))
 
     for method in methods:
@@ -83,7 +84,7 @@ def run_problems(
     :return: None.
     """
 
-    all_folders = ["data", "mp4", "npz", "pdf", "losses"]
+    all_folders = ["data", "mp4", "npz", "png", "pdf", "losses"]
     for folder in all_folders:
         full_folder = os.path.join(PROJECT_ROOT, folder)
         os.makedirs(full_folder, exist_ok=True)

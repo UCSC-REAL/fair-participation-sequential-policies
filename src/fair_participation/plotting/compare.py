@@ -130,7 +130,7 @@ def make_canvas(env: Environment) -> tuple:
 
 
 def get_compare_solutions_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_solutions.pdf")
+    return os.path.join(PROJECT_ROOT, "png", f"{name}_solutions.png")
 
 
 def compare_solutions(env: Environment, methods: list[str]) -> None:
@@ -269,7 +269,7 @@ def compare_solutions_3D(env, methods):
 
 
 def get_compare_timeseries_filename(name: str) -> str:
-    return os.path.join(PROJECT_ROOT, "pdf", f"{name}_time_series.pdf")
+    return os.path.join(PROJECT_ROOT, "png", f"{name}_time_series.png")
 
 
 def compare_timeseries(name: str, methods: list[str]) -> None:
