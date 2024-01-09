@@ -151,7 +151,7 @@ def plot():
     )
     inset_r.yaxis.set_label_position("right")
     inset_r.yaxis.tick_right()
-    inset_r.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g s_g$", labelpad=-30)
+    inset_r.set_ylabel("Total Loss $\\sum_g \\ell_g \\rho_g$", labelpad=-30)
     inset_r.set_xlabel("Parameter $\\theta$", labelpad=-10)
     inset_r.scatter([a], [la], color="red", marker="^", s=ms)
     inset_r.scatter([b], [lb], color="blue", marker="o", s=ms)
