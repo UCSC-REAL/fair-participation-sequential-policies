@@ -85,13 +85,15 @@ class LossBoundaryPlot3Group(UpdatingPlot):
 
         ax.view_init(elev=30, azim=45)
 
-        ax.set_xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
-        ax.set_ylabel("$\\ell_2$ (Group 2)", labelpad=-10)
-        ax.set_zlabel("$\\ell_3$ (Group 3)", labelpad=0)
+        ax.set_xlabel("$\\ell_1$ (Group 1) $\\rightarrow$", labelpad=-5)
+        ax.set_ylabel("$\\leftarrow$ $\\ell_2$ (Group 2)", labelpad=-5)
+        ax.set_zlabel("$\\ell_3$ (Group 3) $\\rightarrow$", labelpad=-5)
         plt.title("Group Losses")
 
-        set_corner_ticks(ax, "xyz")
-
+        # set_corner_ticks(ax, "xyz")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
         ax.scatter(*achievable_loss.T, color="black", label="Pure Policies", zorder=2)
 
 
@@ -127,14 +129,15 @@ class LossBoundaryPlot2Group(UpdatingPlot):
             alpha=0.3,
         )
 
-        plt.xlabel("$\\ell_1$ (Group 1)", labelpad=-10)
-        plt.ylabel("$\\ell_2$ (Group 2)")
-        ax.yaxis.set_label_coords(-0.05, 0.5)
+        plt.xlabel("$\\ell_1$ (Group 1) $\\rightarrow$")
+        plt.ylabel("$\\ell_2$ (Group 2) $\\rightarrow$")
+        # ax.yaxis.set_label_coords(-0.05, 0.5)
         plt.title("Group Loss")
 
         set_nice_limits(ax, -1, 0, res=0.02)
-        set_corner_ticks(ax, "xy")
-
+        # set_corner_ticks(ax, "xy")
+        ax.set_xticks([])
+        ax.set_yticks([])
         ax2data = ax.transLimits.inverted().transform
         ax.add_patch(
             patches.FancyArrowPatch(

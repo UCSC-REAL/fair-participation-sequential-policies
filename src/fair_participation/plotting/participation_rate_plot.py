@@ -144,11 +144,15 @@ class ParticipationRatePlot3Group(UpdatingPlot):
         ax.set_zlim(min_lim, max_lim)
         ax.view_init(elev=30, azim=45)
 
-        plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
-        plt.ylabel("$\\rho_2$ (Group 2)", labelpad=-10)
-        ax.set_zlabel("$\\rho_3$ (Group 3)", labelpad=0)
-        # TODO fix this
-        set_corner_ticks(ax, "xyz")
+        ax.set_xlabel("$\\rho_1$ (Group 1) $\\rightarrow$", labelpad=-5)
+        ax.set_ylabel("$\\leftarrow$ $\\rho_2$ (Group 2)", labelpad=-5)
+        ax.set_zlabel("$\\rho_3$ (Group 3) $\\rightarrow$", labelpad=-5)
+
+        # set_corner_ticks(ax, "xyz")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
         ax.scatter(*pure_rho.T, color="black", zorder=2)
 
 
@@ -194,9 +198,9 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         ax.fill(*rho_samples.T, color="black", alpha=0.3)
 
         plt.title("Group Participation Rates")
-        plt.xlabel("$\\rho_1$ (Group 1)", labelpad=-10)
-        plt.ylabel("$\\rho_2$ (Group 2)")
-        ax.yaxis.set_label_coords(-0.05, 0.5)
+        plt.xlabel("$\\rho_1$ (Group 1) $\\rightarrow$")
+        plt.ylabel("$\\rho_2$ (Group 2) $\\rightarrow$")
+        # ax.yaxis.set_label_coords(-0.05, 0.5)
 
         # Make these start at 0 and end at next highest percent
         max_lim = max([plt.xlim()[1], plt.ylim()[1]])
@@ -205,8 +209,9 @@ class ParticipationRatePlot2Group(UpdatingPlot):
         plt.xlim(0, max_lim)
         plt.ylim(0, max_lim)
 
-        set_corner_ticks(ax, "xy")
-
+        # set_corner_ticks(ax, "xy")
+        ax.set_xticks([])
+        ax.set_yticks([])
         dist = 2 * np.sqrt(fair_epsilon)
 
         ax.plot(

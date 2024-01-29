@@ -195,14 +195,14 @@ class LossDisparityPlot2Group(UpdatingPlot):
         )
 
         plt.title("Loss and Disparity Surfaces")
-        ax.set_xlabel("Parameter $\\phi$", labelpad=-10)
-        ax.set_ylabel("Total Loss $\\mathcal{L}$")
+        ax.set_xlabel("Parameter $\\phi$ $\\rightarrow$")
+        ax.set_ylabel("Total Loss $\\mathcal{L}$ $\\rightarrow$")
         ax.yaxis.label.set_color(LOSS_COLOR)
-        ax.yaxis.set_label_coords(-0.05, 0.6)
+        # ax.yaxis.set_label_coords(-0.05, 0.6)
 
-        ax_r.set_ylabel("Disparity $\\mathcal{H}$")
+        ax_r.set_ylabel("Disparity $\\mathcal{H}$ $\\rightarrow$")
         ax_r.yaxis.label.set_color(DISPARITY_COLOR)
-        ax_r.yaxis.set_label_coords(1.05, 0.6)
+        # ax_r.yaxis.set_label_coords(1.05, 0.6)
 
         rounded_min_phi = np.ceil(min_phi / 0.01) * 0.01
         rounded_max_phi = np.floor(max_phi / 0.01) * 0.01
@@ -214,8 +214,9 @@ class LossDisparityPlot2Group(UpdatingPlot):
                 res=0.001,
                 equal_aspect=False,
             )
-            set_corner_ticks(cax, "xy")
-
+            # set_corner_ticks(cax, "xy")
+            cax.set_xticks([])
+            cax.set_yticks([])
         plt.sca(ax_r)
         plt.yticks(list(plt.yticks()[0]) + [0.0])
 

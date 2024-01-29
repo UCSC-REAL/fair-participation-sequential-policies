@@ -81,16 +81,16 @@ def make_canvas(env: Environment) -> tuple:
         )
 
         rbox = rax.get_position()
-        rbox.x0 += 0.05
-        rbox.x1 += 0.05
+        rbox.x0 += 0.06
+        rbox.x1 += 0.06
         rax.set_position(rbox)
         cbox = cax.get_position()
-        cbox.x0 += 0.04
-        cbox.x1 += 0.04
+        cbox.x0 += 0.05
+        cbox.x1 += 0.05
         cax.set_position(cbox)
         lbox = lax.get_position()
-        lbox.x0 += 0.05
-        lbox.x1 += 0.05
+        lbox.x0 += 0.06
+        lbox.x1 += 0.06
         lax.set_position(lbox)
 
         plots = (left_plot, center_plot, right_plot)
@@ -176,9 +176,10 @@ def compare_solutions(env: Environment, methods: list[str]) -> None:
         ax=left.ax,
     )
     left.ax.legend(
-        loc=(-0.84, 0.3),
+        loc=(-0.89, 0.2),
         frameon=True,
         title=None,
+        borderpad=0.2
     )
     sns.scatterplot(
         data=data,
@@ -248,7 +249,11 @@ def compare_solutions_3D(env, methods):
 
     left.scatter(*loss, **markers[method], label=method)
     center.scatter(*rho, **markers[method], label=method)
-    left.legend(loc=(-0.7, 0.3))
+    left.legend(
+        loc=(-0.76, 0.24),
+        frameon=True,
+        title=None,
+        borderpad=0.2)
 
     if right_p is not None:
         right_p.ax.scatter(
@@ -297,10 +302,14 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax.tick_params("y", colors=LOSS_COLOR)
     ax_r.tick_params("y", colors=DISPARITY_COLOR)
     ax.set_xlabel("Timestep")
-    ax.set_ylabel("Total Loss $\\mathcal{L}$")
+    ax.set_ylabel("Total Loss $\\mathcal{L}$ $\\rightarrow$")
     ax.yaxis.label.set_color(LOSS_COLOR)
-    ax_r.set_ylabel("Disparity $\\mathcal{H}$", labelpad=5)
+    ax_r.set_ylabel("Disparity $\\mathcal{H}$ $\\rightarrow$")
     ax_r.yaxis.label.set_color(DISPARITY_COLOR)
+
+    # ax.set_xticks([])
+    ax.set_yticks([])
+    ax_r.set_yticks([0])
 
     df = load_methods(name, methods)
     n_methods = len(methods)
@@ -328,8 +337,10 @@ def compare_timeseries(name: str, methods: list[str]) -> None:
     ax_r.legend(
         loc="upper center",
         frameon=True,
+        borderpad=0.2,
         title=None,
-        bbox_to_anchor=(0.5, -0.25),
+        columnspacing=0.7,
+        bbox_to_anchor=(0.5, -0.2),
         ncol=n_methods,
     )
     for line in ax_r.get_legend().get_lines():

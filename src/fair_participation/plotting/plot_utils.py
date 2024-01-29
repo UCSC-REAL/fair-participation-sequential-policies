@@ -30,7 +30,7 @@ mpl.rc("font", **font)
 
 def savefig(filename, **kwargs):
     logger.info(f"Saving {filename}")
-    plt.savefig(filename, **kwargs)
+    plt.savefig(filename, **kwargs, dpi=300)
 
 
 class UpdatingPlot:
