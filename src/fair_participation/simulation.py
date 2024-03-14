@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import pandas as pd
 
 from fair_participation.environment import Environment
-from fair_participation.rrm import rrm_step
+from fair_participation.rgd import rgd_step
 from fair_participation.mpg import mpg_step
 from fair_participation.cpg import cpg_step
 
@@ -24,14 +24,14 @@ def update_env_fn(
     Returns a function that updates the environment state.
 
     :param env: Environment object.
-    :param method: Method name. Can be "RRM", "MPG", or "CPG".
+    :param method: Method name. Can be "RGD", "MPG", or "CPG".
     :param init_eta: Initial learning rate.
     :param eta_decay: Learning rate decay.
     :param alpha: Learning rate for dual variable.
     :return: Callable that updates the environment state.
     """
-    if method == "RRM":
-        _update_state = rrm_step(
+    if method == "RGD":
+        _update_state = rgd_step(
             values_and_grads=env.values_and_grads,
             group_sizes=env.group_sizes,
             loss_hull=env.loss_hull,
@@ -74,7 +74,7 @@ def simulate(
     eta_decay: float = 1.0,
     alpha: float = 1.0,
     num_steps: int = 100,
-    method: str = "RRM",
+    method: str = "RGD",
     **_,
 ) -> Environment:
     """
@@ -85,7 +85,7 @@ def simulate(
     :param eta_decay: Learning rate decay for primal variable.
     :param alpha: Learning rate for dual variable.
     :param num_steps: Number of steps to simulate.
-    :param method: Method name to use. Can be "RRM", "MPG", or "CPG".
+    :param method: Method name to use. Can be "RGD", "MPG", or "CPG".
     :return: Environment object.
     """
 

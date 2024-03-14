@@ -44,7 +44,7 @@ _method_markers = {
         "color": to_rgba(cb_palette[7], alpha=0.8),
         "s": 300,
     },
-    "RRM": {
+    "RGD": {
         "marker": "D",
         "color": to_rgba(cb_palette[2], alpha=0.8),
         "s": 240,

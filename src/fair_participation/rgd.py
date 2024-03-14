@@ -7,13 +7,13 @@ from fair_participation.state import StateInfo
 from fair_participation.optimization import solve_qp
 
 
-def rrm_step(
+def rgd_step(
     values_and_grads: Callable[[ArrayLike], dict],
     group_sizes: ArrayLike,
     loss_hull: ConvexHull,
 ) -> Callable[[ArrayLike, tuple[float, float]], StateInfo]:
     """
-    Returns update callable that exactly solves the RRM subproblem:
+    Returns update callable that exactly solves the RGD subproblem:
         min_l Sum_g (s_g * l_g * rho_g^t)
         s.t. l in loss_hull
 
@@ -25,7 +25,7 @@ def rrm_step(
 
     def _step(loss: ArrayLike, rates: tuple[float, float]) -> StateInfo:
         """
-        RRM update step.
+        RGD update step.
         :param loss: Current loss vector.
         :param rates: Learning rates. Only eta is used.
         :return: Dictionary of updated values.

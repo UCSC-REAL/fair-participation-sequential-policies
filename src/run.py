@@ -170,7 +170,7 @@ def main():
         },
     ]
     methods = [  # listed in environment.py
-        "RRM",
+        "RGD",
         "MPG",
         "CPG",
     ]
